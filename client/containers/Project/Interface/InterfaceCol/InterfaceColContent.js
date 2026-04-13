@@ -21,9 +21,9 @@ import * as resolve from 'table-resolver';
 import axios from 'axios';
 import CaseReport from './CaseReport.js';
 import _ from 'underscore';
-import { initCrossRequest } from 'client/components/Postman/CheckCrossInstall.js';
 import produce from 'immer';
 import {InsertCodeMap} from 'client/components/Postman/Postman.js'
+import { REQUEST_MODE, getRequestMode, setRequestMode } from 'client/utils/requestMode';
 
 const plugin = require('client/plugin.js');
 const {
@@ -114,7 +114,7 @@ class InterfaceColContent extends Component {
       reports: {},
       visible: false,
       curCaseid: null,
-      hasPlugin: false,
+      requestMode: getRequestMode(),
 
       advVisible: false,
       curScript: '',
@@ -180,13 +180,6 @@ class InterfaceColContent extends Component {
       await this.handleColIdChange(currColId)
     }
 
-    this._crossRequestInterval = initCrossRequest(hasPlugin => {
-      this.setState({ hasPlugin: hasPlugin });
-    });
-  }
-
-  componentWillUnmount() {
-    clearInterval(this._crossRequestInterval);
   }
 
   // 更新分类简介
@@ -320,11 +313,14 @@ class InterfaceColContent extends Component {
     }));
 
     try {
-      let data = await crossRequest(options, interfaceData.pre_script, interfaceData.after_script, createContext(
-        this.props.curUid,
-        this.props.match.params.id,
-        interfaceData.interface_id
-      ));
+      let data = await crossRequest(
+        options,
+        interfaceData.pre_script,
+        interfaceData.after_script,
+        createContext(this.props.curUid, this.props.match.params.id, interfaceData.interface_id, {
+          requestMode: this.state.requestMode
+        })
+      );
       options.taskId = this.props.curUid;
       let res = (data.res.body = json_parse(data.res.body));
       result = {
@@ -426,6 +422,12 @@ class InterfaceColContent extends Component {
     let globalValue = ArrayToObject(global);
     let context = Object.assign({}, { global: globalValue }, this.records);
     return handleParamsValue(val, context);
+  };
+
+  handleRequestModeChange = checked => {
+    const requestMode = checked ? REQUEST_MODE.SERVER : REQUEST_MODE.BROWSER;
+    setRequestMode(requestMode);
+    this.setState({ requestMode });
   };
 
   arrToObj = (arr, requestParams) => {
@@ -1035,47 +1037,49 @@ class InterfaceColContent extends Component {
             />
           </Col>
           <Col span={9}>
-            {this.state.hasPlugin ? (
-              <div
-                style={{
-                  float: 'right',
-                  paddingTop: '8px'
-                }}
+            <div
+              style={{
+                float: 'right',
+                paddingTop: '8px'
+              }}
+            >
+              <Tooltip
+                title={
+                  this.state.requestMode === REQUEST_MODE.SERVER
+                    ? '开始测试时由 YApi 服务端代发请求'
+                    : '开始测试时由浏览器直接发起请求，目标接口需要支持 CORS'
+                }
               >
-                {this.props.curProjectRole !== 'guest' && (
-                  <Tooltip title="在 YApi 服务端跑自动化测试，测试环境不能为私有网络，请确保 YApi 服务器可以访问到自动化测试环境domain">
-                    <Button
-                      style={{
-                        marginRight: '8px'
-                      }}
-                      onClick={this.autoTests}
-                    >
-                      服务端测试
-                    </Button>
-                  </Tooltip>
-                )}
-                <Button onClick={this.openCommonSetting} style={{
-                        marginRight: '8px'
-                      }} >通用规则配置</Button>
-                &nbsp;
-                <Button type="primary" onClick={this.executeTests}>
-                  开始测试
-                </Button>
-              </div>
-            ) : (
-              <Tooltip title="请安装 cross-request Chrome 插件">
-                <Button
-                  disabled
-                  type="primary"
-                  style={{
-                    float: 'right',
-                    marginTop: '8px'
-                  }}
-                >
-                  开始测试
-                </Button>
+                <span style={{ marginRight: '12px', display: 'inline-flex', alignItems: 'center' }}>
+                  <span style={{ marginRight: '8px' }}>请求方式</span>
+                  <Switch
+                    checked={this.state.requestMode === REQUEST_MODE.SERVER}
+                    onChange={this.handleRequestModeChange}
+                    checkedChildren="服务端"
+                    unCheckedChildren="浏览器"
+                  />
+                </span>
               </Tooltip>
-            )}
+              {this.props.curProjectRole !== 'guest' && (
+                <Tooltip title="在 YApi 服务端跑自动化测试时，请确保 YApi 服务器可以访问到目标测试环境 domain">
+                  <Button
+                    style={{
+                      marginRight: '8px'
+                    }}
+                    onClick={this.autoTests}
+                  >
+                    服务端测试
+                  </Button>
+                </Tooltip>
+              )}
+              <Button onClick={this.openCommonSetting} style={{
+                      marginRight: '8px'
+                    }} >通用规则配置</Button>
+              &nbsp;
+              <Button type="primary" onClick={this.executeTests}>
+                开始测试
+              </Button>
+            </div>
           </Col>
         </Row>
 

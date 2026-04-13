@@ -13,6 +13,8 @@ const jsondiffpatch = require('jsondiffpatch');
 const formattersHtml = jsondiffpatch.formatters.html;
 const showDiffMsg = require('../../common/diff-view.js');
 const mergeJsonSchema = require('../../common/mergeJsonSchema');
+const { crossRequest } = require('../../common/postmanLib');
+const createContext = require('../../common/createContext');
 const fs = require('fs-extra');
 const path = require('path');
 
@@ -60,6 +62,70 @@ function handleHeaders(values){
     }
   }
 }
+
+function ensureDefaultContentType(values) {
+  values.req_headers = Array.isArray(values.req_headers) ? values.req_headers : [];
+
+  const hasContentType = values.req_headers.some(item => {
+    return item && typeof item.name === 'string' && item.name.toLowerCase() === 'content-type';
+  });
+
+  if (!hasContentType) {
+    values.req_headers.unshift({
+      name: 'Content-Type',
+      value: 'application/json',
+      required: '1'
+    });
+  }
+}
+/*
+
+  async proxy(ctx) {
+    try {
+      const body = ctx.request.body || {};
+      const options = body.options;
+      const projectId = Number(body.project_id);
+      const interfaceId = Number(body.interface_id);
+
+      if (!options || typeof options !== 'object') {
+        return (ctx.body = yapi.commons.resReturn(null, 400, 'options 涓嶈兘涓虹┖'));
+      }
+
+      if (!options.url || typeof options.url !== 'string') {
+        return (ctx.body = yapi.commons.resReturn(null, 400, 'options.url 鏍煎紡鏈夎'));
+      }
+
+      if (!options.method || typeof options.method !== 'string') {
+        return (ctx.body = yapi.commons.resReturn(null, 400, 'options.method 鏍煎紡鏈夎'));
+      }
+
+      if (!projectId || !interfaceId) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, 'project_id 鍜?interface_id 涓嶈兘涓虹┖'));
+      }
+
+      const auth = await this.checkAuth(projectId, 'project', 'view');
+      if (!auth) {
+        return (ctx.body = yapi.commons.resReturn(null, 40033, '娌℃湁鏉冮檺'));
+      }
+
+      const result = await crossRequest(
+        options,
+        body.pre_script,
+        body.after_script,
+        createContext(this.getUid(), projectId, interfaceId)
+      );
+
+      ctx.body = yapi.commons.resReturn(result);
+    } catch (err) {
+      ctx.body = yapi.commons.resReturn(
+        null,
+        400,
+        err && err.message ? err.message : '璇锋眰澶辫触'
+      );
+    }
+  }
+}
+*/
 
 
 class interfaceController extends baseController {
@@ -227,6 +293,7 @@ class interfaceController extends baseController {
       ));
     }
 
+    ensureDefaultContentType(params);
     handleHeaders(params)
 
     params.query_path = {};
@@ -1262,6 +1329,51 @@ class interfaceController extends baseController {
       ctx.body = yapi.commons.resReturn(newResult);
     } catch (err) {
       ctx.body = yapi.commons.resReturn(null, 402, err.message);
+    }
+  }
+
+  async proxy(ctx) {
+    try {
+      const body = ctx.request.body || {};
+      const options = body.options;
+      const projectId = Number(body.project_id);
+      const interfaceId = Number(body.interface_id);
+
+      if (!options || typeof options !== 'object') {
+        return (ctx.body = yapi.commons.resReturn(null, 400, 'options 涓嶈兘涓虹┖'));
+      }
+
+      if (!options.url || typeof options.url !== 'string') {
+        return (ctx.body = yapi.commons.resReturn(null, 400, 'options.url 鏍煎紡鏈夎'));
+      }
+
+      if (!options.method || typeof options.method !== 'string') {
+        return (ctx.body = yapi.commons.resReturn(null, 400, 'options.method 鏍煎紡鏈夎'));
+      }
+
+      if (!projectId || !interfaceId) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, 'project_id 鍜?interface_id 涓嶈兘涓虹┖'));
+      }
+
+      const auth = await this.checkAuth(projectId, 'project', 'view');
+      if (!auth) {
+        return (ctx.body = yapi.commons.resReturn(null, 40033, '娌℃湁鏉冮檺'));
+      }
+
+      const result = await crossRequest(
+        options,
+        body.pre_script,
+        body.after_script,
+        createContext(this.getUid(), projectId, interfaceId)
+      );
+
+      ctx.body = yapi.commons.resReturn(result);
+    } catch (err) {
+      ctx.body = yapi.commons.resReturn(
+        null,
+        400,
+        err && err.message ? err.message : '璇锋眰澶辫触'
+      );
     }
   }
 }

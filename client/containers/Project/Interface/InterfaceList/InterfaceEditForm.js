@@ -181,8 +181,8 @@ class InterfaceEditForm extends Component {
 
         req_headers: [
           {
-            name: '',
-            value: '',
+            name: 'Content-Type',
+            value: 'application/json',
             required: '1'
           }
         ],

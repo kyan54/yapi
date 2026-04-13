@@ -16,12 +16,30 @@ require('./utils/notice')
 
 const Koa = require('koa');
 const koaStatic = require('koa-static');
+const koaSend = require('koa-send');
 // const bodyParser = require('koa-bodyparser');
 const koaBody = require('koa-body');
 const router = require('./router.js');
 
 global.storageCreator = storageCreator;
 let indexFile = process.argv[2] === 'dev' ? 'dev.html' : 'index.html';
+const staticRoot = yapi.path.join(yapi.WEBROOT, 'static');
+const staticContentTypeMap = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.eot': 'application/vnd.ms-fontobject'
+};
 
 const app = websockify(new Koa());
 app.proxy = true;
@@ -55,8 +73,30 @@ app.use(async (ctx, next) => {
   await next();
 });
 
+app.use(async (ctx, next) => {
+  try {
+    const requestPath = ctx.path === '/' ? indexFile : ctx.path.replace(/^\//, '');
+    await koaSend(ctx, requestPath, { root: staticRoot, gzip: true });
 
-app.use(koaStatic(yapi.path.join(yapi.WEBROOT, 'static'), { index: indexFile, gzip: true }));
+    let ext = yapi.path.extname(requestPath).toLowerCase();
+    if (ext === '.gz') {
+      const rawPath = requestPath.slice(0, -3);
+      ext = yapi.path.extname(rawPath).toLowerCase();
+    }
+    if (staticContentTypeMap[ext]) {
+      ctx.set('Content-Type', staticContentTypeMap[ext]);
+    }
+    return;
+  } catch (err) {
+    if (!err || err.status !== 404) {
+      throw err;
+    }
+  }
+
+  await next();
+});
+
+app.use(koaStatic(staticRoot, { index: indexFile, gzip: true }));
 
 
 const server = app.listen(yapi.WEBCONFIG.port);

@@ -22,10 +22,10 @@ import _ from 'underscore';
 import { isJson, deepCopyJson, json5_parse } from '../../common.js';
 import axios from 'axios';
 import ModalPostman from '../ModalPostman/index.js';
-import CheckCrossInstall, { initCrossRequest } from './CheckCrossInstall.js';
 import './Postman.scss';
 import ProjectEnv from '../../containers/Project/Setting/ProjectEnv/index.js';
 import json5 from 'json5';
+import { REQUEST_MODE, getRequestMode, setRequestMode } from '../../utils/requestMode';
 const { handleParamsValue, ArrayToObject, schemaValidator } = require('common/utils.js');
 const {
   handleParams,
@@ -129,7 +129,7 @@ export default class Run extends Component {
       mock_verify: false,
       enable_script: false,
       test_script: '',
-      hasPlugin: true,
+      requestMode: getRequestMode(),
       inputValue: '',
       cursurPosition: { row: 1, column: -1 },
       envModalVisible: false,
@@ -272,16 +272,7 @@ export default class Run extends Component {
   }
 
   componentWillMount() {
-    this._crossRequestInterval = initCrossRequest(hasPlugin => {
-      this.setState({
-        hasPlugin: hasPlugin
-      });
-    });
     this.initState(this.props.data);
-  }
-
-  componentWillUnmount() {
-    clearInterval(this._crossRequestInterval);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -320,6 +311,12 @@ export default class Run extends Component {
     });
   };
 
+  handleRequestModeChange = checked => {
+    const requestMode = checked ? REQUEST_MODE.SERVER : REQUEST_MODE.BROWSER;
+    setRequestMode(requestMode);
+    this.setState({ requestMode });
+  };
+
   reqRealInterface = async () => {
     if (this.state.loading === true) {
       this.setState({
@@ -344,11 +341,14 @@ export default class Run extends Component {
 
     try {
       options.taskId = this.props.curUid;
-      result = await crossRequest(options, options.pre_script || this.state.pre_script, options.after_script || this.state.after_script, createContext(
-        this.props.curUid,
-        this.props.projectId,
-        this.props.interfaceId
-      ));
+      result = await crossRequest(
+        options,
+        options.pre_script || this.state.pre_script,
+        options.after_script || this.state.after_script,
+        createContext(this.props.curUid, this.props.projectId, this.props.interfaceId, {
+          requestMode: this.state.requestMode
+        })
+      );
 
       await plugin.emitHook('after_request', result, {
         type: this.props.type,
@@ -580,7 +580,7 @@ export default class Run extends Component {
       loading,
       case_env,
       inputValue,
-      hasPlugin
+      requestMode
     } = this.state;
     // console.log(env);
     return (
@@ -609,8 +609,6 @@ export default class Run extends Component {
             <ProjectEnv projectId={this.props.data.project_id} onOk={this.handleEnvOk} />
           </Modal>
         )}
-        <CheckCrossInstall hasPlugin={hasPlugin} />
-
         <div className="url">
           <InputGroup compact style={{ display: 'flex' }}>
             <Select disabled value={method} style={{ flexBasis: 60 }}>
@@ -646,16 +644,28 @@ export default class Run extends Component {
 
           <Tooltip
             placement="bottom"
-            title={(() => {
-              if (hasPlugin) {
-                return '发送请求';
-              } else {
-                return '请安装 cross-request 插件';
-              }
-            })()}
+            title={
+              requestMode === REQUEST_MODE.SERVER
+                ? '由 YApi 服务端代发请求'
+                : '由浏览器直接发起请求，目标接口需要支持 CORS'
+            }
+          >
+            <span style={{ marginLeft: 10, display: 'inline-flex', alignItems: 'center' }}>
+              <span style={{ marginRight: 8 }}>请求方式</span>
+              <Switch
+                checked={requestMode === REQUEST_MODE.SERVER}
+                onChange={this.handleRequestModeChange}
+                checkedChildren="服务端"
+                unCheckedChildren="浏览器"
+              />
+            </span>
+          </Tooltip>
+
+          <Tooltip
+            placement="bottom"
+            title="发送请求"
           >
             <Button
-              disabled={!hasPlugin}
               onClick={this.reqRealInterface}
               type="primary"
               style={{ marginLeft: 10 }}

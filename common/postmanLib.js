@@ -19,6 +19,14 @@ const ContentTypeMap = {
   'text/html': 'html',
   other: 'text'
 };
+const forbiddenBrowserHeaderMap = {
+  host: true,
+  'content-length': true,
+  cookie: true,
+  origin: true,
+  referer: true,
+  'user-agent': true
+};
 
 const getStorage = async (id)=>{
   try{
@@ -51,6 +59,41 @@ const getStorage = async (id)=>{
   }
 }
 
+function normalizeRequestOptions(options, isBrowserRequest) {
+  let contentTypeItem;
+  options = Object.assign({}, options, {
+    headers: Object.assign({}, options && options.headers)
+  });
+
+  if (!options || typeof options.headers !== 'object' || !options.headers) {
+    return options;
+  }
+
+  Object.keys(options.headers).forEach(key => {
+    const lowerKey = key.toLowerCase();
+    if (/content-type/i.test(key) && options.headers[key]) {
+      contentTypeItem = options.headers[key]
+        .split(';')[0]
+        .trim()
+        .toLowerCase();
+    }
+
+    if (!options.headers[key] || (isBrowserRequest && forbiddenBrowserHeaderMap[lowerKey])) {
+      delete options.headers[key];
+    }
+  });
+
+  if (
+    contentTypeItem === 'application/x-www-form-urlencoded' &&
+    typeof options.data === 'object' &&
+    options.data
+  ) {
+    options.data = qs.stringify(options.data);
+  }
+
+  return options;
+}
+
 async function httpRequestByNode(options) {
   function handleRes(response) {
     if (!response || typeof response !== 'object') {
@@ -58,8 +101,8 @@ async function httpRequestByNode(options) {
         res: {
           status: 500,
           body: isNode
-            ? '请求出错, 内网服务器自动化测试无法访问到，请检查是否为内网服务器！'
-            : '请求出错'
+            ? '璇锋眰鍑洪敊, 鍐呯綉鏈嶅姟鍣ㄨ嚜鍔ㄥ寲娴嬭瘯鏃犳硶璁块棶鍒帮紝璇锋鏌ユ槸鍚︿负鍐呯綉鏈嶅姟鍣紒'
+            : '璇锋眰鍑洪敊'
         }
       };
     }
@@ -67,39 +110,14 @@ async function httpRequestByNode(options) {
       res: {
         header: response.headers,
         status: response.status,
+        statusText: response.statusText,
         body: response.data
       }
     };
   }
 
-  function handleData() {
-    let contentTypeItem;
-    if (!options) return;
-    if (typeof options.headers === 'object' && options.headers) {
-      Object.keys(options.headers).forEach(key => {
-        if (/content-type/i.test(key)) {
-          if (options.headers[key]) {
-            contentTypeItem = options.headers[key]
-              .split(';')[0]
-              .trim()
-              .toLowerCase();
-          }
-        }
-        if (!options.headers[key]) delete options.headers[key];
-      });
-
-      if (
-        contentTypeItem === 'application/x-www-form-urlencoded' &&
-        typeof options.data === 'object' &&
-        options.data
-      ) {
-        options.data = qs.stringify(options.data);
-      }
-    }
-  }
-
   try {
-    handleData(options);
+    options = normalizeRequestOptions(options, false);
     let response = await axios({
       method: options.method,
       url: options.url,
@@ -124,6 +142,43 @@ async function httpRequestByNode(options) {
   }
 }
 
+async function httpRequestByBrowser(options) {
+  options = normalizeRequestOptions(options, true);
+
+  try {
+    let response = await axios({
+      method: options.method,
+      url: options.url,
+      headers: options.headers,
+      timeout: 10000,
+      validateStatus: function() {
+        return true;
+      },
+      data: options.data
+    });
+
+    return {
+      req: options,
+      res: {
+        header: response.headers,
+        status: response.status,
+        statusText: response.statusText,
+        body: response.data
+      }
+    };
+  } catch (err) {
+    const message =
+      err && /network error|failed to fetch/i.test(err.message || '')
+        ? 'Browser request failed. Please enable CORS on the target API or switch to server request mode.'
+        : err.message || 'Browser request failed';
+
+    throw {
+      body: message,
+      header: (err && err.response && err.response.headers) || {},
+      message
+    };
+  }
+}
 function handleContentType(headers) {
   if (!headers || typeof headers !== 'object') return ContentTypeMap.other;
   let contentTypeItem = 'other';
@@ -243,11 +298,12 @@ function sandboxByBrowser(context = {}, script) {
  * @param {*} defaultOptions 
  * @param {*} preScript 
  * @param {*} afterScript 
- * @param {*} commonContext  负责传递一些业务信息，crossRequest 不关注具体传什么，只负责当中间人
+ * @param {*} commonContext  璐熻矗浼犻€掍竴浜涗笟鍔′俊鎭紝crossRequest 涓嶅叧娉ㄥ叿浣撲紶浠€涔堬紝鍙礋璐ｅ綋涓棿浜?
  */
 async function crossRequest(defaultOptions, preScript, afterScript, commonContext = {}) {
   let options = Object.assign({}, defaultOptions);
   const taskId = options.taskId || Math.random() + '';
+  const useServerProxy = !isNode && commonContext.requestMode !== 'browser';
   let urlObj = URL.parse(options.url, true),
     query = {};
   query = Object.assign(query, urlObj.query);
@@ -257,23 +313,20 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
       return urlObj.href;
     },
     set href(val) {
-      throw new Error('context.href 不能被赋值');
+      throw new Error('context.href is readonly');
     },
     get hostname() {
       return urlObj.hostname;
     },
     set hostname(val) {
-      throw new Error('context.hostname 不能被赋值');
+      throw new Error('context.hostname is readonly');
     },
-
     get caseId() {
       return options.caseId;
     },
-
     set caseId(val) {
-      throw new Error('context.caseId 不能被赋值');
+      throw new Error('context.caseId is readonly');
     },
-
     method: options.method,
     pathname: urlObj.pathname,
     query: query,
@@ -283,7 +336,7 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     storage: await getStorage(taskId)
   };
 
-  Object.assign(context, commonContext)
+  Object.assign(context, commonContext);
 
   context.utils = Object.freeze({
     _: _,
@@ -306,7 +359,7 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     scriptEnable = yapi.WEBCONFIG.scriptEnable === true;
   } catch (err) {}
 
-  if (preScript && scriptEnable) {
+  if (preScript && scriptEnable && !useServerProxy) {
     context = await sandbox(context, preScript);
     defaultOptions.url = options.url = URL.format({
       protocol: urlObj.protocol,
@@ -323,30 +376,37 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
   if (isNode) {
     data = await httpRequestByNode(options);
     data.req = options;
+  } else if (commonContext.requestMode === 'browser') {
+    data = await httpRequestByBrowser(options);
   } else {
-    data = await new Promise((resolve, reject) => {
-      options.error = options.success = function(res, header, data) {
-        let message = '';
-        if (res && typeof res === 'string') {
-          res = json_parse(data.res.body);
-          data.res.body = res;
-        }
-        if (!isNode) message = '请求异常，请检查 chrome network 错误信息... https://juejin.im/post/5c888a3e5188257dee0322af 通过该链接查看教程"）';
-        if (isNaN(data.res.status)) {
-          reject({
-            body: res || message,
-            header,
-            message
-          });
-        }
-        resolve(data);
-      };
+    try {
+      const proxyResult = await axios.post('/api/interface/proxy', {
+        options,
+        pre_script: scriptEnable ? preScript : '',
+        after_script: scriptEnable ? afterScript : '',
+        project_id: commonContext.projectId,
+        interface_id: commonContext.interfaceId
+      });
 
-      window.crossRequest(options);
-    });
+      if (proxyResult.data && proxyResult.data.errcode === 0) {
+        data = proxyResult.data.data;
+      } else {
+        throw new Error((proxyResult.data && proxyResult.data.errmsg) || 'Request failed');
+      }
+    } catch (err) {
+      const responseData = err && err.response && err.response.data;
+      throw {
+        body: responseData && responseData.data,
+        header: responseData && responseData.header,
+        message:
+          (responseData && responseData.errmsg) ||
+          err.message ||
+          'Request failed'
+      };
+    }
   }
 
-  if (afterScript && scriptEnable) {
+  if (afterScript && scriptEnable && !useServerProxy) {
     context.responseData = data.res.body;
     context.responseHeader = data.res.header;
     context.responseStatus = data.res.status;
@@ -359,7 +419,6 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
   }
   return data;
 }
-
 function handleParams(interfaceData, handleValue, requestParams) {
   let interfaceRunData = Object.assign({}, interfaceData);
   function paramsToObjectWithEnable(arr) {
@@ -420,7 +479,7 @@ function handleParams(interfaceData, handleValue, requestParams) {
     timeout: 82400000
   };
 
-  // 对 raw 类型的 form 处理
+  // 瀵?raw 绫诲瀷鐨?form 澶勭悊
   try {
     if (interfaceRunData.req_body_type === 'raw') {
       if (headers && headers['Content-Type']) {
