@@ -31,24 +31,21 @@ const RadioGroup = Radio.Group;
 const importDataModule = {};
 const exportDataModule = {};
 const HandleImportData = require('common/HandleImportData');
-function handleExportRouteParams(url, status, isWiki) {
+
+function handleExportRouteParams(url, status, isWiki, catid) {
   if (!url) {
     return;
   }
-  let urlObj = URL.parse(url, true),
-    query = {};
-  query = Object.assign(query, urlObj.query, { status, isWiki });
+
+  const urlObj = URL.parse(url, true);
+  const query = Object.assign({}, urlObj.query, { status, isWiki, catid });
+
   return URL.format({
     pathname: urlObj.pathname,
     query
   });
 }
 
-// exportDataModule.pdf = {
-//   name: 'Pdf',
-//   route: '/api/interface/download_crx',
-//   desc: '导出项目接口文档为 pdf 文件'
-// }
 @connect(
   state => {
     return {
@@ -65,21 +62,6 @@ function handleExportRouteParams(url, status, isWiki) {
   }
 )
 class ProjectData extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      selectCatid: '',
-      menuList: [],
-      curImportType: 'swagger',
-      curExportType: null,
-      showLoading: false,
-      dataSync: 'merge',
-      exportContent: 'all',
-      isSwaggerUrl: false,
-      swaggerUrl: '',
-      isWiki: false
-    };
-  }
   static propTypes = {
     match: PropTypes.object,
     curCatid: PropTypes.number,
@@ -91,13 +73,30 @@ class ProjectData extends Component {
     swaggerUrlData: PropTypes.string
   };
 
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectCatid: '',
+      exportCatid: 'all',
+      menuList: [],
+      curImportType: 'swagger',
+      curExportType: null,
+      showLoading: false,
+      dataSync: 'merge',
+      exportContent: 'all',
+      isSwaggerUrl: false,
+      swaggerUrl: '',
+      isWiki: false
+    };
+  }
+
   componentWillMount() {
     axios.get(`/api/interface/getCatMenu?project_id=${this.props.match.params.id}`).then(data => {
       if (data.data.errcode === 0) {
-        let menuList = data.data.data;
+        const menuList = data.data.data;
         this.setState({
           menuList: menuList,
-          selectCatid: menuList[0]._id
+          selectCatid: menuList.length > 0 ? menuList[0]._id : ''
         });
       }
     });
@@ -105,11 +104,17 @@ class ProjectData extends Component {
     plugin.emitHook('export_data', exportDataModule, this.props.match.params.id);
   }
 
-  selectChange(value) {
+  selectChange = value => {
     this.setState({
       selectCatid: +value
     });
-  }
+  };
+
+  exportCatChange = value => {
+    this.setState({
+      exportCatid: value
+    });
+  };
 
   uploadChange = info => {
     const status = info.file.status;
@@ -137,22 +142,20 @@ class ProjectData extends Component {
     );
   };
 
-  // 本地文件上传
   handleFile = info => {
     if (!this.state.curImportType) {
       return message.error('请选择导入数据的方式');
     }
+
     if (this.state.selectCatid) {
       this.setState({ showLoading: true });
-      let reader = new FileReader();
+      const reader = new FileReader();
       reader.readAsText(info.file);
       reader.onload = async res => {
         res = await importDataModule[this.state.curImportType].run(res.target.result);
         if (this.state.dataSync === 'merge') {
-          // 开启同步
           this.showConfirm(res);
         } else {
-          // 未开启同步
           await this.handleAddInterface(res);
         }
       };
@@ -162,22 +165,21 @@ class ProjectData extends Component {
   };
 
   showConfirm = async res => {
-    let that = this;
-    let typeid = this.props.match.params.id;
-    let apiCollections = res.apis.map(item => {
+    const typeid = this.props.match.params.id;
+    const apiCollections = res.apis.map(item => {
       return {
         method: item.method,
         path: item.path
       };
     });
-    let result = await this.props.fetchUpdateLogData({
+    const result = await this.props.fetchUpdateLogData({
       type: 'project',
       typeid,
       apis: apiCollections
     });
-    let domainData = result.payload.data.data;
+    const domainData = result.payload.data.data;
     const ref = confirm({
-      title: '您确认要进行数据同步????',
+      title: '您确认要进行数据同步吗？',
       width: 600,
       okType: 'danger',
       iconType: 'exclamation-circle',
@@ -195,14 +197,14 @@ class ProjectData extends Component {
               );
             })}
           </div>
-          <p className="info">温馨提示： 数据同步后，可能会造成原本的修改数据丢失</p>
+          <p className="info">温馨提示：数据同步后，可能会造成原本的修改数据丢失</p>
         </div>
       ),
-      async onOk() {
-        await that.handleAddInterface(res);
+      onOk: async () => {
+        await this.handleAddInterface(res);
       },
-      onCancel() {
-        that.setState({ showLoading: false, dataSync: 'normal' });
+      onCancel: () => {
+        this.setState({ showLoading: false, dataSync: 'normal' });
         ref.destroy();
       }
     });
@@ -222,28 +224,24 @@ class ProjectData extends Component {
     });
   };
 
-  // 处理导入信息同步
   onChange = checked => {
     this.setState({
       dataSync: checked
     });
   };
 
-  // 处理swagger URL 导入
   handleUrlChange = checked => {
     this.setState({
       isSwaggerUrl: checked
     });
   };
 
-  // 记录输入的url
   swaggerUrlInput = url => {
     this.setState({
       swaggerUrl: url
     });
   };
 
-  // url导入上传
   onUrlUpload = async () => {
     if (!this.state.curImportType) {
       return message.error('请选择导入数据的方式');
@@ -252,18 +250,15 @@ class ProjectData extends Component {
     if (!this.state.swaggerUrl) {
       return message.error('url 不能为空');
     }
+
     if (this.state.selectCatid) {
       this.setState({ showLoading: true });
       try {
-        // 处理swagger url 导入
         await this.props.handleSwaggerUrlData(this.state.swaggerUrl);
-        // let result = json5_parse(this.props.swaggerUrlData)
-        let res = await importDataModule[this.state.curImportType].run(this.props.swaggerUrlData);
+        const res = await importDataModule[this.state.curImportType].run(this.props.swaggerUrlData);
         if (this.state.dataSync === 'merge') {
-          // merge
           this.showConfirm(res);
         } else {
-          // 未开启同步
           await this.handleAddInterface(res);
         }
       } catch (e) {
@@ -275,24 +270,16 @@ class ProjectData extends Component {
     }
   };
 
-  // 处理导出接口是全部还是公开
   handleChange = e => {
     this.setState({ exportContent: e.target.value });
   };
 
-  //  处理是否开启wiki导出
   handleWikiChange = e => {
     this.setState({
       isWiki: e.target.checked
     });
   };
 
-  /**
-   *
-   *
-   * @returns
-   * @memberof ProjectData
-   */
   render() {
     const uploadMess = {
       name: 'interfaceData',
@@ -303,17 +290,17 @@ class ProjectData extends Component {
       onChange: this.uploadChange
     };
 
-    let exportUrl =
+    const exportUrl =
       this.state.curExportType &&
       exportDataModule[this.state.curExportType] &&
       exportDataModule[this.state.curExportType].route;
-    let exportHref = handleExportRouteParams(
+    const exportHref = handleExportRouteParams(
       exportUrl,
       this.state.exportContent,
-      this.state.isWiki
+      this.state.isWiki,
+      this.state.exportCatid
     );
 
-    // console.log('inter', this.state.exportContent);
     return (
       <div className="g-row">
         <div className="m-panel">
@@ -350,12 +337,12 @@ class ProjectData extends Component {
               </div>
               <div className="catidSelect">
                 <Select
-                  value={this.state.selectCatid + ''}
+                  value={this.state.selectCatid === '' ? undefined : this.state.selectCatid + ''}
                   showSearch
                   style={{ width: '100%' }}
                   placeholder="请选择数据导入的默认分类"
                   optionFilterProp="children"
-                  onChange={this.selectChange.bind(this)}
+                  onChange={this.selectChange}
                   filterOption={(input, option) =>
                     option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
@@ -381,11 +368,11 @@ class ProjectData extends Component {
                         <h3 style={{ color: 'white' }}>智能合并</h3>
                         <p>
                           已存在的接口，将合并返回数据的 response，适用于导入了 swagger
-                          数据，保留对数据结构的改动
+                          数据后保留对数据结构的修改
                         </p>
                         <br />
                         <h3 style={{ color: 'white' }}>完全覆盖</h3>
-                        <p>不保留旧数据，完全使用新数据，适用于接口定义完全交给后端定义</p>
+                        <p>不保留旧数据，完全使用新数据，适用于接口定义完全交给后端维护</p>
                       </div>
                     }
                   >
@@ -397,16 +384,14 @@ class ProjectData extends Component {
                   <Option value="good">智能合并</Option>
                   <Option value="merge">完全覆盖</Option>
                 </Select>
-
-                {/* <Switch checked={this.state.dataSync} onChange={this.onChange} /> */}
               </div>
               {this.state.curImportType === 'swagger' && (
                 <div className="dataSync">
                   <span className="label">
-                    开启url导入&nbsp;
+                    开启 url 导入&nbsp;
                     <Tooltip title="swagger url 导入">
                       <Icon type="question-circle-o" />
-                    </Tooltip>{' '}
+                    </Tooltip>
                     &nbsp;&nbsp;
                   </span>
 
@@ -464,7 +449,11 @@ class ProjectData extends Component {
                 <h3>数据导出</h3>
               </div>
               <div className="dataImportTile">
-                <Select placeholder="请选择导出数据的方式" onChange={this.handleExportType}>
+                <Select
+                  placeholder="请选择导出数据的方式"
+                  value={this.state.curExportType}
+                  onChange={this.handleExportType}
+                >
                   {Object.keys(exportDataModule).map(name => {
                     return (
                       <Option key={name} value={name}>
@@ -475,8 +464,26 @@ class ProjectData extends Component {
                 </Select>
               </div>
 
+              <div className="catidSelect">
+                <Select
+                  value={this.state.exportCatid}
+                  style={{ width: '100%' }}
+                  placeholder="请选择导出的分类"
+                  onChange={this.exportCatChange}
+                >
+                  <Option value="all">全部分类</Option>
+                  {this.state.menuList.map(item => {
+                    return (
+                      <Option key={item._id} value={item._id + ''}>
+                        {item.name}
+                      </Option>
+                    );
+                  })}
+                </Select>
+              </div>
+
               <div className="dataExport">
-                <RadioGroup defaultValue="all" onChange={this.handleChange}>
+                <RadioGroup value={this.state.exportContent} onChange={this.handleChange}>
                   <Radio value="all">全部接口</Radio>
                   <Radio value="open">公开接口</Radio>
                 </RadioGroup>
@@ -485,13 +492,9 @@ class ProjectData extends Component {
                 {this.state.curExportType ? (
                   <div>
                     <p className="export-desc">{exportDataModule[this.state.curExportType].desc}</p>
-                    <a 
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      href={exportHref}>
+                    <a target="_blank" rel="noopener noreferrer" href={exportHref}>
                       <Button className="export-button" type="primary" size="large">
-                        {' '}
-                        导出{' '}
+                        导出
                       </Button>
                     </a>
                     <Checkbox
@@ -500,16 +503,15 @@ class ProjectData extends Component {
                       className="wiki-btn"
                       disabled={this.state.curExportType === 'json'}
                     >
-                      添加wiki&nbsp;
-                      <Tooltip title="开启后 html 和 markdown 数据导出会带上wiki数据">
+                      附加 wiki&nbsp;
+                      <Tooltip title="开启后 html 和 markdown 导出会带上 wiki 数据">
                         <Icon type="question-circle-o" />
                       </Tooltip>{' '}
                     </Checkbox>
                   </div>
                 ) : (
                   <Button disabled className="export-button" type="primary" size="large">
-                    {' '}
-                    导出{' '}
+                    导出
                   </Button>
                 )}
               </div>
