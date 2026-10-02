@@ -19,45 +19,13 @@ const sandboxFn = require('./sandbox')
 
 const ejs = require('easy-json-schema');
 
-const jsf = require('json-schema-faker');
+const { generate: generateSchema } = require('./schema-faker.mjs');
 const { schemaValidator } = require('../../common/utils');
 const http = require('http');
 
-jsf.extend('mock', function () {
-  return {
-    mock: function (xx) {
-      return Mock.mock(xx);
-    }
-  };
-});
-
-const defaultOptions = {
-  failOnInvalidTypes: false,
-  failOnInvalidFormat: false
-};
-
-// formats.forEach(item => {
-//   item = item.name;
-//   jsf.format(item, () => {
-//     if (item === 'mobile') {
-//       return jsf.random.randexp('^[1][34578][0-9]{9}$');
-//     }
-//     return Mock.mock('@' + item);
-//   });
-// });
-
 exports.schemaToJson = function (schema, options = {}) {
-  Object.assign(options, defaultOptions);
-
-  jsf.option(options);
-  let result;
-  try {
-    result = jsf(schema);
-  } catch (err) {
-    result = err.message;
-  }
-  jsf.option(defaultOptions);
-  return result;
+  try { return generateSchema(schema, options); }
+  catch (error) { return error.message; }
 };
 
 exports.resReturn = (data, num, errmsg) => {
@@ -281,20 +249,8 @@ exports.verifyPath = path => {
  * @example let a = sandbox({a: 1}, 'a=2')
  * a = {a: 2}
  */
-exports.sandbox = (sandbox, script) => {
-  try {
-    const vm = require('vm');
-    sandbox = sandbox || {};	
-    script = new vm.Script(script);	
-    const context = new vm.createContext(sandbox);	
-    script.runInContext(context, {	
-      timeout: 3000	
-    });	      
-    return sandbox
-  } catch (err) {
-    throw err
-  }
-};
+// Legacy helper is now asynchronous; there is no host-VM compatibility fallback.
+exports.sandbox = sandboxFn;
 
 function trim(str) {
   if (!str) {
@@ -363,6 +319,7 @@ exports.handleParams = (params, keys) => {
 exports.validateParams = (schema2, params) => {
   const flag = schema2.closeRemoveAdditional;
   const ajv = new Ajv({
+    strict: false,
     allErrors: true,
     coerceTypes: true,
     useDefaults: true,
@@ -526,7 +483,7 @@ function convertString(variable) {
 }
 
 
-exports.runCaseScript = async function runCaseScript(params, colId, interfaceId) {
+exports.runCaseScript = async function runCaseScript(params, colId, interfaceId, networkScope) {
   const colInst = yapi.getInst(interfaceColModel);
   let colData = await colInst.get(colId);
   const logs = [];
@@ -577,7 +534,7 @@ ${JSON.stringify(schema, null, 2)}`)
       // script 是断言
       if (globalScript) {
         logs.push('执行脚本：' + globalScript)
-        result = await sandboxFn(context, globalScript);
+        result = await sandboxFn(context, globalScript, networkScope);
       }
     }
 
@@ -586,7 +543,7 @@ ${JSON.stringify(schema, null, 2)}`)
     // script 是断言
     if (script) {
       logs.push('执行脚本:' + script)
-      result = await sandboxFn(context, script);
+      result = await sandboxFn(context, script, networkScope);
     }
     result.logs = logs;
     return yapi.commons.resReturn(result);

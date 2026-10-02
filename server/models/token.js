@@ -34,7 +34,7 @@ class tokenModel extends baseModel {
   }
 
   up(project_id, token) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         project_id: project_id
       },

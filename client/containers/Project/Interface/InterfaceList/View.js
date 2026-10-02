@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import './View.scss';
 import React, { PureComponent as Component } from 'react';
 import { connect } from 'react-redux';
@@ -498,7 +499,7 @@ class View extends Component {
           <div
             className="tui-editor-contents"
             style={{ margin: '0px', padding: '0px 20px', float: 'none' }}
-            dangerouslySetInnerHTML={{ __html: this.props.curData.desc }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(this.props.curData.desc || '') }}
           />
         )}
         <h2 className="interface-title" style={{ display: requestShow ? '' : 'none' }}>

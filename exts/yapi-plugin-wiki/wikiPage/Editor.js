@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Button, Checkbox } from 'antd';
-import Editor from 'common/tui-editor/dist/tui-editor-Editor-all.min.js';
-require('common/tui-editor/dist/tui-editor.min.css'); // editor ui
-require('common/tui-editor/dist/tui-editor-contents.min.css'); // editor content
+import Editor from '@toast-ui/editor';
+import '@toast-ui/editor/dist/toastui-editor.css';
+
+
 class WikiEditor extends Component {
   constructor(props) {
     super(props);
@@ -22,13 +23,16 @@ class WikiEditor extends Component {
     this.editor = new Editor({
       el: document.querySelector('#desc'),
       initialEditType: 'wysiwyg',
+      usageStatistics: false,
       height: '500px',
       initialValue: this.props.desc
     });
   }
 
+  componentWillUnmount() { if (this.editor) this.editor.destroy(); }
+
   onUpload = () => {
-    let desc = this.editor.getHtml();
+    let desc = this.editor.getHTML();
     let markdown = this.editor.getMarkdown();
     this.props.onUpload(desc, markdown);
   };

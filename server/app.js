@@ -47,6 +47,7 @@ yapi.app = app;
 
 // app.use(bodyParser({multipart: true}));
 app.use(koaBody({strict: false, multipart: true, jsonLimit: '2mb', formLimit: '1mb', textLimit: '1mb' }));
+app.use(require('./services/documentation/http').fromApplication(yapi));
 app.use(mockServer);
 app.use(router.routes());
 app.use(router.allowedMethods());
@@ -99,7 +100,7 @@ app.use(async (ctx, next) => {
 app.use(koaStatic(staticRoot, { index: indexFile, gzip: true }));
 
 
-const server = app.listen(yapi.WEBCONFIG.port);
+const server = app.listen(yapi.WEBCONFIG.port, yapi.WEBCONFIG.host || '0.0.0.0');
 
 server.setTimeout(yapi.WEBCONFIG.timeout);
 

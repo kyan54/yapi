@@ -38,13 +38,13 @@ class stroageModel extends baseModel {
       let r = new this.model(saveData);
       return r.save();
     }
-    return this.model.updateOne({
+    return this.updateDocuments({
       key
     }, saveData)
   }
 
   del(key) {
-    return this.model.remove({
+    return this.removeDocuments({
       key
     });
   }

@@ -10,7 +10,7 @@ const yapi = require('../yapi.js');
 const userModel = require('../models/user.js');
 const projectModel = require('../models/project.js');
 const jsondiffpatch = require('jsondiffpatch');
-const formattersHtml = jsondiffpatch.formatters.html;
+const formattersHtml = require('jsondiffpatch/formatters/html');
 const showDiffMsg = require('../../common/diff-view.js');
 const mergeJsonSchema = require('../../common/mergeJsonSchema');
 const { crossRequest } = require('../../common/postmanLib');
@@ -112,7 +112,8 @@ function ensureDefaultContentType(values) {
         options,
         body.pre_script,
         body.after_script,
-        createContext(this.getUid(), projectId, interfaceId)
+        createContext(this.getUid(), projectId, interfaceId),
+        require('../sandbox/trusted-scope').create(this.getUid(), projectId)
       );
 
       ctx.body = yapi.commons.resReturn(result);
@@ -752,6 +753,10 @@ class interfaceController extends baseController {
     if (!interfaceData) {
       return (ctx.body = yapi.commons.resReturn(null, 400, '不存在的接口'));
     }
+    // A valid project token must never authorize an interface in another project.
+    if (this.$tokenAuth && Number(params.project_id) !== interfaceData.project_id) {
+      return (ctx.body = yapi.commons.resReturn(null, 400, '没有权限'));
+    }
     if (!this.$tokenAuth) {
       let auth = await this.checkAuth(interfaceData.project_id, 'project', 'edit');
       if (!auth) {
@@ -850,20 +855,17 @@ class interfaceController extends baseController {
     if (params.switch_notice === true) {
       let diffView = showDiffMsg(jsondiffpatch, formattersHtml, logData);
       let annotatedCss = fs.readFileSync(
-        path.resolve(
-          yapi.WEBROOT,
-          'node_modules/jsondiffpatch/dist/formatters-styles/annotated.css'
-        ),
+        require.resolve('jsondiffpatch/formatters/styles/annotated.css'),
         'utf8'
       );
       let htmlCss = fs.readFileSync(
-        path.resolve(yapi.WEBROOT, 'node_modules/jsondiffpatch/dist/formatters-styles/html.css'),
+        require.resolve('jsondiffpatch/formatters/styles/html.css'),
         'utf8'
       );
 
       let project = await this.projectModel.getBaseInfo(interfaceData.project_id);
 
-      let interfaceUrl = `${ctx.request.origin}/project/${
+      let interfaceUrl = `${(ctx.protocol + '://' + ctx.host)}/project/${
         interfaceData.project_id
       }/interface/api/${id}`;
 
@@ -1364,7 +1366,8 @@ class interfaceController extends baseController {
         options,
         body.pre_script,
         body.after_script,
-        createContext(this.getUid(), projectId, interfaceId)
+        createContext(this.getUid(), projectId, interfaceId),
+        require('../sandbox/trusted-scope').create(this.getUid(), projectId)
       );
 
       ctx.body = yapi.commons.resReturn(result);

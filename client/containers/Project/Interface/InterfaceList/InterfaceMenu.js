@@ -291,19 +291,19 @@ class InterfaceMenu extends Component {
   };
 
   onDrop = async e => {
-    const dropCatIndex = e.node.props.pos.split('-')[1] - 1;
-    const dragCatIndex = e.dragNode.props.pos.split('-')[1] - 1;
+    const dropCatIndex = e.node.pos.split('-')[1] - 1;
+    const dragCatIndex = e.dragNode.pos.split('-')[1] - 1;
     if (dropCatIndex < 0 || dragCatIndex < 0) {
       return;
     }
     const { list } = this.props;
     const dropCatId = this.props.list[dropCatIndex]._id;
-    const id = e.dragNode.props.eventKey;
+    const id = e.dragNode.key;
     const dragCatId = this.props.list[dragCatIndex]._id;
 
-    const dropPos = e.node.props.pos.split('-');
+    const dropPos = e.node.pos.split('-');
     const dropIndex = Number(dropPos[dropPos.length - 1]);
-    const dragPos = e.dragNode.props.pos.split('-');
+    const dragPos = e.dragNode.pos.split('-');
     const dragIndex = Number(dragPos[dragPos.length - 1]);
 
     if (id.indexOf('cat') === -1) {

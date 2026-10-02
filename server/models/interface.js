@@ -273,36 +273,32 @@ class interfaceModel extends baseModel {
   }
 
   del(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       _id: id
     });
   }
 
   delByCatid(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       catid: id
     });
   }
 
   delByProjectId(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       project_id: id
     });
   }
 
   up(id, data) {
-    data.up_time = yapi.commons.time();
-    return this.model.update(
-      {
-        _id: id
-      },
-      data,
-      { runValidators: true }
-    );
+    const { writeLegacyInterface } = require('../services/documentation/legacy-write');
+    return writeLegacyInterface(this.model, id, data, {
+      now: () => new Date(yapi.commons.time() * 1000)
+    });
   }
 
   upEditUid(id, uid) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },
@@ -327,7 +323,7 @@ class interfaceModel extends baseModel {
   }
 
   upIndex(id, index) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },

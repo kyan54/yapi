@@ -30,8 +30,7 @@ import './ProjectList.scss';
     fetchProjectList,
     addProject,
     delProject,
-    changeUpdateModal,
-    setBreadcrumb
+      setBreadcrumb
   }
 )
 class ProjectList extends Component {
@@ -48,7 +47,6 @@ class ProjectList extends Component {
     fetchProjectList: PropTypes.func,
     addProject: PropTypes.func,
     delProject: PropTypes.func,
-    changeUpdateModal: PropTypes.func,
     projectList: PropTypes.array,
     userInfo: PropTypes.object,
     tableLoading: PropTypes.bool,

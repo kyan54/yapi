@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import './MockDoc.scss';
 import React, { PureComponent as Component } from 'react';
 import PropTypes from 'prop-types';
@@ -111,7 +112,7 @@ function produceSpace(count) {
 }
 
 function setStrToHtml(str) {
-  return <span dangerouslySetInnerHTML={{ __html: `${str}` }} />;
+  return <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(`${str}` || '') }} />;
 }
 function arrToHtml(mockArr, mock) {
   for (var i in mockArr) {

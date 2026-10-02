@@ -92,36 +92,36 @@ class interfaceCase extends baseModel {
   }
 
   del(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       _id: id
     });
   }
 
   delByProjectId(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       project_id: id
     });
   }
 
   delByInterfaceId(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       interface_id: id
     });
   }
 
   delByCol(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       col_id: id
     });
   }
 
   up(id, data) {
     data.up_time = yapi.commons.time();
-    return this.model.update({ _id: id }, data);
+    return this.updateDocuments({ _id: id }, data);
   }
 
   upCaseIndex(id, index) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },

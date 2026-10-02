@@ -4,7 +4,6 @@ import { withRouter } from 'react-router';
 import PropTypes from 'prop-types';
 import {
   fetchInterfaceColList,
-  fetchInterfaceCaseList,
   setColData,
   fetchCaseList,
   fetchCaseData
@@ -55,7 +54,6 @@ const ColModalForm = Form.create()(props => {
   },
   {
     fetchInterfaceColList,
-    fetchInterfaceCaseList,
     fetchCaseData,
     // fetchInterfaceListMenu,
     fetchCaseList,
@@ -69,7 +67,6 @@ export default class InterfaceColMenu extends Component {
     match: PropTypes.object,
     interfaceColList: PropTypes.array,
     fetchInterfaceColList: PropTypes.func,
-    fetchInterfaceCaseList: PropTypes.func,
     // fetchInterfaceListMenu: PropTypes.func,
     fetchCaseList: PropTypes.func,
     fetchCaseData: PropTypes.func,
@@ -246,7 +243,7 @@ export default class InterfaceColMenu extends Component {
     let data = caseData.payload.data.data;
     data = JSON.parse(JSON.stringify(data));
     data.casename=`${data.casename}_copy`
-    delete data._id 
+    delete data._id
     const res = await axios.post('/api/col/add_case',data);
       if (!res.data.errcode) {
         message.success('克隆用例成功');
@@ -352,15 +349,15 @@ export default class InterfaceColMenu extends Component {
   onDrop = async e => {
     // const projectId = this.props.match.params.id;
     const { interfaceColList } = this.props;
-    const dropColIndex = e.node.props.pos.split('-')[1];
+    const dropColIndex = e.node.pos.split('-')[1];
     const dropColId = interfaceColList[dropColIndex]._id;
-    const id = e.dragNode.props.eventKey;
-    const dragColIndex = e.dragNode.props.pos.split('-')[1];
+    const id = e.dragNode.key;
+    const dragColIndex = e.dragNode.pos.split('-')[1];
     const dragColId = interfaceColList[dragColIndex]._id;
 
-    const dropPos = e.node.props.pos.split('-');
+    const dropPos = e.node.pos.split('-');
     const dropIndex = Number(dropPos[dropPos.length - 1]);
-    const dragPos = e.dragNode.props.pos.split('-');
+    const dragPos = e.dragNode.pos.split('-');
     const dragIndex = Number(dragPos[dragPos.length - 1]);
 
     if (id.indexOf('col') === -1) {
@@ -494,7 +491,7 @@ export default class InterfaceColMenu extends Component {
       list = list.filter(item => {
 
         item.caseList = item.caseList.filter(inter => {
-          if (inter.casename.indexOf(this.state.filterValue) === -1 
+          if (inter.casename.indexOf(this.state.filterValue) === -1
           && inter.path.indexOf(this.state.filterValue) === -1
           ) {
             return false;

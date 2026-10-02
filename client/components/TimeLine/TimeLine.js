@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import React, { PureComponent as Component } from 'react';
 import { Timeline, Spin, Row, Col, Tag, Avatar, Button, Modal, AutoComplete } from 'antd';
 import PropTypes from 'prop-types';
@@ -9,10 +10,10 @@ import { Link } from 'react-router-dom';
 import { fetchNewsData, fetchMoreNews } from '../../reducer/modules/news.js';
 import { fetchInterfaceList } from '../../reducer/modules/interface.js';
 import ErrMsg from '../ErrMsg/ErrMsg.js';
-const jsondiffpatch = require('jsondiffpatch/dist/jsondiffpatch.umd.js');
-const formattersHtml = jsondiffpatch.formatters.html;
-import 'jsondiffpatch/dist/formatters-styles/annotated.css';
-import 'jsondiffpatch/dist/formatters-styles/html.css';
+const jsondiffpatch = require('jsondiffpatch/with-text-diffs');
+const formattersHtml = require('jsondiffpatch/formatters/html');
+import 'jsondiffpatch/formatters/styles/annotated.css';
+import 'jsondiffpatch/formatters/styles/html.css';
 import './TimeLine.scss';
 import { timeago } from '../../../common/utils.js';
 
@@ -29,7 +30,7 @@ const AddDiffView = props => {
   return (
     <div className={className}>
       <h3 className="title">{title}</h3>
-      <div dangerouslySetInnerHTML={{ __html: content }} />
+      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content || '') }} />
     </div>
   );
 };
@@ -194,7 +195,7 @@ class TimeTree extends Component {
               <span className="logtype">{logType[item.type]}动态</span>
               <span className="logtime">{formatTime(item.add_time)}</span>
             </div>
-            <span className="logcontent" dangerouslySetInnerHTML={{ __html: item.content }} />
+            <span className="logcontent" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content || '') }} />
             <div style={{ padding: '10px 0 0 10px' }}>
               {interfaceDiff && <Button onClick={() => this.openDiff(item.data)}>改动详情</Button>}
             </div>

@@ -98,7 +98,7 @@ class wikiController extends baseController {
         current: params.desc,
         old: result ? result.toObject().desc : ''
       };
-      let wikiUrl = `${ctx.request.origin}/project/${params.project_id}/wiki`;
+      let wikiUrl = `${(ctx.protocol + '://' + ctx.host)}/project/${params.project_id}/wiki`;
 
       if (notice) {
         let diffView = showDiffMsg(jsondiffpatch, formattersHtml, logData);

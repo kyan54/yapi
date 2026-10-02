@@ -4,7 +4,7 @@ const nodemailer = require('nodemailer');
 
 let config;
 try {
-  const configPath = path.resolve(__dirname, '../../config.json');
+  const configPath = process.env.YAPI_CONFIG || path.resolve(__dirname, '../../config.json');
   if (fs.existsSync(configPath)) {
     config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   } else {

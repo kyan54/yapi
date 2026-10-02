@@ -34,10 +34,11 @@ const getStorage = async (id)=>{
       let storage = global.storageCreator(id);
       let data = await storage.getItem();
       return {
+        _sandboxData: data,
         getItem: (name)=> data[name],
         setItem: (name, value)=>{
           data[name] = value;
-          storage.setItem(name, value)
+          return storage.setItem(name, value)
         }
       }
     }else{
@@ -230,41 +231,12 @@ function handleCurrDomain(domains, case_env) {
   return currDomain;
 }
 
-function sandboxByNode(sandbox = {}, script) {
-  const vm = require('vm');
-  script = new vm.Script(script);
-  const context = new vm.createContext(sandbox);
-  script.runInContext(context, {
-    timeout: 10000
-  });
-  return sandbox;
-}
-
-async function sandbox(context = {}, script) {
+async function sandbox(context = {}, script, networkScope) {
   if (isNode) {
-    try {
-      context.context = context;
-      context.console = console;
-      context.Promise = Promise;
-      context.setTimeout = setTimeout;
-      context = sandboxByNode(context, script);
-    } catch (err) {
-      err.message = `Script: ${script}
-      message: ${err.message}`;
-      throw err;
-    }
-  } else {
-    context = sandboxByBrowser(context, script);
+    return await require('../server/utils/sandbox')(context, script, networkScope);
   }
-  if (context.promise && typeof context.promise === 'object' && context.promise.then) {
-    try {
-      await context.promise;
-    } catch (err) {
-      err.message = `Script: ${script}
-      message: ${err.message}`;
-      throw err;
-    }
-  }
+  context = sandboxByBrowser(context, script);
+  if (context.promise && typeof context.promise.then === 'function') await context.promise;
   return context;
 }
 
@@ -300,7 +272,7 @@ function sandboxByBrowser(context = {}, script) {
  * @param {*} afterScript 
  * @param {*} commonContext  璐熻矗浼犻€掍竴浜涗笟鍔′俊鎭紝crossRequest 涓嶅叧娉ㄥ叿浣撲紶浠€涔堬紝鍙礋璐ｅ綋涓棿浜?
  */
-async function crossRequest(defaultOptions, preScript, afterScript, commonContext = {}) {
+async function crossRequest(defaultOptions, preScript, afterScript, commonContext = {}, networkScope) {
   let options = Object.assign({}, defaultOptions);
   const taskId = options.taskId || Math.random() + '';
   const useServerProxy = !isNode && commonContext.requestMode !== 'browser';
@@ -360,7 +332,7 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
   } catch (err) {}
 
   if (preScript && scriptEnable && !useServerProxy) {
-    context = await sandbox(context, preScript);
+    context = await sandbox(context, preScript, networkScope);
     defaultOptions.url = options.url = URL.format({
       protocol: urlObj.protocol,
       host: urlObj.host,
@@ -411,7 +383,7 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     context.responseHeader = data.res.header;
     context.responseStatus = data.res.status;
     context.runTime = data.runTime;
-    context = await sandbox(context, afterScript);
+    context = await sandbox(context, afterScript, networkScope);
     data.res.body = context.responseData;
     data.res.header = context.responseHeader;
     data.res.status = context.responseStatus;

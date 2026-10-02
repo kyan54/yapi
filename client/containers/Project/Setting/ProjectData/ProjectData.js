@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import React, { PureComponent as Component } from 'react';
 import {
   Upload,
@@ -192,7 +193,7 @@ class ProjectData extends Component {
             {domainData.map((item, index) => {
               return (
                 <div key={index} className="postman-dataImport-show-diff">
-                  <span className="logcontent" dangerouslySetInnerHTML={{ __html: item.content }} />
+                  <span className="logcontent" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content || '') }} />
                 </div>
               );
             })}

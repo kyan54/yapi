@@ -11,13 +11,13 @@ import {
   setColData,
   fetchCaseEnvList
 } from '../../../../reducer/modules/interfaceCol';
-import HTML5Backend from 'react-dnd-html5-backend';
+
 import { getToken, getEnv } from '../../../../reducer/modules/project';
-import { DragDropContext } from 'react-dnd';
+
 import AceEditor from 'client/components/AceEditor/AceEditor';
-import * as Table from 'reactabular-table';
-import * as dnd from 'reactabular-dnd';
-import * as resolve from 'table-resolver';
+
+
+
 import axios from 'axios';
 import CaseReport from './CaseReport.js';
 import _ from 'underscore';
@@ -80,7 +80,7 @@ function handleReport(json) {
   }
 )
 @withRouter
-@DragDropContext(HTML5Backend)
+
 class InterfaceColContent extends Component {
   static propTypes = {
     match: PropTypes.object,
@@ -458,7 +458,11 @@ class InterfaceColContent extends Component {
     });
   };
   onMoveRow({ sourceRowId, targetRowId }) {
-    let rows = dnd.moveRows({ sourceRowId, targetRowId })(this.state.rows);
+    const rows = [...this.state.rows];
+    const source = rows.findIndex(row => row.id === sourceRowId);
+    const target = rows.findIndex(row => row.id === targetRowId);
+    if (source < 0 || target < 0 || source === target) return;
+    rows.splice(target, 0, rows.splice(source, 1)[0]);
 
     if (rows) {
       this.setState({ rows });
@@ -854,19 +858,6 @@ class InterfaceColContent extends Component {
       }
     ];
     const { rows } = this.state;
-    const components = {
-      header: {
-        cell: dnd.Header
-      },
-      body: {
-        row: dnd.Row
-      }
-    };
-    const resolvedColumns = resolve.columnChildren({ columns });
-    const resolvedRows = resolve.resolve({ columns: resolvedColumns, method: resolve.nested })(
-      rows
-    );
-
     const localUrl =
       location.protocol +
       '//' +
@@ -1087,26 +1078,18 @@ class InterfaceColContent extends Component {
           <Label onChange={val => this.handleChangeInterfaceCol(val, col_name)} desc={col_desc} />
         </div>
 
-        <Table.Provider
-          components={components}
-          columns={resolvedColumns}
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse'
-          }}
-        >
-          <Table.Header
-            className="interface-col-table-header"
-            headerRows={resolve.headerRows({ columns })}
-          />
-
-          <Table.Body
-            className="interface-col-table-body"
-            rows={resolvedRows}
-            rowKey="id"
-            onRow={this.onRow}
-          />
-        </Table.Provider>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead className="interface-col-table-header"><tr>
+            <th scope="col">排序</th>
+            {columns.map((column, index) => <th scope="col" key={index} {...column.props}>{column.header.formatters ? column.header.formatters[0](column.header.label) : column.header.label}</th>)}
+          </tr></thead>
+          <tbody className="interface-col-table-body">
+            {rows.map((row, index) => <tr key={row.id} draggable onDragStart={() => { this.draggedRow = row.id; }} onDragOver={event => event.preventDefault()} onDrop={() => { this.onMoveRow({ sourceRowId: this.draggedRow, targetRowId: row.id }); this.setState({}, this.onDrop); }}>
+              <td><Button aria-label={`上移用例 ${row.casename}`} disabled={index === 0} onClick={() => { this.onMoveRow({ sourceRowId: row.id, targetRowId: rows[index - 1].id }); this.setState({}, this.onDrop); }} icon="arrow-up" /><Button aria-label={`下移用例 ${row.casename}`} disabled={index === rows.length - 1} onClick={() => { this.onMoveRow({ sourceRowId: row.id, targetRowId: rows[index + 1].id }); this.setState({}, this.onDrop); }} icon="arrow-down" /></td>
+              {columns.map((column, columnIndex) => <td key={columnIndex} {...column.props}>{column.cell.formatters[0](row[column.property], { rowData: row })}</td>)}
+            </tr>)}
+          </tbody>
+        </table>
         <Modal
           title="测试报告"
           width="900px"

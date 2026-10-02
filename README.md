@@ -1,3 +1,5 @@
+> Modernization branch: see [build instructions, compatibility limits and release gates](docs/modernization/README.md). The legacy environment requirements below do not apply to this branch. Do not point the new driver at MongoDB 3.6.
+
 ## YApi  可视化接口管理平台
 
 体验地址：

@@ -54,7 +54,7 @@ class interfaceColController extends baseController {
           return a.index - b.index;
         });
         result[i].caseList = caseList;
-        
+
       }
       ctx.body = yapi.commons.resReturn(result);
     } catch (e) {
@@ -855,7 +855,14 @@ class interfaceColController extends baseController {
 
   async runCaseScript(ctx) {
     let params = ctx.request.body;
-    ctx.body = await yapi.commons.runCaseScript(params, params.col_id, params.interface_id, this.getUid());
+    const collection = await this.colModel.get(params.col_id);
+    const target = await this.interfaceModel.get(params.interface_id);
+    if (!collection || !target || Number(collection.project_id) !== Number(target.project_id) ||
+        await this.checkAuth(collection.project_id, 'project', 'view') !== true) {
+      ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'); return;
+    }
+    const scope = require('../sandbox/trusted-scope').create(this.getUid(), Number(collection.project_id));
+    ctx.body = await yapi.commons.runCaseScript(params, params.col_id, params.interface_id, scope);
   }
 
   // 数组去重

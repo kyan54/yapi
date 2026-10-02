@@ -52,7 +52,7 @@ class groupModel extends baseModel {
   }
 
   updateMember(data) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         'members.uid': data.uid
       },
@@ -96,7 +96,7 @@ class groupModel extends baseModel {
   }
 
   addMember(id, data) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },
@@ -108,7 +108,7 @@ class groupModel extends baseModel {
   }
 
   delMember(id, uid) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },
@@ -119,7 +119,7 @@ class groupModel extends baseModel {
   }
 
   changeMemberRole(id, uid, role) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id,
         'members.uid': uid
@@ -170,13 +170,13 @@ class groupModel extends baseModel {
   }
 
   del(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       _id: id
     });
   }
 
   up(id, data) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },

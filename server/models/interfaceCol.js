@@ -81,20 +81,20 @@ class interfaceCol extends baseModel {
   }
 
   del(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       _id: id
     });
   }
 
   delByProjectId(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       project_id: id
     });
   }
 
   up(id, data) {
     data.up_time = yapi.commons.time();
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },
@@ -103,7 +103,7 @@ class interfaceCol extends baseModel {
   }
 
   upColIndex(id, index) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },

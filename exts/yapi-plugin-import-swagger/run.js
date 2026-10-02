@@ -2,6 +2,7 @@ const _ = require('underscore')
 const swagger = require('swagger-client');
 const compareVersions = require('compare-versions');
 
+function isolatedImport(input) {
   var SwaggerData, isOAS3;
   function handlePath(path) {
     if (path === '/') return path;
@@ -323,4 +324,6 @@ const compareVersions = require('compare-versions');
 
 
 
-module.exports = run;
+  return run(input);
+}
+module.exports = isolatedImport;

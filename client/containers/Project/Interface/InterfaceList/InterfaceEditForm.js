@@ -12,15 +12,16 @@ import mockEditor from 'client/components/AceEditor/mockEditor';
 import AceEditor from 'client/components/AceEditor/AceEditor';
 import axios from 'axios';
 import { MOCK_SOURCE } from '../../../../constants/variable.js';
-import Editor from 'common/tui-editor/dist/tui-editor-Editor-all.min.js';
-const jSchema = require('json-schema-editor-visual');
-const ResBodySchema = jSchema({ lang: 'zh_CN', mock: MOCK_SOURCE });
-const ReqBodySchema = jSchema({ lang: 'zh_CN', mock: MOCK_SOURCE });
+import Editor from '@toast-ui/editor';
+import '@toast-ui/editor/dist/toastui-editor.css';
+import SchemaEditor from 'client/components/SchemaEditor';
+const ResBodySchema = SchemaEditor;
+const ReqBodySchema = SchemaEditor;
 const TabPane = Tabs.TabPane;
 
 
-require('common/tui-editor/dist/tui-editor.min.css'); // editor ui
-require('common/tui-editor/dist/tui-editor-contents.min.css'); // editor content
+
+
 require('./editor.css');
 
 
@@ -234,7 +235,7 @@ class InterfaceEditForm extends Component {
           }
         }, 3000);
         if (!err) {
-          values.desc = this.editor.getHtml();
+          values.desc = this.editor.getHTML();
           values.markdown = this.editor.getMarkdown();
           if (values.res_body_type === 'json') {
             if (this.state.res_body && validJson(this.state.res_body) === false) {
@@ -386,12 +387,18 @@ class InterfaceEditForm extends Component {
     this.editor = new Editor({
       el: document.querySelector('#desc'),
       initialEditType: 'wysiwyg',
+      usageStatistics: false,
       height: '500px',
       initialValue: this.state.markdown || this.state.desc
+    });
+    const initialMarkdown = this.editor.getMarkdown();
+    this.editor.on('change', () => {
+      if (this._isMounted && this.editor.getMarkdown() !== initialMarkdown) this.props.changeEditStatus(true);
     });
   }
 
   componentWillUnmount() {
+    if (this.editor) this.editor.destroy();
     EditFormContext.props.changeEditStatus(false);
     EditFormContext = null;
     this._isMounted = false;
@@ -840,7 +847,7 @@ class InterfaceEditForm extends Component {
                 rules: [{ required: true, message: '请选择一个分类' }]
               })(
                 <Select placeholder="请选择一个分类">
-                  {this.props.cat.map(item => {
+                  {(this.props.cat || []).map(item => {
                     return (
                       <Option key={item._id} value={item._id + ''}>
                         {item.name}
@@ -926,7 +933,7 @@ class InterfaceEditForm extends Component {
             <FormItem className="interface-edit-item" {...formItemLayout} label="Tag">
               {getFieldDecorator('tag', { initialValue: this.state.tag })(
                 <Select placeholder="请选择 tag " mode="multiple">
-                  {projectMsg.tag.map(item => {
+                  {(projectMsg.tag || []).map(item => {
                     return (
                       <Option value={item.name} key={item._id}>
                         {item.name}

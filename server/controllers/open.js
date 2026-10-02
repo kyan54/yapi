@@ -99,18 +99,17 @@ class openController extends baseController {
       return (ctx.body = yapi.commons.resReturn(null, 40022, 'json 或者 url 参数，不能都为空'));
     }
     try {
-      let request = require("request");// let Promise = require('Promise');
-      let syncGet = function (url){
-          return new Promise(function(resolve, reject){
-              request.get({url : url}, function(error, response, body){
-                  if(error){
-                      reject(error);
-                  }else{
-                      resolve(body);
-                  }
-              });
-          });
-      } 
+      const syncGet = async value => {
+        const source = new URL(value);
+        if (!['http:', 'https:'].includes(source.protocol) || source.username || source.password) {
+          throw new Error('Unsupported Swagger import URL');
+        }
+        const response = await axios.get(source.href, {
+          responseType: 'text', transformResponse: [body => body],
+          timeout: 30000, maxContentLength: 5 * 1024 * 1024, maxRedirects: 0
+        });
+        return response.data;
+      };
       if(ctx.params.url){
         content = await syncGet(ctx.params.url);
       }else if(content.indexOf('http://') === 0 || content.indexOf('https://') === 0){
@@ -209,13 +208,20 @@ class openController extends baseController {
       return (ctx.body = yapi.commons.resReturn(null, 40022, 'id值不存在'));
     }
 
+    if (Number(colData.project_id) !== Number(projectId)) {
+      return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+    }
+    this.scriptNetworkScope = require('../sandbox/trusted-scope').create(this.getUid(), Number(projectId));
     let projectData = await this.projectModel.get(projectId);
 
     let caseList = await yapi.commons.getCaseList(id);
     if (caseList.errcode !== 0) {
-      ctx.body = caseList;
+      ctx.body = caseList; return;
     }
     caseList = caseList.data;
+    if (!Array.isArray(caseList) || caseList.some(item => Number(item.project_id) !== Number(projectId))) {
+      return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+    }
     for (let i = 0, l = caseList.length; i < l; i++) {
       let item = caseList[i];
       let projectEvn = await this.projectModel.getByEnv(item.project_id);
@@ -281,7 +287,7 @@ class openController extends baseController {
 
     if (ctx.params.email === true && reportsResult.message.failedNum !== 0) {
       let autoTestUrl = `${
-        ctx.request.origin
+        (ctx.protocol + '://' + ctx.host)
       }/api/open/run_auto_test?id=${id}&token=${token}&mode=${ctx.params.mode}`;
       yapi.commons.sendNotice(projectId, {
         title: `YApi自动化测试报告`,
@@ -329,7 +335,7 @@ class openController extends baseController {
         this.getUid(),
         interfaceData.project_id,
         interfaceData.interface_id
-      ));
+      ), this.scriptNetworkScope);
       let res = data.res;
 
       result = Object.assign(result, {
@@ -388,7 +394,7 @@ class openController extends baseController {
         records: this.records,
         script: interfaceData.test_script,
         params: requestParams
-      }, interfaceData.col_id, interfaceData.interface_id, this.getUid());
+      }, interfaceData.col_id, interfaceData.interface_id, this.scriptNetworkScope);
       if (test.errcode !== 0) {
         test.data.logs.forEach(item => {
           validRes.push({

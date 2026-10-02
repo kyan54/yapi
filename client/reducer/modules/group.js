@@ -58,15 +58,15 @@ export default (state = initialState, action) => {
       };
     }
     case FETCH_GROUP_MSG: {
-      console.log(action.payload)
+
       // const {role,group_name,group_desc,} = action.payload.data.data
       return {
         ...state,
         role: action.payload.data.data.role,
         currGroup: action.payload.data.data,
         field: {
-          name: action.payload.data.data.custom_field1.name,
-          enable: action.payload.data.data.custom_field1.enable
+          name: (action.payload.data.data.custom_field1 || {}).name,
+          enable: (action.payload.data.data.custom_field1 || {}).enable
         }
       };
     }

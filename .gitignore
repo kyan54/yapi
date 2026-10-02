@@ -44,3 +44,13 @@ tsconfig.json
 client/plugin-module.js
 .vscode
 /iconfont
+
+# Generated modern client assets; build with npm run build-client
+/static/prd/
+/static/index.html
+
+/playwright-report/
+/test-results/
+
+**/playwright-report/
+**/test-results/
