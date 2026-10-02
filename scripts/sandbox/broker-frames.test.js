@@ -46,3 +46,23 @@ test('host rejects forged job identity, scope-bearing frames and duplicate reque
     }), /SCRIPT_RESPONSE_SCOPE_MISMATCH|SCRIPT_INVALID_BROKER_FRAME/);
   }
 });
+test('cleanup waits for Docker auto-remove race, but never accepts an unconfirmed removal',async t=>{
+  let calls=0;
+  t.mock.method(childProcess,'spawn',()=>{
+    const child=new EventEmitter();child.stderr=new EventEmitter();child.kill=()=>{};
+    queueMicrotask(()=>{calls++;child.stderr.emit('data',Buffer.from(calls===1?'removal of container is already in progress':'Error: No such container'));child.emit('close',1);});
+    return child;
+  });
+  delete require.cache[require.resolve('../../server/sandbox/orchestrator')];
+  try {await require('../../server/sandbox/orchestrator').cleanupContainer('yapi-script-fixture');assert.equal(calls,2);}
+  finally {t.mock.restoreAll();delete require.cache[require.resolve('../../server/sandbox/orchestrator')];}
+});
+test('cleanup daemon or permission failure remains fail-closed',async t=>{
+  t.mock.method(childProcess,'spawn',()=>{
+    const child=new EventEmitter();child.stderr=new EventEmitter();child.kill=()=>{};
+    queueMicrotask(()=>{child.stderr.emit('data',Buffer.from('Cannot connect to Docker daemon'));child.emit('close',1);});return child;
+  });
+  delete require.cache[require.resolve('../../server/sandbox/orchestrator')];
+  try {await assert.rejects(require('../../server/sandbox/orchestrator').cleanupContainer('yapi-script-fixture'),/SCRIPT_CLEANUP_FAILED/);}
+  finally {t.mock.restoreAll();delete require.cache[require.resolve('../../server/sandbox/orchestrator')];}
+});

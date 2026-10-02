@@ -60,18 +60,30 @@ async function execute(job, rules = []) {
   } finally {
     broker.close();
     // Killing the CLI alone does not reliably kill its container.
-    await new Promise((resolve, reject) => {
-      const cleanup = spawn('docker', ['rm', '-f', name], {stdio: ['ignore', 'ignore', 'pipe'], env: {PATH: process.env.PATH}});
-      let diagnostic = '';
-      cleanup.stderr.on('data', chunk => {diagnostic = (diagnostic + chunk.toString()).slice(0, 4096);});
-      const timer = setTimeout(() => {cleanup.kill('SIGKILL'); reject(fail('SCRIPT_CLEANUP_FAILED'));}, 3000);
-      cleanup.once('error', () => {clearTimeout(timer); reject(fail('SCRIPT_CLEANUP_FAILED'));});
-      cleanup.once('close', code => {
-        clearTimeout(timer);
-        if (code === 0 || /No such container/i.test(diagnostic)) resolve();
-        else reject(fail('SCRIPT_CLEANUP_FAILED'));
-      });
-    });
+    await cleanupContainer(name);
+
   }
 }
-module.exports = {execute, dockerArgs, IMAGE};
+async function cleanupContainer(name) {
+  // --rm and an explicit rm -f can race after a killed CLI. Docker reports
+  // "removal ... already in progress" before the container actually vanishes.
+  // Retry only that known transient state; do not mistake it for confirmed
+  // removal or weaken fail-closed handling of daemon/permission failures.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const outcome = await new Promise((resolve, reject) => {
+      const cleanup = spawn('docker', ['rm', '-f', name], {stdio:['ignore','ignore','pipe'],env:{PATH:process.env.PATH}});
+      let diagnostic='';
+      cleanup.stderr.on('data', chunk => {diagnostic=(diagnostic+chunk.toString()).slice(0,4096);});
+      const timer=setTimeout(()=>{cleanup.kill('SIGKILL');reject(fail('SCRIPT_CLEANUP_FAILED'));},3000);
+      cleanup.once('error',()=>{clearTimeout(timer);reject(fail('SCRIPT_CLEANUP_FAILED'));});
+      cleanup.once('close',code=>{clearTimeout(timer);resolve({code,diagnostic});});
+    });
+    if(outcome.code===0 || /No such container/i.test(outcome.diagnostic)) return;
+    if(!/removal.*in progress|already.*remov/i.test(outcome.diagnostic)) {
+      const error=fail('SCRIPT_CLEANUP_FAILED'); error.cleanupDiagnostic=outcome.diagnostic; throw error;
+    }
+    await new Promise(resolve=>setTimeout(resolve,50*(attempt+1)));
+  }
+  throw fail('SCRIPT_CLEANUP_FAILED');
+}
+module.exports = {execute, dockerArgs, IMAGE, cleanupContainer};
