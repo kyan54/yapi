@@ -44,11 +44,12 @@ async function login(page) {
   await page.getByRole('button', { name: /^登\s*录$/ }).click();
   await expect(page).toHaveURL(/\/group/);
 }
-test('real login, interface preview, reviewed AI update, history and reversible restore', async ({ page }) => {
+test('real login, interface preview, reviewed AI update, history and reversible restore', async ({ page }, testInfo) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await login(page);
   await page.goto(baseURL + '/project/11/interface/api/17');
   await expect(page.getByRole('tab', { name: '预览', exact: true })).toBeVisible();
+  await page.screenshot({path:testInfo.outputPath('interface-preview.png'),fullPage:true});
   await page.getByTestId('documentation-ai-button').click();
   await expect(page.getByTestId('documentation-outbound')).toContainText('Synthetic order lookup');
   const generate = page.getByRole('button', { name: '生成文档建议' }); await expect(generate).toBeDisabled();
@@ -57,6 +58,7 @@ test('real login, interface preview, reviewed AI update, history and reversible 
   await expect(page.getByRole('region', { name: 'AI 文档建议预览' })).toBeVisible();
   await expect(page.getByText('Confirm expansion semantics')).toBeVisible();
   await expect(page.locator('script').filter({ hasText: 'alert("fixture")' })).toHaveCount(0);
+  await page.screenshot({path:testInfo.outputPath('reviewed-ai-diff.png'),fullPage:true});
   await page.getByRole('button', { name: '审核完成，采纳此建议' }).click();
   await expect(page.getByRole('button', { name: '恢复原始文档（版本 0）' })).toBeVisible();
   let record = await connection.db.collection('interface').findOne({ _id: 17 });
@@ -66,23 +68,44 @@ test('real login, interface preview, reviewed AI update, history and reversible 
   await expect(page.getByText('版本 2', { exact: true })).toBeVisible();
   record = await connection.db.collection('interface').findOne({ _id: 17 });
   expect(record.markdown).toBe(fixture.markdown); expect(record.req_query[0].desc).toBe(fixture.req_query[0].desc); expect(record.docs_history).toBeUndefined(); expect(record.docs_revision).toBe(2); expect(await connection.db.collection('documentation_revisions').countDocuments({interfaceId:17,projectId:11})).toBe(3);
+  await page.screenshot({path:testInfo.outputPath('restored-version-history.png'),fullPage:true});
   expect(errors).toEqual([]);
 });
-test('legacy interface editing, request runner, Mock, collection, Swagger and configuration screens still mount', async ({ page }) => {
+test('legacy interface editing, request runner, Mock, collection, Swagger and configuration screens still mount', async ({ page }, testInfo) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await login(page); await page.goto(baseURL + '/project/11/interface/api/17');
   for (const name of ['编辑', '运行', '高级Mock', '预览']) {
     await page.getByRole('tab', { name, exact: true }).click();
     await expect(page.getByRole('tab', { name, exact: true })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByText('Unexpected Application Error!')).toHaveCount(0);
+    if(name==='编辑') {
+      await expect(page.getByPlaceholder('接口名称')).toBeVisible();
+      await page.getByPlaceholder('接口名称').fill('Browser verified manual edit');
+      await page.getByRole('button',{name:/^保\s*存$/}).click();
+      await expect.poll(async()=> (await connection.db.collection('interface').findOne({_id:17})).title).toBe('Browser verified manual edit');
+    }
+    if(name==='运行') await expect(page.getByRole('button',{name:/^发\s*送$/})).toBeVisible();
+    if(name==='高级Mock') await expect(page.getByRole('radio',{name:'期望',exact:true})).toBeVisible();
   }
   await page.goto(baseURL + '/project/11/interface/col/21');
   await expect(page.getByRole('button', { name: '开始测试', exact: true })).toBeVisible();
   await page.goto(baseURL + '/project/11/setting');
   for (const name of ['项目配置', '环境配置', '请求配置', '全局mock脚本', 'Swagger自动同步']) {
     const tab = page.getByRole('tab', { name, exact: true });
-    if (name === 'Swagger自动同步') { await expect(page.getByRole('tab', { name: /swagger|同步/i })).toBeVisible(); }
+    if (name === 'Swagger自动同步') { const sync=page.getByRole('tab', { name: /swagger|同步/i }); await sync.click(); await expect(page.getByText('项目的swagger json地址',{exact:true})).toBeVisible(); await page.screenshot({path:testInfo.outputPath('swagger-sync-settings.png'),fullPage:true}); }
     else { await tab.click(); await expect(tab).toHaveAttribute('aria-selected', 'true'); }
   }
   expect(errors).toEqual([]);
+});
+
+test('actual Mock route and authenticated collection assertions execute through isolated runner',async({page})=>{
+  await login(page);
+  await connection.db.collection('project').updateOne({_id:11},{$set:{is_mock_open:true,project_mock_script:'mockJson.isolated = true; delay = 0;'}});
+  try {
+    const response=await page.request.get(baseURL+'/mock/11/orders/123');
+    expect(response.status()).toBe(200);
+    const body=await response.json();expect(body.isolated).toBe(true);expect(typeof body.id).toBe('number');
+    const checked=await page.request.post(baseURL+'/api/col/run_script',{data:{col_id:21,interface_id:17,response:{status:200,body:{id:123},header:{}},records:[],params:{},script:'assert.equal(status,200); assert.equal(body.id,123); log("asserted");'}});
+    expect(checked.status()).toBe(200);const result=await checked.json();expect(result.errcode).toBe(0);expect(JSON.stringify(result.data.logs)).toContain('asserted');
+  } finally {await connection.db.collection('project').updateOne({_id:11},{$set:{is_mock_open:false,project_mock_script:''}});}
 });

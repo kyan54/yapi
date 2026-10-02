@@ -95,7 +95,7 @@ export function Timeline({ children, ...props }) {
   return <Ant.Timeline {...props} items={props.items || React.Children.toArray(children).filter(React.isValidElement).map(child => ({ ...child.props, content: child.props.children }))} />;
 }
 Timeline.Item = () => null;
-const legacyOption = option => option ? { ...option, props: { ...option, children: option.label === undefined ? option.children : option.label } } : option;
+const legacyOption = option => option ? { ...option, props: { ...option, children: option.label === undefined ? (option.children === undefined ? option.value : option.children) : option.label } } : option;
 const selectCallbacks = props => ({ ...props, onSelect: props.onSelect ? (value, option) => props.onSelect(value, legacyOption(option)) : undefined, filterOption: typeof props.filterOption === 'function' ? (input, option) => props.filterOption(input, legacyOption(option)) : props.filterOption });
 export const Select = React.forwardRef((props, ref) => <Ant.Select {...selectCallbacks(props)} ref={ref} />);
 Select.Option = Ant.Select.Option;

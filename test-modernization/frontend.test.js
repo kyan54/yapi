@@ -181,3 +181,13 @@ test('AI history loads older cursor pages without hiding the current page', asyn
  assert.deepEqual(queries[1],{projectId:11,interfaceId:17,cursor:1,limit:50});
  assert.equal(screen.queryByText('加载更早历史'),null);
 });
+
+test('legacy autocomplete filter receives string children for modern value-only options', async () => {
+  const labels = [];
+  render(h(Ant.AutoComplete, { dataSource: ['Content-Type','Authorization'], open: true,
+    filterOption: (input, option) => { labels.push(option.props.children); return option.props.children.toUpperCase().includes(input.toUpperCase()); }
+  }));
+  await userEvent.type(screen.getByRole('combobox'), 'content');
+  await waitFor(() => assert.ok(labels.includes('Content-Type')));
+  assert.ok(labels.every(label => typeof label === 'string'));
+});
