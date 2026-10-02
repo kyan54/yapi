@@ -3,7 +3,7 @@ const wikiModel = require('./wikiModel.js');
 const projectModel = require('models/project.js');
 const userModel = require('models/user.js');
 const jsondiffpatch = require('jsondiffpatch');
-const formattersHtml = jsondiffpatch.formatters.html;
+const formattersHtml = require('jsondiffpatch/formatters/html');
 const yapi = require('yapi.js');
 // const util = require('./util.js');
 const fs = require('fs-extra');
@@ -104,14 +104,11 @@ class wikiController extends baseController {
         let diffView = showDiffMsg(jsondiffpatch, formattersHtml, logData);
 
         let annotatedCss = fs.readFileSync(
-          path.resolve(
-            yapi.WEBROOT,
-            'node_modules/jsondiffpatch/dist/formatters-styles/annotated.css'
-          ),
+          require.resolve('jsondiffpatch/formatters/styles/annotated.css'),
           'utf8'
         );
         let htmlCss = fs.readFileSync(
-          path.resolve(yapi.WEBROOT, 'node_modules/jsondiffpatch/dist/formatters-styles/html.css'),
+          require.resolve('jsondiffpatch/formatters/styles/html.css'),
           'utf8'
         );
         let project = await this.projectModel.getBaseInfo(params.project_id);
