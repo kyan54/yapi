@@ -1064,7 +1064,8 @@ test('interface detail tabs retain legacy spacing and switch views at desktop wi
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);await page.screenshot({path:testInfo.outputPath('detail-tabs-'+width+'.png'),fullPage:false});await nav.screenshot({path:testInfo.outputPath('detail-tabstrip-'+width+'.png')});
  }
  for(const name of ['编辑','运行','高级Mock','预览']){const tab=tabs.getByRole('tab',{name,exact:true});await tab.click();await expect(tab).toHaveAttribute('aria-selected','true');}
- await preview.focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');await expect(tabs.getByRole('tab',{name:'编辑',exact:true})).toHaveAttribute('aria-selected','true');await preview.click();await expect(page.locator('.caseContainer')).toBeVisible();
+ // A focused keyboard tab includes AntD's position announcement in its accessible name.
+ await preview.focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');await expect(tabs.locator('[role="tab"][id$="-tab-edit"]')).toHaveAttribute('aria-selected','true');await preview.click();await expect(page.locator('.caseContainer')).toBeVisible();
 });
 
 for(const width of [1920,1024])test('entering interface Edit keeps top and user-controlled remark focus at '+width,async({page},testInfo)=>{
