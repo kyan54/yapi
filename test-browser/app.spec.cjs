@@ -704,3 +704,13 @@ test('search authorizes before ten-result limit and hides other personal groups'
   }finally{await db.collection('user').updateOne({_id:9},{$set:{role:'admin'}});}
   const admin=(await(await page.request.get(baseURL+'/api/project/search?q='+prefix)).json()).data;expect(admin.project).toHaveLength(10);expect(admin.project[0]._id).toBe(754000);expect(admin.group).toHaveLength(10);
 });
+test('avatar menu Escape closes restores focus and never navigates',async({page})=>{
+  await login(page);await page.goto(baseURL+'/group/8');const trigger=page.getByRole('button',{name:'用户菜单',exact:true});const original=page.url();
+  for(let i=0;i<2;i++){
+    await trigger.click();await expect(trigger).toHaveAttribute('aria-expanded','true');
+    const profile=page.getByRole('link',{name:/个人中心/});await expect(profile).toBeVisible();await profile.focus();
+    await page.keyboard.press('Escape');await expect(page.locator('.user-menu:visible')).toHaveCount(0);await expect(trigger).toBeFocused();await expect(trigger).toHaveAttribute('aria-expanded','false');expect(page.url()).toBe(original);
+  }
+  await trigger.press('Enter');await expect(page.locator('.user-menu:visible')).toHaveCount(1);await page.locator('body').click({position:{x:1000,y:60}});await expect(page.locator('.user-menu:visible')).toHaveCount(0);
+  await trigger.focus();await trigger.press('Space');await expect(page.locator('.user-menu:visible')).toHaveCount(1);await page.getByRole('link',{name:/个人中心/}).click();await expect(page).toHaveURL(/\/user\/profile\/9$/);await expect(page.locator('.user-menu:visible')).toHaveCount(0);
+});
