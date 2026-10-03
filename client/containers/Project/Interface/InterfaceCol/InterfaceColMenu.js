@@ -429,7 +429,9 @@ export default class InterfaceColMenu extends Component {
       if (router) {
         if (router.params.action === 'case') {
           if (!currCase || !currCase._id) {
-            return rNull;
+            const caseId = Number(router.params.actionId);
+            const collection = interfaceColList.find(col => (col.caseList || []).some(item => item._id === caseId));
+            return collection ? { expands: this.state.expands || ['col_' + collection._id], selects: ['case_' + caseId] } : rNull;
           }
           return {
             expands: this.state.expands ? this.state.expands : ['col_' + currCase.col_id],
