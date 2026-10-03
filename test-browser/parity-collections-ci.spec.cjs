@@ -107,7 +107,14 @@ async function collection(page,id,name='CI collection'){
  const record=await api(page,apps.default,'/api/col/add_case',{project_id:id,col_id:col._id,interface_id:id,casename:name+' case'});
  return{id,col:col._id,case:record._id,name:name+' case'};
 }
-async function colView(page,f,origin=apps.default){await page.goto(origin+`/project/${f.id}/interface/col/${f.col}`);await expect(page.getByRole('cell',{name:f.name,exact:true})).toBeVisible();}
+async function colView(page,f,origin=apps.default){
+ await page.goto(origin+`/project/${f.id}/interface/col/${f.col}`);
+ // The name column deliberately truncates names longer than 23 characters.
+ // Locate by persisted case identity, then verify both presentation and Key.
+ const link=page.getByRole('cell').locator(`a[href="/project/${f.id}/interface/case/${f.case}"]`);
+ await expect(link).toBeVisible();await expect(link).toHaveText(f.name.length>23?f.name.slice(0,20)+'...':f.name);
+ await expect(page.getByRole('cell',{name:String(f.case),exact:true})).toBeVisible();
+}
 async function caseScript(page,f,script,enabled){await page.goto(apps.default+`/project/${f.id}/interface/case/${f.case}`);await page.getByRole('tab',{name:'Test',exact:true}).click();const pane=page.locator('.response-test');await editor(page,pane.locator('.case-script'),script);const toggle=pane.getByRole('switch');if((await toggle.getAttribute('aria-checked')==='true')!==enabled)await toggle.click();const payload=await saved(page,'/api/col/up_case',()=>page.getByRole('button',{name:/^更\s*新$/}).click());expect(payload).toMatchObject({id:f.case,test_script:script,enable_script:enabled});await page.reload();await page.getByRole('tab',{name:'Test',exact:true}).click();await expect(pane.getByRole('switch')).toHaveAttribute('aria-checked',String(enabled));await expect(pane.locator('.ace_content')).toContainText(script);const db=await connection.db.collection('interface_case').findOne({_id:f.case});expect(db).toMatchObject({test_script:script,enable_script:enabled});}
 async function collectionScript(page,f,script,enabled){await colView(page,f);await page.getByRole('button',{name:'通用规则配置',exact:true}).click();const d=page.getByRole('dialog',{name:'通用规则配置'});await editor(page,d.locator('.case-script'),script);const toggle=d.locator('.setting-item').filter({hasText:'全局测试脚本'}).getByRole('switch');if((await toggle.getAttribute('aria-checked')==='true')!==enabled)await toggle.click();await expect(d.locator('.case-script .ace_content')).toContainText(script);const payload=await saved(page,'/api/col/up_col',()=>d.getByRole('button',{name:/确\s*定$/}).click());expect(payload.checkScript).toEqual({content:script,enable:enabled});await page.reload();await page.getByRole('button',{name:'通用规则配置',exact:true}).click();await expect(toggle).toHaveAttribute('aria-checked',String(enabled));await expect(d.locator('.case-script .ace_content')).toContainText(script);await d.getByRole('button',{name:/取\s*消$/}).click();expect((await connection.db.collection('interface_col').findOne({_id:f.col})).checkScript).toEqual({content:script,enable:enabled});}
 async function runCollection(page,f,info,label,expected){await colView(page,f);await saved(page,'/api/col/up_col',()=>page.getByRole('button',{name:'开始测试',exact:true}).click());const db=await connection.db.collection('interface_col').findOne({_id:f.col}),report=JSON.parse(db.test_report);expect(Object.keys(report)).toEqual([String(f.case)]);await page.reload();await page.getByRole('button',{name:'测试报告',exact:true}).click();const dialog=page.getByRole('dialog',{name:'测试报告',exact:true});await dialog.getByRole('tab',{name:'验证结果',exact:true}).click();await expect(dialog.locator('.case-report-pane:visible')).toContainText(expected);await shot(page,info,label);await dialog.locator('.ant-modal-close').click();await info.attach(label+'-db-report',{body:JSON.stringify(report),contentType:'application/json'});return report[f.case];}
@@ -123,10 +130,32 @@ test('runner_response-03 collection_rules-03 Test and collection scripts preserv
  await caseScript(page,f,'assert.equal(body.ok, true);',true);result=await runCollection(page,f,info,'case-enabled-recovery','验证通过');expect(result.code).toBe(0);
 });
 
+async function automationFormat(page,dialog,info,label,settleBeforeOpen){
+ const settle=async()=>{
+  // Prepare can have transform:none before scale-in starts, so also wait for
+  // the actual appear/enter classes to disappear. No fixed sleep or force click.
+  await expect.poll(()=>dialog.evaluate(node=>{const modal=node.closest('.ant-modal')||node;return !/ant-zoom-(?:appear|enter)/.test(modal.className)&&getComputedStyle(modal).transform==='none';})).toBe(true);
+  await expect.poll(async()=>{const box=await dialog.boundingBox();return box?Math.round(box.width):0;}).toBe(780);
+ };
+ if(settleBeforeOpen)await settle();
+ const phase=()=>dialog.evaluate(node=>({className:node.className,transform:getComputedStyle(node).transform,width:node.getBoundingClientRect().width}));
+ const before=await phase(),format=dialog.locator('.row').filter({hasText:'输出格式'}).locator('.ant-select');await expect(format).toHaveCount(1);await format.click();const after=await phase();await settle();
+ const popup=page.locator('.ant-select-dropdown:visible'),option=popup.locator('.ant-select-item-option-content').filter({hasText:/^json$/});await expect(popup).toHaveCount(1);await expect(option).toHaveCount(1);await expect(option).toBeVisible();
+ await expect.poll(async()=>{const box=await popup.boundingBox();return box?box.width:0;}).toBeGreaterThanOrEqual(120);
+ await expect.poll(()=>option.evaluate(node=>node.clientWidth>=node.scrollWidth&&node.clientWidth>=20)).toBe(true);
+ const geometry={before,after,popup:await popup.boundingBox(),option:await option.evaluate(node=>({clientWidth:node.clientWidth,scrollWidth:node.scrollWidth}))};
+ await page.screenshot({path:info.outputPath(label+'.png'),fullPage:true,mask:[dialog.locator('.autoTestUrl')]});await option.click();await expect(format).toContainText('json');
+ const url=new URL(await dialog.locator('.autoTestUrl a').getAttribute('href'),page.url());expect(url.searchParams.get('mode')).toBe('json');
+ await info.attach(label+'-geometry',{body:JSON.stringify(geometry),contentType:'application/json'});return url;
+}
+
 test('collection_server-04 UI-generated automation shows nonempty sandbox and network failure reports',async({page},info)=>{
  const id=await fixture(page,1011),f=await collection(page,id);await collectionScript(page,f,`await utils.axios.get(${JSON.stringify(echoOrigin+'/must-not-send')});`,true);
  for(const [origin,error]of[[apps.default,'SCRIPT_NETWORK_DISABLED'],[apps.missing,'ISOLATED_RUNNER_REQUIRED']]){
-  await login(page,origin);await colView(page,f,origin);await page.getByRole('button',{name:'服务端测试',exact:true}).click();const d=page.getByRole('dialog',{name:'服务端自动化测试'});await d.locator('.ant-select').last().click();await page.locator('.ant-select-dropdown:visible').getByText('json',{exact:true}).last().click();const url=new URL(await d.locator('.autoTestUrl a').getAttribute('href'),origin);url.searchParams.set('email','false');const before=requests.length,response=await page.request.get(url.href);expect(response.status()).toBe(200);const report=await response.json();expect(report.numbs).toBe(1);expect(report.list).toHaveLength(1);expect(report.list[0].id||report.list[0].caseId).toBe(f.case);expect(report.list[0].code).not.toBe(0);expect(report.message).toMatchObject({failedNum:1,successNum:0});expect(JSON.stringify(report.list[0].validRes)).toContain(error);expect(requests.slice(before).some(r=>r.path==='/must-not-send')).toBe(false);
+  await login(page,origin);await colView(page,f,origin);await page.getByRole('button',{name:'服务端测试',exact:true}).click();const d=page.getByRole('dialog',{name:'服务端自动化测试'});
+  await automationFormat(page,d,info,'automation-format-rapid-'+error,false);await d.locator('.ant-modal-close').click();await expect(d).toHaveCount(0);
+  await page.getByRole('button',{name:'服务端测试',exact:true}).click();const url=await automationFormat(page,d,info,'automation-format-settled-'+error,true);
+  url.searchParams.set('email','false');const before=requests.length,response=await page.request.get(url.href);expect(response.status()).toBe(200);const report=await response.json();expect(report.numbs).toBe(1);expect(report.list).toHaveLength(1);expect(report.list[0].id||report.list[0].caseId).toBe(f.case);expect(report.list[0].code).not.toBe(0);expect(report.message).toMatchObject({failedNum:1,successNum:0});expect(JSON.stringify(report.list[0].validRes)).toContain(error);expect(requests.slice(before).some(r=>r.path==='/must-not-send')).toBe(false);
   await page.screenshot({path:info.outputPath('automation-'+error+'.png'),fullPage:true,mask:[d.locator('.autoTestUrl')]});await info.attach('automation-'+error+'-report',{body:JSON.stringify(report),contentType:'application/json'});
   // Render the generated result in its own tab as the user following the link does.
   const resultPage=await page.context().newPage();await resultPage.goto(url.href);await expect(resultPage.locator('body')).toContainText(error);await resultPage.screenshot({path:info.outputPath('automation-'+error+'-visible-result.png'),fullPage:true});await resultPage.close();
