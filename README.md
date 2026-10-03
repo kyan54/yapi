@@ -84,7 +84,7 @@ MCP 用于让支持 MCP 的客户端读取已授权的接口文档，与上面�
 
 工具为 `list_projects({})`、`list_categories({projectId,cursor,limit})`、`list_interfaces({projectId,cursor,limit,query})`、`get_interface_documentation({projectId,interfaceId})`。分页默认 limit=50、cursor=0，limit 为 1..100，后页 cursor 取上一页最后数字 `_id`；query 为最长 100 字符的字面查询。没有文档历史、写入、恢复、执行脚本或读取环境变量工具。输出经筛选脱敏，文档正文仍是不可信数据。实现与进一步说明见 [stdio](server/mcp/stdio.js)、[工具定义](server/mcp/server.js)、[MCP 说明](docs/modernization/README.md#read-only-mcp)。
 
-MCP 验证记录：在 `90d3245` 的既有合成 Mongo 数据上，官方 Client + `StdioClientTransport` 直接启动 `node server/mcp/stdio.js`，完成 45/45 项检查，包括 initialize、四工具枚举、项目/分类/接口分页（38 个接口）、搜索、当前接口文档、多角色及公开/私有项目 ACL、越 scope/非法请求和不存在写工具的拒绝。9 个相关运行文件 hash 与该提交一致，数据库前后 dbHash 一致；相关单元测试 15/15 通过。该测试使用本地无认证数据库，**没有验证生产 Mongo 只读账号权限，也没有连接真实桌面 MCP 宿主 UI**；部署后仍须分别验证这两项。MCP 没有历史文档工具，不应将网页历史恢复流程算作 MCP 能力。
+MCP 验证记录：在 `90d3245` 的既有合成 Mongo 数据上，官方 Client + `StdioClientTransport` 直接启动 `node server/mcp/stdio.js`，完成 45/45 项检查，包括 initialize、四工具枚举、项目枚举、分类/接口分页（38 个接口）、搜索、当前接口文档、多角色及公开/私有项目 ACL、越 scope/非法请求和不存在写工具的拒绝。9 个相关运行文件 hash 与该提交一致，数据库前后 dbHash 一致；相关单元测试 15/15 通过。该测试使用本地无认证数据库，**没有验证生产 Mongo 只读账号权限，也没有连接真实桌面 MCP 宿主 UI**；部署后仍须分别验证这两项。MCP 没有历史文档工具，不应将网页历史恢复流程算作 MCP 能力。
 
 ## 从旧版 MongoDB 3.6.23 / YApi fd90 迁移
 
