@@ -50,8 +50,8 @@ class AdvMock extends Component {
   async getAdvMockData() {
     let interfaceId = this.props.match.params.actionId;
     let result = await axios.get('/api/plugin/advmock/get?interface_id=' + interfaceId);
+    const mockData = result.data.errcode === 0 ? result.data.data : { enable: false, mock_script: '' };
     if (result.data.errcode === 0) {
-      let mockData = result.data.data;
       this.setState({
         enable: mockData.enable,
         mock_script: mockData.mock_script
@@ -61,7 +61,7 @@ class AdvMock extends Component {
     let that = this;
     mockEditor({
       container: 'mock-script',
-      data: that.state.mock_script,
+      data: mockData.mock_script,
       onChange: function(d) {
         that.setState({
           mock_script: d.text

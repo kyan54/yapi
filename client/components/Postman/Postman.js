@@ -610,7 +610,7 @@ export default class Run extends Component {
           </Modal>
         )}
         <div className="url">
-          <InputGroup compact style={{ display: 'flex' }}>
+          <InputGroup compact style={{ display: 'flex', flex: 1, minWidth: 0 }}>
             <Select disabled value={method} style={{ flexBasis: 60 }}>
               {Object.keys(HTTP_METHOD).map(name => {
                 <Option value={name.toUpperCase()}>{name.toUpperCase()}</Option>;
@@ -653,7 +653,7 @@ export default class Run extends Component {
                 : '由浏览器直接发起请求，目标接口需要支持 CORS'
             }
           >
-            <span style={{ marginLeft: 10, display: 'inline-flex', alignItems: 'center' }}>
+            <span style={{ marginLeft: 10, display: 'inline-flex', alignItems: 'center', flexShrink: 0, whiteSpace: 'nowrap' }}>
               <span style={{ marginRight: 8 }}>请求方式</span>
               <Switch
                 checked={requestMode === REQUEST_MODE.SERVER}

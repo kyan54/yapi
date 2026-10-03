@@ -308,11 +308,16 @@ export default class InterfaceColMenu extends Component {
     const groupId = this.props.curProject.group_id;
     await this.props.fetchProjectList(groupId);
     // await this.props.fetchInterfaceListMenu(projectId)
-    this.setState({ importInterVisible: true, importColId: colId });
+    this.setState({ importInterVisible: true, importColId: colId, importInterIds: [], selectedProject: this.props.match.params.id });
   };
 
   handleImportOk = async () => {
-    const project_id = this.state.selectedProject || this.props.match.params.id;
+    if (this.importSaving) return;
+    if (!this.state.importInterIds || !this.state.importInterIds.length) return message.error('请选择要导入的接口');
+    this.importSaving = true;
+    this.setState({ importSaving: true });
+    try {
+    const project_id = this.props.match.params.id;
     const { importColId, importInterIds } = this.state;
     const res = await axios.post('/api/col/add_case_list', {
       interface_list: importInterIds,
@@ -329,9 +334,16 @@ export default class InterfaceColMenu extends Component {
     } else {
       message.error(res.data.errmsg);
     }
+    } catch (_) {
+      message.error('导入接口失败，请重试');
+    } finally {
+      this.importSaving = false;
+      this.setState({ importSaving: false });
+    }
   };
   handleImportCancel = () => {
-    this.setState({ importInterVisible: false });
+    if (this.importSaving) return;
+    this.setState({ importInterVisible: false, importInterIds: [], selectedProject: undefined });
   };
 
   filterCol = e => {
@@ -484,7 +496,7 @@ export default class InterfaceColMenu extends Component {
     let currentKes = defaultExpandedKeys();
     // console.log('currentKey', currentKes)
 
-    let list = this.state.list;
+    let list = this.state.list.map(col => ({ ...col, caseList: [...col.caseList] }));
 
     if (this.state.filterValue) {
       let arr = [];
@@ -615,11 +627,13 @@ export default class InterfaceColMenu extends Component {
           title="导入接口到集合"
           visible={importInterVisible}
           onOk={this.handleImportOk}
+          confirmLoading={this.state.importSaving}
+          maskClosable={false}
           onCancel={this.handleImportCancel}
           className="import-case-modal"
           width={800}
         >
-          <ImportInterface currProjectId={currProjectId} selectInterface={this.selectInterface} />
+          {importInterVisible && <ImportInterface currProjectId={currProjectId} selectInterface={this.selectInterface} />}
         </Modal>
       </div>
     );

@@ -149,6 +149,18 @@
     "server/controllers/project.js": {
       "baselineSha256": "d857f2153fa9a3ad8a8e3bb8fc7f2419c60150c282d4c7d855e4546d8f3b3da8",
       "reason": "Search checks live project visibility and returns only navigation labels/IDs, never environment or member payloads. Member addition requires existing owner/admin danger rights; real independent-role browser tests verify no denied writes and legitimate owner admission."
+    },
+    "exts/yapi-plugin-advanced-mock/MockCol/MockCol.js": {
+      "baselineSha256": "e72783ce31d367ad9270867b4285e3cb8df2b0d53ca3d3fa56f9df34888dfa55",
+      "reason": "Prevent duplicate expectation writes on repeated confirmation; keep modal pending and errors visible until the save finishes."
+    },
+    "exts/yapi-plugin-advanced-mock/MockCol/CaseDesModal.js": {
+      "baselineSha256": "a67503bd3c1a689dbcde94a56b20faf1f4669c92ac87d5fdca974f44132866bf",
+      "reason": "Prevent duplicate expectation writes on repeated confirmation; keep modal pending and errors visible until the save finishes."
+    },
+    "exts/yapi-plugin-advanced-mock/AdvMock.js": {
+      "baselineSha256": "3707646731dd6e8f92a195b71fcb8a2e0cacca2951268fea2e58d7b68e4bc4c7",
+      "reason": "Initialize the advanced Mock editor from fetched persisted data, preserving disabled script drafts when React batches state updates."
     }
   },
   "dependencies": {

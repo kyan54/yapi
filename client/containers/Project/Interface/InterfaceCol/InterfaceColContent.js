@@ -126,6 +126,8 @@ class InterfaceColContent extends Component {
       currColEnvObj: {},
       collapseKey: '1',
       commonSettingModalVisible: false,
+      commonSettingSaving: false,
+      running: false,
       commonSetting: {
         checkHttpCodeIs200: false,
         checkResponseField: {
@@ -145,6 +147,12 @@ class InterfaceColContent extends Component {
   }
 
   async handleColIdChange(newColId){
+    this.activeRun = null;
+    const load = {};
+    this.activeCollectionLoad = load;
+    this.reports = {};
+    this.records = {};
+    this.setState({ running: false, rows: [] });
     this.props.setColData({
       currColId: +newColId,
       isShowCol: true,
@@ -152,20 +160,17 @@ class InterfaceColContent extends Component {
     });
 
     let result = await this.props.fetchCaseList(newColId);
+    if (this.activeCollectionLoad !== load) return;
     if (result.payload.data.errcode === 0) {
       this.reports = handleReport(result.payload.data.colData.test_report);
-      this.setState({
-        commonSetting:{
-          ...this.state.commonSetting,
-          ...result.payload.data.colData
-        }
-      })
+      this.savedCommonSetting = this.ruleSettings(result.payload.data.colData);
+      this.setState({ commonSetting: this.ruleSettings(this.savedCommonSetting) });
     }
 
-    await this.props.fetchCaseList(newColId);
     await this.props.fetchCaseEnvList(newColId);
+    if (this.activeCollectionLoad !== load) return;
     this.changeCollapseClose();
-    this.handleColdata(this.props.currCaseList);
+    this.handleColdata(result.payload.data.data || []);
   }
 
   async componentWillMount() {
@@ -237,9 +242,23 @@ class InterfaceColContent extends Component {
     this.setState({ rows: newRows });
   };
 
+  componentWillUnmount() {
+    this.activeCollectionLoad = null;
+    this.activeRun = null;
+  }
+
   executeTests = async () => {
-    for (let i = 0, l = this.state.rows.length, curitem; i < l; i++) {
-      let { rows } = this.state;
+    if (this.activeRun) return;
+    const run = { colId: this.props.currColId };
+    this.activeRun = run;
+    this.reports = {};
+    this.records = {};
+    this.setState({ running: true });
+    const rows = this.state.rows.map(row => ({ ...row, test_status: undefined }));
+    this.setState({ rows });
+    try {
+    for (let i = 0, l = rows.length, curitem; i < l; i++) {
+      if (this.activeRun !== run) return;
 
       let envItem = _.find(this.props.envList, item => {
         return item._id === rows[i].project_id;
@@ -250,6 +269,8 @@ class InterfaceColContent extends Component {
         rows[i],
         {
           env: envItem.env,
+          runColId: run.colId,
+          runToken: run,
           pre_script: this.props.currProject.pre_script,
           after_script: this.props.currProject.after_script
         },
@@ -276,6 +297,7 @@ class InterfaceColContent extends Component {
         result = e;
       }
 
+      if (this.activeRun !== run) return;
       //result.body = result.data;
       this.reports[curitem._id] = result;
       this.records[curitem._id] = {
@@ -288,10 +310,19 @@ class InterfaceColContent extends Component {
       // rows snapshot would restore completed earlier rows to "loading".
       this.setState(state => ({ rows: state.rows.map(row => row._id === caseId ? { ...row, test_status: status } : row) }));
     }
-    await axios.post('/api/col/up_col', {
-      col_id: this.props.currColId,
+    const saved = await axios.post('/api/col/up_col', {
+      col_id: run.colId,
       test_report: JSON.stringify(this.reports)
     });
+    if (this.activeRun === run && saved.data.errcode !== 0) message.error(saved.data.errmsg || '保存测试报告失败');
+    } catch (_) {
+      if (this.activeRun === run) message.error('保存测试报告失败，请重试');
+    } finally {
+      if (this.activeRun === run) {
+        this.activeRun = null;
+        this.setState({ running: false });
+      }
+    }
   };
 
   handleTest = async interfaceData => {
@@ -320,6 +351,7 @@ class InterfaceColContent extends Component {
           requestMode: this.state.requestMode
         })
       );
+      if (interfaceData.runToken && this.activeRun !== interfaceData.runToken) return { code: 400, msg: '测试已取消' };
       options.taskId = this.props.curUid;
       let res = (data.res.body = json_parse(data.res.body));
       result = {
@@ -402,7 +434,7 @@ class InterfaceColContent extends Component {
         records: this.records,
         script: interfaceData.test_script,
         params: requestParams,
-        col_id: this.props.currColId,
+        col_id: interfaceData.runColId || this.props.currColId,
         interface_id: interfaceData.interface_id
       });
       if (test.data.errcode !== 0) {
@@ -610,39 +642,44 @@ class InterfaceColContent extends Component {
     return str;
   };
 
-  handleCommonSetting = ()=>{
-    let setting = this.state.commonSetting;
+  ruleSettings = data => ({
+    checkHttpCodeIs200: Boolean(data.checkHttpCodeIs200),
+    checkResponseSchema: Boolean(data.checkResponseSchema),
+    checkResponseField: { name: 'code', value: '0', enable: false, ...data.checkResponseField },
+    checkScript: { enable: false, content: '', ...data.checkScript }
+  });
 
-    let params = {
-      col_id: this.props.currColId,
-      ...setting
-
-    };
-    console.log(params)
-
-    axios.post('/api/col/up_col', params).then(async res => {
-      if (res.data.errcode) {
-        return message.error(res.data.errmsg);
-      }
+  handleCommonSetting = async () => {
+    if (this.savingCommonSetting) return;
+    const colId = this.props.currColId;
+    const setting = this.ruleSettings(this.state.commonSetting);
+    this.savingCommonSetting = true;
+    this.setState({ commonSettingSaving: true });
+    try {
+      const res = await axios.post('/api/col/up_col', { col_id: colId, ...setting });
+      if (colId !== this.props.currColId) return;
+      if (res.data.errcode !== 0) return message.error(res.data.errmsg || '保存通用规则失败');
+      this.savedCommonSetting = this.ruleSettings(setting);
+      this.setState({ commonSettingModalVisible: false });
       message.success('配置测试集成功');
-    });
+    } catch (_) {
+      if (colId === this.props.currColId) message.error('保存通用规则失败，请重试');
+    } finally {
+      this.savingCommonSetting = false;
+      this.setState({ commonSettingSaving: false });
+    }
+  };
 
-    this.setState({
-      commonSettingModalVisible: false
-    })
-  }
+  cancelCommonSetting = () => {
+    if (this.savingCommonSetting) return;
+    this.setState({ commonSettingModalVisible: false,
+      commonSetting: this.ruleSettings(this.savedCommonSetting || this.state.commonSetting) });
+  };
 
-  cancelCommonSetting = ()=>{
-    this.setState({
-      commonSettingModalVisible: false
-    })
-  }
-
-  openCommonSetting = ()=>{
-    this.setState({
-      commonSettingModalVisible: true
-    })
-  }
+  openCommonSetting = () => {
+    this.setState({ commonSettingModalVisible: true,
+      commonSetting: this.ruleSettings(this.savedCommonSetting || this.state.commonSetting) });
+  };
 
   changeCommonFieldSetting = (key)=>{
     return (e)=>{
@@ -887,6 +924,10 @@ class InterfaceColContent extends Component {
             title="通用规则配置"
             visible={this.state.commonSettingModalVisible}
             onOk={this.handleCommonSetting}
+            confirmLoading={this.state.commonSettingSaving}
+            closable={!this.state.commonSettingSaving}
+            keyboard={!this.state.commonSettingSaving}
+            maskClosable={false}
             onCancel={this.cancelCommonSetting}
             width={'1000px'}
             style={defaultModalStyle}
@@ -1067,7 +1108,7 @@ class InterfaceColContent extends Component {
                       marginRight: '8px'
                     }} >通用规则配置</Button>
               &nbsp;
-              <Button type="primary" onClick={this.executeTests}>
+              <Button type="primary" onClick={this.executeTests} loading={this.state.running} disabled={this.state.running}>
                 开始测试
               </Button>
             </div>
