@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { formatTime } from 'client/common.js';
-import { Form, Switch, Button, Icon, Tooltip, message, Input, Select } from 'antd';
+import { Form, Switch, Button, Icon, Tooltip, message, Input, Select, Alert } from 'antd';
 import {handleSwaggerUrlData} from 'client/reducer/modules/project';
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -54,68 +54,99 @@ export default class ProjectInterfaceSync extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      sync_data: { is_sync_open: false }
+      sync_data: { is_sync_open: false },
+      saving: false,
+      savedPending: false,
+      syncStatus: '',
+      loadError: ''
     };
   }
 
-  handleSubmit = async () => {
-    const { form, projectId } = this.props;
-    let params = {
-      project_id: projectId,
-      is_sync_open: this.state.sync_data.is_sync_open,
-      uid: this.props.projectMsg.uid
-    };
-    if (this.state.sync_data._id) {
-      params.id = this.state.sync_data._id;
-    }
-    form.validateFields(async (err, values) => {
-      if (!err) {
-        let assignValue = Object.assign(params, values);
-        await axios.post('/api/plugin/autoSync/save', assignValue).then(res => {
-          if (res.data.errcode === 0) {
-            message.success('保存成功');
-          } else {
-            message.error(res.data.errmsg);
-          }
-        });
+  canEdit = () => ['admin', 'owner', 'dev'].includes(this.props.projectMsg.role);
+
+  handleSubmit = () => {
+    if (this.saving || this.state.savedPending || !this.canEdit()) return;
+    this.saving = true;
+    this.setState({ saving: true });
+    const projectId = this.props.projectId;
+    const isCurrent = () => this.mounted && this.props.projectId === projectId;
+    this.props.form.validateFields(async (err, values) => {
+      try {
+        if (err) return;
+        const params = { ...values, project_id: projectId,
+          is_sync_open: this.state.sync_data.is_sync_open === true };
+        if (this.state.sync_data._id) params.id = this.state.sync_data._id;
+        const res = await axios.post('/api/plugin/autoSync/save', params);
+        if (!isCurrent()) return;
+        if (res.data.errcode !== 0) {
+          this.setState({ loadError: res.data.errmsg || '同步设置未保存' });
+          message.error(res.data.errmsg || '同步设置未保存');
+          return;
+        }
+        this.setState({ savedPending: true });
+        if (await this.getSyncData()) message.success('保存成功');
+        else message.error('已保存，但加载失败，请重新加载');
+      } catch (error) {
+        if (isCurrent()) message.error('同步设置保存失败，请重试');
+      } finally {
+        this.saving = false;
+        if (isCurrent()) this.setState({ saving: false });
       }
     });
-
   };
 
   validSwaggerUrl = async (rule, value, callback) => {
-    if(!value)return;
-    try{
-      await this.props.handleSwaggerUrlData(value);
-    } catch(e) {
+    if (!value) return callback();
+    try {
+      const res = await this.props.handleSwaggerUrlData(value);
+      const body = res && res.payload && res.payload.data;
+      if (!body || body.errcode !== 0 || !body.data || typeof body.data !== 'object' ||
+          (!body.data.swagger && !body.data.openapi)) return callback('swagger地址不正确');
+      callback();
+    } catch (error) {
       callback('swagger地址不正确');
-    } 
-    callback()
-  }
+    }
+  };
 
-  componentWillMount() {
-    //查询同步任务
-    this.setState({
-      sync_data: {}
-    });
-    //默认每份钟同步一次,取一个随机数
-    this.setState({
-      random_corn: '*/2 * * * *'
-    });
+  componentDidMount() {
+    this.mounted = true;
     this.getSyncData();
   }
 
-  async getSyncData() {
-    let projectId = this.props.projectMsg._id;
-    let result = await axios.get('/api/plugin/autoSync/get?project_id=' + projectId);
-    if (result.data.errcode === 0) {
-      if (result.data.data) {
-        this.setState({
-          sync_data: result.data.data
-        });
-      }
+  componentDidUpdate(previousProps) {
+    if (previousProps.projectId !== this.props.projectId) {
+      this.props.form.resetFields();
+      this.setState({ sync_data: { is_sync_open: false }, savedPending: false, loadError: '' });
+      this.getSyncData();
     }
   }
+
+  componentWillUnmount() {
+    this.mounted = false;
+  }
+
+  getSyncData = async () => {
+    const projectId = this.props.projectId;
+    try {
+      const result = await axios.get('/api/plugin/autoSync/get?project_id=' + projectId);
+      if (!this.mounted || this.props.projectId !== projectId) return false;
+      if (result.data.errcode !== 0) throw new Error(result.data.errmsg || '同步配置加载失败');
+      const data = result.data.data || { is_sync_open: false };
+      const history = await axios.get('/api/log/list', { params: {
+        type: 'project', typeid: projectId, selectValue: '自动同步接口状态', limit: 1
+      } });
+      if (!this.mounted || this.props.projectId !== projectId) return false;
+      if (!history.data || history.data.errcode !== 0) throw new Error('同步状态加载失败');
+      const latest = history.data.data && history.data.data.list && history.data.data.list[0];
+      this.setState({ sync_data: data, syncStatus: latest ? latest.content : '', loadError: '', savedPending: false });
+      this.props.form.setFieldsValue({ sync_mode: data.sync_mode,
+        sync_json_url: data.sync_json_url || '', sync_cron: data.sync_cron || '*/10 * * * *' });
+      return true;
+    } catch (error) {
+      if (this.mounted && this.props.projectId === projectId) this.setState({ loadError: error.message || '同步配置加载失败' });
+      return false;
+    }
+  };
 
   // 是否开启
   onChange = v => {
@@ -126,26 +157,32 @@ export default class ProjectInterfaceSync extends Component {
     });
   };
 
-  sync_cronCheck(rule, value, callback){
-    if(!value)return;
-    value = value.trim();
-    if(value.split(/ +/).length > 5){
-      callback('不支持秒级别的设置，建议使用 "*/10 * * * *" ,每隔10分钟更新')
-    }
-    callback()
+  sync_cronCheck(rule, value, callback) {
+    if (!value) return callback();
+    const fields = value.trim().split(/\s+/);
+    if (fields.length !== 5) return callback('不支持秒级别或不完整的设置，请输入五段 cron 表达式');
+    if (!fields.every(field => /^[\dA-Za-z*/,\-]+$/.test(field))) return callback('cron表达式不正确');
+    callback();
   }
 
   render() {
     const { getFieldDecorator } = this.props.form;
+    const disabled = !this.canEdit() || this.state.saving || this.state.savedPending;
     return (
       <div className="m-panel">
+        {this.state.syncStatus.includes('自动同步接口状态:失败') && <Alert type="error" message={this.state.syncStatus} />}
+        {this.state.loadError && <Alert type="error" message={this.state.loadError} />}
+        {this.state.savedPending && <div role="status">已保存，但加载尚未完成。</div>}
+        {(this.state.loadError || this.state.savedPending) && <Button onClick={this.getSyncData}>重新加载</Button>}
+        {!this.canEdit() && <Alert type="info" message="没有自动同步编辑权限" />}
         <Form>
           <FormItem
             label="是否开启自动同步"
             {...formItemLayout}
           >
             <Switch
-              checked={this.state.sync_data.is_sync_open}
+              disabled={disabled}
+              checked={this.state.sync_data.is_sync_open === true}
               onChange={this.onChange}
               checkedChildren="开"
               unCheckedChildren="关"
@@ -188,7 +225,7 @@ export default class ProjectInterfaceSync extends Component {
                 ]
               })(
 
-                <Select>
+                <Select disabled={disabled}>
                   <Option value="normal">普通模式</Option>
                   <Option value="good">智能合并</Option>
                   <Option value="merge">完全覆盖</Option>
@@ -209,7 +246,7 @@ export default class ProjectInterfaceSync extends Component {
                 ],
                 validateTrigger: 'onBlur',
                 initialValue: this.state.sync_data.sync_json_url
-              })(<Input />)}
+              })(<Input disabled={disabled} />)}
             </FormItem>
 
             <FormItem {...formItemLayout} label={<span>类cron风格表达式(默认10分钟更新一次)&nbsp;<a href="https://blog.csdn.net/shouldnotappearcalm/article/details/89469047">参考</a></span>}>
@@ -223,12 +260,12 @@ export default class ProjectInterfaceSync extends Component {
                     validator: this.sync_cronCheck
                   }
                 ],
-                initialValue: this.state.sync_data.sync_cron ? this.state.sync_data.sync_cron : this.state.random_corn
-              })(<Input />)}
+                initialValue: this.state.sync_data.sync_cron ? this.state.sync_data.sync_cron : '*/10 * * * *'
+              })(<Input disabled={disabled} />)}
             </FormItem>
           </div>
           <FormItem {...tailFormItemLayout}>
-            <Button type="primary" htmlType="submit" icon="save" size="large" onClick={this.handleSubmit}>
+            <Button type="primary" htmlType="submit" icon="save" size="large" onClick={this.handleSubmit} disabled={disabled} loading={this.state.saving}>
               保存
             </Button>
           </FormItem>

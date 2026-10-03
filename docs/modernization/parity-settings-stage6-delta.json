@@ -1,0 +1,247 @@
+{
+  "scope": "C exact remaining 18; independent delta, do not overwrite main246",
+  "rows": [
+    {
+      "id": "group_nav-01",
+      "assertion": "Select and search groups and verify project/member/log/settings content resets to selected group",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "failed",
+      "evidence": [
+        "remaining-groups-final-results.json"
+      ]
+    },
+    {
+      "id": "group_nav-02",
+      "assertion": "add group validates name, description and owner selection",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "remaining-groups-final-results.json"
+      ]
+    },
+    {
+      "id": "group_nav-03",
+      "assertion": "Cancel/Close/reopen does not create or leak values between groups",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "failed",
+      "evidence": [
+        "remaining-groups-final-results.json"
+      ]
+    },
+    {
+      "id": "group_nav-04",
+      "assertion": "repeated create submits once and Back/Forward highlights correct group",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "failed",
+      "evidence": [
+        "remaining-groups-final-results.json"
+      ]
+    },
+    {
+      "id": "projects-01",
+      "assertion": "Project cards show title/status/count and open correct route",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "remaining-projects-final-results.json",
+        "remaining-card-errors-accepted-results.json"
+      ],
+      "note": "No status field is exposed by either old/new ProjectCard; title, count and routes verified. Original assertion retained."
+    },
+    {
+      "id": "projects-02",
+      "assertion": "personal-group followed/my-project sections remain laid out and independently clickable",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "remaining-projects-final-results.json",
+        "remaining-card-errors-accepted-results.json"
+      ]
+    },
+    {
+      "id": "projects-03",
+      "assertion": "Add project is enabled only when role permits, otherwise explanation appears",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "remaining-projects-final-results.json",
+        "remaining-card-errors-accepted-results.json"
+      ]
+    },
+    {
+      "id": "projects-04",
+      "assertion": "create/follow/delete errors leave cards and counts synchronized after reload",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "remaining-projects-final-results.json",
+        "remaining-card-errors-accepted-results.json"
+      ]
+    },
+    {
+      "id": "add_project-01",
+      "assertion": "Validate project name/group/base path and permission choice",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "remaining-projects-final-results.json",
+        "remaining-card-errors-accepted-results.json"
+      ]
+    },
+    {
+      "id": "add_project-02",
+      "assertion": "ineligible group options are disabled",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "remaining-projects-final-results.json",
+        "remaining-card-errors-accepted-results.json"
+      ]
+    },
+    {
+      "id": "add_project-03",
+      "assertion": "submit correct name, description, basepath and visibility and open new project",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "remaining-projects-final-results.json",
+        "remaining-card-errors-accepted-results.json"
+      ]
+    },
+    {
+      "id": "add_project-04",
+      "assertion": "repeated create, Back and revisit do not clone project or reuse another group",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "failed",
+      "evidence": [
+        "remaining-projects-final-results.json",
+        "remaining-card-errors-accepted-results.json"
+      ]
+    },
+    {
+      "id": "project_members-02",
+      "assertion": "per-member email notification toggle follows owner/admin restriction",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "failed",
+      "evidence": [
+        "notice-fixed-results.json",
+        "notice-boundary-results.json"
+      ]
+    },
+    {
+      "id": "wiki-01",
+      "assertion": "Display sanitized wiki and preserve normal headings/tables/images/links",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "failed",
+      "evidence": [
+        "wiki-final-results.json"
+      ]
+    },
+    {
+      "id": "swagger_sync-01",
+      "assertion": "Toggle sync and save URL/cron/mode with visible validation",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "swagger-paired-final-results.json",
+        "swagger-old-eventual-results.json"
+      ]
+    },
+    {
+      "id": "swagger_sync-02",
+      "assertion": "reopen/reload reads saved config and last update",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "passed",
+      "old": "passed",
+      "evidence": [
+        "swagger-paired-final-results.json",
+        "swagger-old-eventual-results.json"
+      ]
+    },
+    {
+      "id": "swagger_sync-03",
+      "assertion": "manual/import changes are preserved or replaced per selected mode and revision history captures intended writes",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "notrun",
+      "old": "notrun",
+      "evidence": [
+        "swagger-paired-final-results.json",
+        "swagger-old-eventual-results.json"
+      ],
+      "note": "Partial: all three mode persistence and success activity logs pass both versions. Exact revision snapshot history remains unverified; compound not passed. Legacy success can precede async persistence."
+    },
+    {
+      "id": "swagger_sync-04",
+      "assertion": "unauthorized guest and stale-owner job operations deny clearly with no misleading enabled state",
+      "owner": "C",
+      "bucket": "local_executable",
+      "remaining": "",
+      "new": "failed",
+      "old": "notrun",
+      "evidence": [
+        "swagger-stale-owner-evidence.json",
+        "remaining-new-results.json"
+      ],
+      "repair": "blocked",
+      "note": "New guest gate passes; revoked editor scheduled job continues writes. Runtime/shared hook repair rejected twice by automatic approval; awaiting direct trusted user authorization, no workaround."
+    }
+  ],
+  "new_counts": {
+    "passed": 16,
+    "failed": 1,
+    "notrun": 1
+  },
+  "validation": {
+    "modernization": "337 passed, 6 skipped, 0 failed with exact existing integrator ec712ab fixture; shared frontend test not committed here",
+    "visual": "1920x1080 old/new screenshots inspected. AddProject permission helper baseline crowded in new UI; shared style coordination required. Group capture datasets differ, not pixel equality evidence."
+  }
+}

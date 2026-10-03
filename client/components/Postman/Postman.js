@@ -33,7 +33,8 @@ const {
   checkRequestBodyIsRaw,
   handleContentType,
   crossRequest,
-  checkNameIsExistInArray
+  checkNameIsExistInArray,
+  MAX_FILE_BYTES
 } = require('common/postmanLib.js');
 
 const plugin = require('client/plugin.js');
@@ -204,6 +205,7 @@ export default class Run extends Component {
   async initState(data) {
     this.activeRequest = null;
     this.initializedIdentity = null;
+    this.singleFile = null;
     const initialization = {};
     this.activeInitialization = initialization;
     this.envModalContext = null;
@@ -367,6 +369,17 @@ export default class Run extends Component {
     let options, result;
     try {
     options = handleParams(this.state, this.handleValue);
+    if (this.state.req_body_type === 'file') {
+      const file = this.singleFile;
+      if (!file) throw new Error('请先选择要发送的文件');
+      if (file.size > MAX_FILE_BYTES) throw new Error('文件不能超过 512 KiB');
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (this.activeRequest !== request || !this.isRequestReady()) return;
+      let binary = '';
+      for (let offset = 0; offset < bytes.length; offset += 32768) binary += String.fromCharCode(...bytes.subarray(offset, offset + 32768));
+      delete options.data;
+      options.binary = { base64: btoa(binary), size: bytes.length };
+    }
     await plugin.emitHook('before_request', options, {
       type: this.props.type,
       caseId: options.caseId,
@@ -981,7 +994,8 @@ export default class Run extends Component {
             {HTTP_METHOD[method].request_body &&
               req_body_type === 'file' && (
                 <div>
-                  <Input type="file" id="single-file" />
+                  <Input key={this.requestIdentity(this.props.data)} type="file" id="single-file" onChange={event => { this.singleFile = event.target.files[0] || null; }} />
+                  <span>单文件上限 512 KiB</span>
                 </div>
               )}
           </Panel>

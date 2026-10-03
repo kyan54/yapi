@@ -14,7 +14,7 @@ const jsondiffpatch = require('jsondiffpatch');
 const formattersHtml = require('jsondiffpatch/formatters/html');
 const showDiffMsg = require('../../common/diff-view.js');
 const mergeJsonSchema = require('../../common/mergeJsonSchema');
-const { crossRequest } = require('../../common/postmanLib');
+const { crossRequest, decodeBinaryBody } = require('../../common/postmanLib');
 const createContext = require('../../common/createContext');
 const fs = require('fs-extra');
 const path = require('path');
@@ -1410,6 +1410,8 @@ class interfaceController extends baseController {
           await this.checkAuth(projectId, 'project', 'view') !== true || body.auth_only) {
         return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
       }
+
+      decodeBinaryBody(options);
 
       const result = await crossRequest(
         options,
