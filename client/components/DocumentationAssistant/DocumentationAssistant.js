@@ -20,11 +20,12 @@ export default function DocumentationAssistant({ projectId, interfaceId, sourceD
   const [approved, setApproved] = React.useState(false);
   const [error, setError] = React.useState('');
   const [restoreVersion, setRestoreVersion] = React.useState(null);
+  const [restoreExpectedVersion, setRestoreExpectedVersion] = React.useState(null);
   const sequence = React.useRef(0);
   const pending = React.useRef(false);
   const requestId = React.useRef(null);
   const ids = { projectId: Number(projectId), interfaceId: Number(interfaceId) };
-  React.useEffect(() => { sequence.current++; pending.current = false; requestId.current = null; setOpen(false); setLoaded(null); setProposal(null); setHistory(null); setApproved(false); setError(''); setBusy(false); return () => { sequence.current++; }; }, [projectId, interfaceId]);
+  React.useEffect(() => { sequence.current++; pending.current = false; requestId.current = null; setOpen(false); setRestoreVersion(null); setRestoreExpectedVersion(null); setLoaded(null); setProposal(null); setHistory(null); setApproved(false); setError(''); setBusy(false); return () => { sequence.current++; }; }, [projectId, interfaceId]);
   const call = async (action, body, query = {}) => {
     let response;
     try { response = body ? await axios.post(`/api/documentation/${action}`, { ...ids, ...body }, { headers: { 'X-YApi-Docs-Intent': 'review' } }) : await axios.get(`/api/documentation/${action}`, { params: { ...ids, ...query } }); } catch (failure) {
@@ -39,7 +40,7 @@ export default function DocumentationAssistant({ projectId, interfaceId, sourceD
     pending.current = true; setBusy(true); setError('');
     const token = sequence.current;
     try { await task(() => token === sequence.current); }
-    catch (failure) { if (token === sequence.current) { setError(failure.message || '请求失败'); if (failure.code === 409) setProposal(null); } }
+    catch (failure) { if (token === sequence.current) { setError(failure.message || '请求失败'); if (failure.code === 409) { setProposal(null); setRestoreVersion(null); setRestoreExpectedVersion(null); setApproved(false); } } }
     finally { if (token === sequence.current) { pending.current = false; setBusy(false); } }
   };
   const show = () => { requestId.current = null; setLoaded(null); setOpen(true); setApproved(false); setProposal(null); setHistory(null); run(async current => { const result = await call('get'); if (current()) setLoaded(result); }); };
@@ -47,12 +48,13 @@ export default function DocumentationAssistant({ projectId, interfaceId, sourceD
   const refreshHistory = async current => { const result = await call('history'); if (current()) setHistory(result); };
   const moreHistory = () => run(async current => { const result = await call('history', null, { cursor: history.nextCursor, limit: 50 }); if (current()) setHistory(previous => ({ ...result, revisions: [...previous.revisions, ...result.revisions.filter(item => !previous.revisions.some(existing => existing.version === item.version))] })); });
   const accept = () => run(async current => { const result = await call('accept', { proposalId: proposal.id }); if (!current()) return; const refreshed = await call('get'); if (!current()) return; setLoaded(refreshed); requestId.current = null; setProposal(null); setApproved(false); if (onChanged) onChanged(); await refreshHistory(current); });
-  const restore = () => run(async current => { const result = await call('restore', { version: restoreVersion }); if (!current()) return; setRestoreVersion(null); setProposal(null); const refreshed = await call('get'); if (!current()) return; setLoaded(refreshed); setApproved(false); requestId.current = null; if (onChanged) onChanged(); await refreshHistory(current); });
+  const restore = () => run(async current => { const result = await call('restore', { version: restoreVersion, expectedVersion: restoreExpectedVersion }); if (!current()) return; setRestoreVersion(null); setProposal(null); const refreshed = await call('get'); if (!current()) return; setLoaded(refreshed); setApproved(false); requestId.current = null; if (onChanged) onChanged(); await refreshHistory(current); });
+  const openRestore = version => { setRestoreExpectedVersion(history.currentVersion); setRestoreVersion(version); };
   const close = () => { if (busy) return; sequence.current++; setOpen(false); setLoaded(null); setRestoreVersion(null); };
   const provider = loaded && loaded.provider;
   return <>
     <Button onClick={show} disabled={!projectId || !interfaceId} data-testid="documentation-ai-button">AI 文档助手</Button>
-    <Modal title="AI 文档助手 · 先预览，再人工采纳" open={open} onCancel={close} footer={null} width={960} mask={{ closable: !busy }} closable={!busy} keyboard={!busy} destroyOnHidden>
+    <Modal title="AI 文档助手 · 先预览，再人工采纳" zIndex={1000} open={open} onCancel={close} footer={null} width={960} mask={{ closable: !busy }} closable={!busy} keyboard={!busy} destroyOnHidden>
       {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 12 }} />}
       {!loaded && busy && <Spin />}
       {loaded && <>
@@ -75,12 +77,12 @@ export default function DocumentationAssistant({ projectId, interfaceId, sourceD
         </section>}
         {history && <section aria-label="文档修订历史"><h3>文档修订历史</h3>
           {!history.revisions.length && <Empty description="暂无已保存的 AI 文档修订" />}
-          {history.revisions.map(revision => <div key={revision.version} style={{ padding: 12, borderBottom: '1px solid #ddd' }}><Space wrap><Text strong>版本 {revision.version}</Text><Tag>{revision.kind}</Tag><Text>操作人 {revision.actorId}</Text><Text>{String(revision.createdAt)}</Text><Button disabled={busy || revision.version === history.currentVersion} onClick={() => setRestoreVersion(revision.version)}>恢复此版本</Button></Space>{revision.fieldHistoryAvailable === false && <Tag>旧历史：仅包含顶层文档</Tag>}<details><summary>查看此版本内容</summary><pre style={codeStyle}>{revision.after.markdown || revision.after.desc || '（空）'}</pre>{revision.after.descriptionSnapshot && <pre style={codeStyle}>{JSON.stringify(revision.after.descriptionSnapshot, null, 2)}</pre>}</details></div>)}
+          {history.revisions.map(revision => <div key={revision.version} style={{ padding: 12, borderBottom: '1px solid #ddd' }}><Space wrap><Text strong>版本 {revision.version}</Text><Tag>{revision.kind}</Tag><Text>操作人 {revision.actorId}</Text><Text>{String(revision.createdAt)}</Text><Button disabled={busy || revision.version === history.currentVersion} onClick={() => openRestore(revision.version)}>恢复此版本</Button></Space>{revision.fieldHistoryAvailable === false && <Tag>旧历史：仅包含顶层文档</Tag>}<details><summary>查看此版本内容</summary><pre style={codeStyle}>{revision.after.markdown || revision.after.desc || '（空）'}</pre>{revision.after.descriptionSnapshot && <pre style={codeStyle}>{JSON.stringify(revision.after.descriptionSnapshot, null, 2)}</pre>}</details></div>)}
           {history.hasMore && <Button style={{ marginTop: 12 }} disabled={busy} onClick={moreHistory}>加载更早历史</Button>}
-          {history.revisions.length > 0 && <Button style={{ marginTop: 12 }} disabled={busy} onClick={() => setRestoreVersion(0)}>恢复原始文档（版本 0）</Button>}
+          {history.revisions.length > 0 && <Button style={{ marginTop: 12 }} disabled={busy} onClick={() => openRestore(0)}>恢复原始文档（版本 0）</Button>}
         </section>}
       </>}
     </Modal>
-    <Modal title="确认恢复文档" open={restoreVersion !== null} onOk={restore} onCancel={() => !busy && setRestoreVersion(null)} confirmLoading={busy} okText="确认恢复" cancelText="取消"><p>将版本 {restoreVersion} 的文档与已记录的字段描述 恢复为一个新版本，现有历史记录会保留。</p></Modal>
+    <Modal title="确认恢复文档" zIndex={1100} open={restoreVersion !== null} onOk={restore} onCancel={() => !busy && setRestoreVersion(null)} confirmLoading={busy} okText="确认恢复" cancelText="取消"><p>将版本 {restoreVersion} 的文档与已记录的字段描述 恢复为一个新版本，现有历史记录会保留。</p></Modal>
   </>;
 }

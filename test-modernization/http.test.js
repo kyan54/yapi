@@ -53,7 +53,7 @@ test('HTTP generated field descriptions apply only after explicit acceptance to 
   assert.deepEqual(result.data.changes.descriptionEdits,descriptionEdits);assert.equal(raw.req_query[0].desc,'wrong');
   assert.equal((await post(h,'accept',{...params,proposalId:result.data.id})).status,200);
   assert.equal(raw.req_query[0].desc,'Page number');const schema=JSON.parse(raw.res_body);assert.equal(schema.properties.id.default,'PRIVATE_LITERAL');assert.deepEqual(schema.properties.id.enum,['a','b']);assert.equal(schema.properties.id.description,'<script>Untrusted text</script>');
-  assert.equal((await post(h,'restore',{...params,version:0})).status,200);assert.equal(JSON.parse(raw.res_body).properties.id.description,undefined);
+  assert.equal((await post(h,'restore',{...params,version:0,expectedVersion:raw.docs_revision})).status,200);assert.equal(JSON.parse(raw.res_body).properties.id.description,undefined);
  } finally {await h.close();}
 });
 test('history HTTP forwards bounded numeric cursor/limit and rejects malformed pagination', async()=>{
@@ -68,3 +68,5 @@ test('history HTTP forwards bounded numeric cursor/limit and rejects malformed p
   }
  } finally {await h.close();}
 });
+
+test('restore HTTP strictly requires reviewed current version and forwards it unchanged',async()=>{const calls=[];const h=await host({store:{restore:async(...args)=>{calls.push(args);throw Object.assign(Error('VERSION_CONFLICT'),{code:'VERSION_CONFLICT'});}}});try{for(const expectedVersion of[undefined,null,-1,1.2,'1',true,Number.MAX_SAFE_INTEGER+1]){assert.equal((await post(h,'restore',{...params,version:0,expectedVersion})).status,400);}assert.equal(calls.length,0);assert.equal((await post(h,'restore',{...params,version:0,expectedVersion:3})).status,409);assert.deepEqual(calls,[[11,17,0,9,3]]);}finally{await h.close();}});

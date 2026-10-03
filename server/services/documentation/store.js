@@ -70,9 +70,11 @@ function createStore({interfaces,proposals,revisions,now=()=>new Date().toISOStr
     async history(projectId,interfaceId,options) {
       return revisionStore.history(await current(projectId,interfaceId),options);
     },
-    async restore(projectId,interfaceId,version,actorId) {
+    async restore(projectId,interfaceId,version,actorId,expectedVersion) {
       if(!Number.isSafeInteger(version) || version<0) fail('INVALID_ID');
+      if(!Number.isSafeInteger(expectedVersion) || expectedVersion<0) fail('INVALID_INPUT');
       const raw=await current(projectId,interfaceId);
+      if(plain(raw).version!==expectedVersion) fail('VERSION_CONFLICT');
       const target=await revisionStore.target(raw,version);
       const document=plain(raw);
       const audit={actorId,now:now()};

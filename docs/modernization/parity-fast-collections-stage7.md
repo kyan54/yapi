@@ -1,0 +1,3 @@
+Restore now binds confirmation to the current document revision the reviewer saw. Send `expectedVersion` (a nonnegative safe integer) along with `projectId`, `interfaceId`, and target `version` to POST `/api/documentation/restore`. Missing or malformed values return 400; a stale version returns 409 before any revision is prepared. The existing exact BSON CAS still rejects a concurrent edit after that check. Refresh and explicitly reconfirm after conflict; never automatically rebase or retry a restore over newer content.
+
+The UI, synthetic browser reset client, HTTP/application integration fixtures, and store callers have been migrated. Read-only MCP has no changed contract. Independent AI12 results are in the adjacent JSON delta.

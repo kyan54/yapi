@@ -41,7 +41,7 @@ test('real application HTTP on modern Mongo: session auth, docs, legacy writes, 
     assert.equal((await db.collection('interface').findOne({_id:17})).docs_revision,1);
     response=await fetch(url+'/api/interface/up',{method:'POST',headers,body:JSON.stringify({id:17,title:'Manual synthetic update'})});payload=await response.json();assert.equal(payload.errcode,0,JSON.stringify(payload));
     assert.equal((await db.collection('interface').findOne({_id:17})).docs_revision,2);
-    response=await fetch(url+'/api/documentation/restore',{method:'POST',headers,body:JSON.stringify({projectId:11,interfaceId:17,version:0})});payload=await response.json();assert.equal(payload.errcode,0,JSON.stringify(payload));
+    response=await fetch(url+'/api/documentation/restore',{method:'POST',headers,body:JSON.stringify({projectId:11,interfaceId:17,version:0,expectedVersion:2})});payload=await response.json();assert.equal(payload.errcode,0,JSON.stringify(payload));
     const final=await db.collection('interface').findOne({_id:17});assert.equal(final.docs_revision,3);assert.equal(final.title,'Manual synthetic update');assert.equal(final.markdown,fixture.markdown);assert.equal(final.docs_history,undefined);assert.equal(typeof final.docs_revision_head,'string');assert.deepEqual((await store.history(11,17)).revisions.map(row=>row.version),[3,2,1,0]);
     // Exercise actual bundled plugin writes, not only controller/module loading.
     async function pluginPost(endpoint,data) {

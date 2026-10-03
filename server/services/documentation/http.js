@@ -61,7 +61,8 @@ function createDocumentationMiddleware({authenticate,authorize,store,provider,pr
       } else if(action==='accept') {
         data=await store.accept(projectId,interfaceId,params.proposalId,user._id);
       } else {
-        data=await store.restore(projectId,interfaceId,params.version,user._id);
+        if(!Number.isSafeInteger(params.expectedVersion)||params.expectedVersion<0) throw Object.assign(Error('INVALID_INPUT'),{code:'INVALID_INPUT'});
+        data=await store.restore(projectId,interfaceId,params.version,user._id,params.expectedVersion);
       }
       ctx.body={errcode:0,data};
     } catch(error) {
