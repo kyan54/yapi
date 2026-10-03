@@ -1036,3 +1036,21 @@ test('basic settings late save and refresh results cannot show feedback after na
   }finally{release();await page.unroute(pattern);}
  }
 });
+
+
+test('Schema dialogs restore native trigger focus after animated close and discard cancelled drafts',async({page})=>{
+ const id=797220,schema={type:'object',description:'Original focus',properties:{value:{type:'string',description:'Leaf'}}};
+ await connection.db.collection('interface').insertOne({...fixture,_id:id,uid:9,title:'Synthetic focus regression',path:'/schema-focus-regression',method:'POST',req_body_type:'json',req_body_is_json_schema:true,req_body_other:JSON.stringify(schema),res_body_is_json_schema:true,res_body:JSON.stringify(schema)});
+ await login(page);await page.goto(baseURL+'/project/11/interface/api/'+id);await page.getByRole('tab',{name:'编辑',exact:true}).click();
+ const modal=page.locator('.ant-modal:visible');
+ for(const name of ['高级设置 根节点','编辑 根节点 标题','编辑 根节点 描述','编辑 value Mock'])for(const close of ['Escape','Cancel','X']){
+  const trigger=page.locator('.schema-editor-modern:visible').last().getByRole('button',{name,exact:true});await trigger.focus();await page.keyboard.press('Enter');await expect(modal).toBeVisible();const input=modal.locator('textarea').last(),original=await input.inputValue();await input.fill(original+' cancelled');
+  if(close==='Escape')await page.keyboard.press('Escape');else await(close==='X'?modal.locator('.ant-modal-close'):modal.getByRole('button',{name:/^取\s*消$/})).click();
+  await expect(modal).toHaveCount(0);await expect(trigger).toBeFocused();await page.keyboard.press('Tab');await expect(trigger).not.toBeFocused();await page.keyboard.press('Shift+Tab');await expect(trigger).toBeFocused();await page.keyboard.press('Space');await expect(modal.locator('textarea').last()).toHaveValue(original);await page.keyboard.press('Escape');await expect(modal).toHaveCount(0);await expect(trigger).toBeFocused();
+ }
+ const trigger=page.locator('.schema-editor-modern:visible').last().getByRole('button',{name:'编辑 根节点 描述',exact:true});await trigger.click();await modal.locator('textarea').fill('Applied focus');await modal.getByRole('button',{name:/^应\s*用$/}).click();await expect(modal).toHaveCount(0);await expect(trigger).toBeFocused();await saveInterfaceSuccessfully(page);const saved=await connection.db.collection('interface').findOne({_id:id});expect(JSON.parse(saved.res_body)).toEqual({...schema,description:'Applied focus'});expect(JSON.parse(saved.req_body_other)).toEqual(schema);await page.reload();await page.getByRole('tab',{name:'编辑',exact:true}).click();await expect(page.locator('.schema-editor-modern:visible').last().getByLabel('根节点 描述',{exact:true})).toHaveValue('Applied focus');
+ for(const normalized of [{properties:{value:{type:'string'}}},{type:'OBJECT',properties:{value:{type:'string'}}}]){
+  const advanced=page.locator('.schema-editor-modern:visible').last().getByRole('button',{name:'高级设置 根节点',exact:true});await advanced.click();await modal.getByLabel('根节点 高级设置内容',{exact:true}).fill(JSON.stringify(normalized));await modal.getByRole('button',{name:/^应\s*用$/}).click();await expect(modal).toHaveCount(0);await expect(advanced).toBeFocused();await page.keyboard.press('Enter');await expect(modal.getByLabel('根节点 高级设置内容',{exact:true})).toHaveValue(JSON.stringify({...normalized,type:'object'},null,2));await page.keyboard.press('Escape');await expect(modal).toHaveCount(0);await expect(advanced).toBeFocused();await saveInterfaceSuccessfully(page);expect(JSON.parse((await connection.db.collection('interface').findOne({_id:id})).res_body)).toEqual({...normalized,type:'object'});await page.reload();await page.getByRole('tab',{name:'编辑',exact:true}).click();
+ }
+
+});

@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import normalizeSchema from '../containers/Project/Interface/InterfaceList/normalizeSchema';
 import { Alert, AutoComplete, Button, Checkbox, Input, InputNumber, Modal, Radio, Select, Tabs } from 'antd-modern';
 
 const mockOptions = 'string natural float character boolean url domain ip id guid now timestamp date time datetime image imageData color hex rgba rgb hsl integer email paragraph sentence word cparagraph ctitle title name cname cfirst clast first last csentence cword region province city county upper lower pick shuffle protocol'.split(' ').map(name => ({ value: '@' + name }));
@@ -127,7 +128,11 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
   const [enumError, setEnumError] = React.useState('');
   React.useEffect(() => { setNameDraft(name || ''); setNameError(''); }, [name]);
   // Never apply a draft captured from an older externally replaced subtree.
-  React.useEffect(() => { setEditor(null); }, [schema]);
+  React.useEffect(() => { setEditor(current => current && current.open === false ? current : null); }, [schema]);
+  // Retain a closing dialog so AntD can finish its close/focus lifecycle.
+  // Opening always creates a fresh draft; external replacement while open
+  // still removes the old editor immediately, without restoring stale focus.
+  const closeEditor = () => setEditor(current => current ? { ...current, open: false } : null);
   const object = isObject(schema);
   const objectType = hasType(schema, 'object');
   const arrayType = hasType(schema, 'array');
@@ -159,7 +164,7 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
     try {
       if (editor.kind === 'advanced') onChange(parseSchema(editor.text));
       else patch({ [editor.kind]: editor.kind === 'mock' ? mockValue(schema, editor.text) : editor.text });
-      setEditor(null);
+      closeEditor();
     } catch (error) { setEditor({ ...editor, error: error.message }); }
   };
   const type = object && typeof schema.type === 'string' ? schema.type : '__custom__';
@@ -203,7 +208,7 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
         onChange={next => patch({ items: schema.items.map((value, position) => position === index ? next : value) })} />)}
       <Button onClick={() => patch({ items: [...schema.items, { type: 'string' }] })}>添加数组元素</Button>
     </React.Fragment> : <NodeEditor label="数组元素" depth={depth + 1} schema={schema.items === undefined ? { type: 'string' } : schema.items} onChange={items => patch({ items })} />)}
-    {editor && <Modal title={`${label} ${modalLabel}`} open mask={{ closable: false }} width={editor.kind === 'advanced' ? 780 : 520} okText="应用" okButtonProps={{ disabled: !!(editor.error || enumError) }} cancelText="取消" onCancel={() => setEditor(null)} onOk={saveEditor}>
+    {editor && <Modal title={`${label} ${modalLabel}`} open={editor.open !== false} mask={{ closable: false }} width={editor.kind === 'advanced' ? 780 : 520} okText="应用" okButtonProps={{ disabled: !!(editor.error || enumError) }} cancelText="取消" onCancel={closeEditor} afterClose={() => setEditor(current => current && current.open === false ? null : current)} onOk={saveEditor}>
       <p>应用后更新当前节点；保存接口后生效。</p>
       {editor.kind === 'advanced' && <AdvancedFields onError={setEnumError} text={editor.text} onChange={text => setEditor({ ...editor, text, error: '' })} />}
       <Input.TextArea aria-label={`${label} ${modalLabel}内容`} rows={editor.kind === 'advanced' ? 14 : 6} value={editor.text} onChange={event => setEditor({ ...editor, text: event.target.value, error: '' })} />
@@ -215,20 +220,33 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
 export default function SchemaEditor({ data, onChange, onValidityChange }) {
   const input = data === '' || data == null ? JSON.stringify({ type: 'object', properties: {} }, null, 2) : typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   const [text, setText] = React.useState(input);
+  const [generation, setGeneration] = React.useState(0);
+  const pendingEcho = React.useRef(null);
   const [error, setError] = React.useState('');
   const [importOpen, setImportOpen] = React.useState(false);
   const [importText, setImportText] = React.useState('');
   const [importKind, setImportKind] = React.useState('example');
   const [importError, setImportError] = React.useState('');
-  React.useEffect(() => { setText(input); setError(''); }, [input]);
+  React.useEffect(() => {
+    // Consume only the normalized receipt of our latest local submission.
+    // The form may infer/lowercase the root type before echoing it back.
+    const ownEcho = pendingEcho.current !== null && normalizeSchema(input) === pendingEcho.current;
+    pendingEcho.current = null;
+    if (input !== text) {
+      if (!ownEcho) setGeneration(value => value + 1);
+      setText(input);
+    }
+    setError('');
+  }, [input]);
   const parsed = React.useMemo(() => { try { return { value: parseSchema(text), valid: true }; } catch (_) { return { valid: false }; } }, [text]);
   React.useEffect(() => { if (onValidityChange) onValidityChange(parsed.valid); }, [parsed.valid, onValidityChange]);
-  const update = value => { const next = JSON.stringify(value, null, 2); setText(next); setError(''); onChange(next); };
+  const publish = next => { pendingEcho.current = normalizeSchema(next) || null; onChange(next); };
+  const update = value => { const next = JSON.stringify(value, null, 2); setText(next); setError(''); publish(next); };
   return <div className="schema-editor-modern">
     <Button type="primary" onClick={() => { setImportOpen(true); setImportText(''); setImportError(''); }}>导入 JSON</Button>
     <Tabs items={[
-      { key: 'visual', label: '可视化 Schema', children: parsed.valid ? <div className="schema-tree-scroll"><NodeEditor schema={parsed.value} onChange={update} /></div> : <Alert type="error" title="Schema JSON 无效，请在 JSON 模式修复。" /> },
-      { key: 'json', label: 'JSON（完整 Schema）', children: <React.Fragment><Input.TextArea aria-label="JSON Schema" rows={14} value={text} onChange={event => { const next = event.target.value; setText(next); try { parseSchema(next); setError(''); onChange(next); } catch (e) { setError(e.message); } }} />{error && <Alert type="error" title={error} />}</React.Fragment> }
+      { key: 'visual', label: '可视化 Schema', children: parsed.valid ? <div className="schema-tree-scroll"><NodeEditor key={generation} schema={parsed.value} onChange={update} /></div> : <Alert type="error" title="Schema JSON 无效，请在 JSON 模式修复。" /> },
+      { key: 'json', label: 'JSON（完整 Schema）', children: <React.Fragment><Input.TextArea aria-label="JSON Schema" rows={14} value={text} onChange={event => { const next = event.target.value; setText(next); try { parseSchema(next); setError(''); publish(next); } catch (e) { setError(e.message); } }} />{error && <Alert type="error" title={error} />}</React.Fragment> }
     ]} />
     <Modal title="导入 JSON" open={importOpen} mask={{ closable: false }} onCancel={() => setImportOpen(false)} okText="导入并替换" cancelText="取消" onOk={() => {
       try { const value = importKind === 'schema' ? parseSchema(importText) : JSON.parse(importText); update(importKind === 'example' ? schemaFromExample(value) : value); setImportOpen(false); } catch (e) { setImportError(e.message); }
