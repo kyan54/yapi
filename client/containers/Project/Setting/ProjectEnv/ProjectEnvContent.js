@@ -113,17 +113,28 @@ class ProjectEnvContent extends Component {
     this.setState(newValue);
   };
 
-  handleInit(data) {
-    this.props.form.resetFields();
-    let newValue = this.initState(data);
-    this.setState({ ...newValue });
+  handleInit(data = {}) {
+    const rows = this.initState(data);
+    const separator = (data.domain || '').indexOf('//');
+    this.setState(rows, () => {
+      this.props.form.setFieldsValue({
+        ...rows,
+        env: {
+          name: data.name === '新环境' ? '' : data.name || '',
+          domain: separator < 0 ? data.domain || '' : data.domain.slice(separator + 2),
+          protocol: separator < 0 ? 'http://' : data.domain.slice(0, separator + 2)
+        }
+      });
+    });
   }
 
-  componentWillReceiveProps(nextProps) {
-    let curEnvName = this.props.projectMsg.name;
-    let nextEnvName = nextProps.projectMsg.name;
-    if (curEnvName !== nextEnvName) {
-      this.handleInit(nextProps.projectMsg);
+  componentDidMount() {
+    this.handleInit(this.props.projectMsg);
+  }
+
+  componentDidUpdate(previousProps) {
+    if (previousProps.projectMsg !== this.props.projectMsg) {
+      this.handleInit(this.props.projectMsg);
     }
   }
 
@@ -362,7 +373,7 @@ class ProjectEnvContent extends Component {
     };
 
     return (
-      <div>
+      <Form>
         {envTpl(projectMsg)}
         <div className="btnwrap-changeproject">
           <Button
@@ -375,7 +386,7 @@ class ProjectEnvContent extends Component {
             保 存
           </Button>
         </div>
-      </div>
+      </Form>
     );
   }
 }

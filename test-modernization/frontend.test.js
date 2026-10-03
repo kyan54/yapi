@@ -582,3 +582,30 @@ test('legacy schema title, Mock choices, typed advanced drafts and tuple sibling
   assert.equal(latest.properties.tuple.items[1].title,'second');
   assert.equal(latest.properties.tuple.items[0].type,'string');
 });
+
+
+test('environment form hydrates asynchronous records and switches without stale nested values', async () => {
+  const Environment = require('../client/containers/Project/Setting/ProjectEnv/ProjectEnvContent').default;
+  let saved;
+  const props = { handleEnvInput() {}, onSubmit(value) { saved = value; } };
+  const view = render(h(Environment, { ...props, projectMsg: {} }));
+  const first = { name: 'local-synthetic', domain: 'http://127.0.0.1:3000/mock/1', header: [{ name: 'X-Fixture', value: 'synthetic' }], global: [{ name: 'sampleId', value: '42' }] };
+  view.rerender(h(Environment, { ...props, projectMsg: first }));
+  await waitFor(() => assert.equal(screen.getByPlaceholderText('请输入环境名称').value, 'local-synthetic'));
+  assert.equal(screen.getByPlaceholderText('请输入环境域名').value, '127.0.0.1:3000/mock/1');
+  assert.equal(document.getElementById('header_0_value').value, 'synthetic');
+  assert.equal(document.getElementById('global_0_value').value, '42');
+  const second = { name: 'browser-synthetic', domain: 'https://example.invalid/mock', header: [], global: [] };
+  view.rerender(h(Environment, { ...props, projectMsg: second }));
+  await waitFor(() => assert.equal(screen.getByPlaceholderText('请输入环境名称').value, 'browser-synthetic'));
+  assert.equal(screen.getByPlaceholderText('请输入环境域名').value, 'example.invalid/mock');
+  assert.equal(document.getElementById('header_0_value').value, '');
+  assert.equal(document.getElementById('global_0_value').value, '');
+  view.rerender(h(Environment, { ...props, projectMsg: first }));
+  await waitFor(() => assert.equal(document.getElementById('global_0_value').value, '42'));
+  fireEvent.click(screen.getByRole('button', { name: /保.*存/ }));
+  await waitFor(() => assert.ok(saved));
+  assert.equal(saved.env.domain, first.domain);
+  assert.deepEqual(saved.env.global, first.global);
+  assert.deepEqual(saved.env.header, first.header);
+});

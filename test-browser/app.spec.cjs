@@ -456,3 +456,36 @@ test('project settings Save retains the visible submitted value across repeat sa
   }
   await page.reload(); await expect(name).toHaveValue('Synthetic persisted project');
 });
+
+test('environment settings load, switch, edit and save actual nested values', async ({page}) => {
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const env=[
+    {name:'local-synthetic',domain:'http://127.0.0.1:3000/mock/11',header:[{name:'X-Fixture',value:'synthetic'}],global:[{name:'sampleId',value:'42'}]},
+    {name:'browser-synthetic',domain:'https://example.invalid/mock',header:[],global:[]}
+  ];
+  await connection.db.collection('project').updateOne({_id:11},{$set:{env}});
+  await login(page);await page.goto(baseURL+'/project/11/setting');
+  await page.getByRole('tab',{name:'环境配置',exact:true}).click();
+  await expect(page.getByPlaceholder('请输入环境名称')).toHaveValue('local-synthetic');
+  await expect(page.getByPlaceholder('请输入环境域名')).toHaveValue('127.0.0.1:3000/mock/11');
+  await expect(page.locator('#header_0_value')).toHaveValue('synthetic');
+  await expect(page.locator('#global_0_value')).toHaveValue('42');
+  await page.getByText('browser-synthetic',{exact:true}).click();
+  await expect(page.getByPlaceholder('请输入环境名称')).toHaveValue('browser-synthetic');
+  await expect(page.getByPlaceholder('请输入环境域名')).toHaveValue('example.invalid/mock');
+  await expect(page.locator('#header_0_value')).toHaveValue('');
+  await expect(page.locator('#global_0_value')).toHaveValue('');
+  await page.getByText('local-synthetic',{exact:true}).click();
+  await expect(page.locator('#global_0_value')).toHaveValue('42');
+  await page.locator('#global_0_value').fill('43');
+  const reply=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/project/up_env');
+  await page.getByRole('button',{name:/保\s*存/}).click();
+  expect((await (await reply).json()).errcode).toBe(0);
+  await expect(page.getByText('修改成功!',{exact:true})).toBeVisible();
+  const saved=await connection.db.collection('project').findOne({_id:11});
+  expect(saved.env[0].global.map(({name,value})=>({name,value}))).toEqual([{name:'sampleId',value:'43'}]);
+  expect(saved.env[0].header.map(({name,value})=>({name,value}))).toEqual(env[0].header);expect(saved.env[1]).toMatchObject(env[1]);
+  await page.reload();await page.getByRole('tab',{name:'环境配置',exact:true}).click();
+  await expect(page.locator('#global_0_value')).toHaveValue('43');
+  expect(errors).toEqual([]);
+});
