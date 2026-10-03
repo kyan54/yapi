@@ -7,6 +7,15 @@ const { Content, Sider } = Layout;
 import ProjectEnvContent from './ProjectEnvContent.js';
 import { connect } from 'react-redux';
 import { updateEnv, getProject, getEnv } from '../../../../reducer/modules/project';
+// Resolve the environment request before dispatch so late settings refreshes can
+// be discarded without extending the shared project reducer's action contract.
+export async function guardedGetEnv(projectId, meta) {
+  const action = getEnv(projectId);
+  const payload = await action.payload;
+  if (!meta.isCurrent()) return { type: 'yapi/project/ENV_REFRESH_IGNORED', payload };
+  return { ...action, payload };
+}
+
 import EasyDragSort from '../../../../components/EasyDragSort/EasyDragSort.js';
 
 @connect(
@@ -18,7 +27,7 @@ import EasyDragSort from '../../../../components/EasyDragSort/EasyDragSort.js';
   {
     updateEnv,
     getProject,
-    getEnv
+    getEnv: guardedGetEnv
   }
 )
 class ProjectEnv extends Component {
@@ -57,15 +66,36 @@ class ProjectEnv extends Component {
     });
   }
 
+  generation = 0;
+
   async componentWillMount() {
     this._isMounted = true;
+    this.generation++;
     await this.loadLocalProject();
   }
 
+  componentDidUpdate(previousProps) {
+    if (previousProps.projectId !== this.props.projectId) {
+      this.generation++;
+      this.savedReceipt = null;
+      this.saving = false;
+      this.refreshing = false;
+      this.setState({ env: [], _id: null, currentEnvMsg: {}, currentKey: -2,
+        canEdit: false, loadFailed: false, saving: false, savedPendingRefresh: false });
+      this.loadLocalProject();
+    }
+  }
+
+  currentScope = () => {
+    const projectId = this.props.projectId, generation = this.generation;
+    return { projectId, isCurrent: () => this._isMounted && this.generation === generation &&
+      this.props.projectId === projectId };
+  };
+
   isInline = () => this.props.inline || typeof this.props.onOk === 'function';
 
-  readLocalProject = async () => {
-    const res = await axios.get('/api/project/get', { params: { id: this.props.projectId } });
+  readLocalProject = async (projectId = this.props.projectId) => {
+    const res = await axios.get('/api/project/get', { params: { id: projectId } });
     if (!res.data || res.data.errcode !== 0 || !res.data.data) {
       throw new Error('环境加载失败，请重试');
     }
@@ -73,16 +103,19 @@ class ProjectEnv extends Component {
   };
 
   loadLocalProject = async () => {
+    const scope = this.currentScope();
     try {
-      const project = await this.readLocalProject();
-      if (!this._isMounted) return;
+      const project = await this.readLocalProject(scope.projectId);
+      if (!scope.isCurrent()) return;
       const env = Array.isArray(project.env) ? project.env : [];
       this.initState(env, project._id);
       this.handleClick(env.length ? 0 : -1, env[0] || {});
       this.setState({ canEdit: ['admin', 'owner', 'dev'].includes(project.role), loadFailed: false });
     } catch (err) {
-      if (this._isMounted) this.setState({ loadFailed: true });
-      message.error('环境加载失败，请重试');
+      if (scope.isCurrent()) {
+        this.setState({ loadFailed: true });
+        message.error('环境加载失败，请重试');
+      }
     }
   };
 
@@ -90,6 +123,7 @@ class ProjectEnv extends Component {
 
   componentWillUnmount() {
     this._isMounted = false;
+    this.generation++;
   }
 
   handleClick = (key, data) => {
@@ -136,42 +170,53 @@ class ProjectEnv extends Component {
   // 保存设置
   async onSave(assignValue, index) {
     if (!this.canMutate()) return false;
+    const scope = this.currentScope();
     this.saving = true;
     this.setState({ saving: true });
     try {
       const res = await this.props.updateEnv(assignValue);
+      // The write may already be committed; leaving the page only cancels refresh.
+      if (!scope.isCurrent()) return false;
       if (!res.payload || !res.payload.data || res.payload.data.errcode !== 0) {
         message.error('环境设置不成功，请重试');
         return false;
       }
-      this.savedReceipt = { assignValue, index };
+      this.savedReceipt = { assignValue, index, scope };
       if (this._isMounted) this.setState({ ...assignValue, savedPendingRefresh: true });
       return await this.refreshSaved();
     } catch (err) {
-      message.error('环境设置不成功，请重试');
+      if (scope.isCurrent()) message.error('环境设置不成功，请重试');
       return false;
     } finally {
-      this.saving = false;
-      if (this._isMounted) this.setState({ saving: false });
+      if (scope.isCurrent()) {
+        this.saving = false;
+        this.setState({ saving: false });
+      }
     }
   }
 
   refreshSaved = async () => {
     if (!this.savedReceipt || this.refreshing) return false;
+    const receipt = this.savedReceipt;
+    const { scope } = receipt;
+    if (!scope.isCurrent()) return false;
     this.refreshing = true;
     try {
-      const project = await this.readLocalProject();
+      const project = await this.readLocalProject(scope.projectId);
+      if (!scope.isCurrent()) return false;
       // Inline source projects must never replace the route project's Redux state.
       if (!this.isInline()) {
         for (const read of [this.props.getProject, this.props.getEnv]) {
-          const res = await read(this.props.projectId);
+          if (!scope.isCurrent()) return false;
+          const res = await read(scope.projectId, { isCurrent: scope.isCurrent });
+          if (!scope.isCurrent()) return false;
           if (!res.payload || !res.payload.data || res.payload.data.errcode !== 0) {
             throw new Error('refresh failed');
           }
         }
       }
-      if (!this._isMounted) return false;
-      const { index } = this.savedReceipt;
+      if (!scope.isCurrent() || this.savedReceipt !== receipt) return false;
+      const { index } = receipt;
       this.savedReceipt = null;
       const env = Array.isArray(project.env) ? project.env : [];
       this.setState({ env, savedPendingRefresh: false, canEdit: ['admin', 'owner', 'dev'].includes(project.role) });
@@ -179,10 +224,10 @@ class ProjectEnv extends Component {
       if (this.props.onOk && Number.isInteger(index)) this.props.onOk(env, index);
       return true;
     } catch (err) {
-      message.error('已保存，但加载失败，请重新加载');
+      if (scope.isCurrent()) message.error('已保存，但加载失败，请重新加载');
       return false;
     } finally {
-      this.refreshing = false;
+      if (scope.isCurrent()) this.refreshing = false;
     }
   };
 
