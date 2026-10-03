@@ -1,4 +1,5 @@
 'use strict';
+const {activeSchema}=require('./schema-mode');
 const {createHash}=require('node:crypto');
 const {toDocumentationDTO}=require('./read-service');
 function redactText(value) {
@@ -44,8 +45,8 @@ function outboundPayload(document) {
   for(const key of ['req_query','req_headers','req_params','req_body_form']) {
     if(dto[key])result[key]=dto[key].map(item=>Object.fromEntries(Object.entries(item).map(([name,value])=>[name,typeof value==='string'?redactText(value):value])));
   }
-  for(const [field,flag] of [['req_body_other','req_body_is_json_schema'],['res_body','res_body_is_json_schema']]) {
-    if(dto[flag]===true){try{result[field]=schemaView(JSON.parse(dto[field]));}catch{result[field]={omitted:'invalid or non-JSON schema'};}}
+  for(const field of ['req_body_other','res_body']) {
+    if(activeSchema(dto,field)){try{result[field]=schemaView(JSON.parse(dto[field]));}catch{result[field]={omitted:'invalid or non-JSON schema'};}}
     else if(dto[field])result[field]={omitted:'raw examples and response bodies are not transmitted'};
   }
   return result;

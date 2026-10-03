@@ -1,4 +1,5 @@
 'use strict';
+const {activeSchema}=require('./schema-mode');
 const {isDeepStrictEqual}=require('node:util');
 const IGNORED=new Set(['up_time','edit_uid','docs_history','docs_revision','docs_revision_head','__v']);
 // Compare parsed schema objects only if parsing cannot round a numeric token.
@@ -17,7 +18,7 @@ function exactNumbers(text) {
   }
 }
 function comparable(field,value,document) {
-  if((field==='res_body'&&document.res_body_is_json_schema===true||field==='req_body_other'&&document.req_body_is_json_schema===true)&&typeof value==='string') {
+  if((['res_body','req_body_other'].includes(field)&&activeSchema(document,field))&&typeof value==='string') {
     try{exactNumbers(value);return JSON.parse(value);}catch{return value;}
   }
   return value;
