@@ -74,7 +74,11 @@ export default class ProjectMock extends Component {
     if (result.payload.data.errcode === 0) {
       message.success('保存成功');
       try {
-        await this.props.getProject(this.props.projectId);
+        const refreshed = await this.props.getProject(this.props.projectId);
+        if (!refreshed || refreshed.error || !refreshed.payload || !refreshed.payload.data ||
+          refreshed.payload.data.errcode !== 0 || !refreshed.payload.data.data) {
+          message.error('保存成功，但刷新项目失败，请刷新页面');
+        }
       } catch (error) {
         message.error('保存成功，但刷新项目失败，请刷新页面');
       }

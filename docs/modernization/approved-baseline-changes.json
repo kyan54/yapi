@@ -149,6 +149,10 @@
     "server/controllers/project.js": {
       "baselineSha256": "d857f2153fa9a3ad8a8e3bb8fc7f2419c60150c282d4c7d855e4546d8f3b3da8",
       "reason": "Search checks live project visibility and returns only navigation labels/IDs, never environment or member payloads. Member addition requires existing owner/admin danger rights; real independent-role browser tests verify no denied writes and legitimate owner admission."
+    },
+    "server/controllers/group.js": {
+      "baselineSha256": "50cbbd60c6da38fef6fb326880e2a585af1b2b3a83a8be7ebcdcc4119d8977e0",
+      "reason": "Require existing owner or administrator danger authorization before admitting group members, preventing developer or guest privilege escalation while preserving legitimate membership management."
     }
   },
   "dependencies": {
