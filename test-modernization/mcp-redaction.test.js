@@ -22,3 +22,12 @@ test('MCP recursively inspects object-valued defaults/examples and discovery met
   const metadata=redactDiscovery([{_id:17,name:'Bearer secret-token',title:'password=private',path:'/v1?token=secret'}]);
   assert.equal(JSON.stringify(metadata).includes('secret-token'),false);assert.equal(JSON.stringify(metadata).includes('token=secret'),false);assert.equal(metadata[0]._id,17);
 });
+
+
+test('MCP tag metadata follows prose redaction and omits arbitrary nested payloads',()=>{
+  const result=redactMcpDocumentation({tag:['safe tag','token=example-secret',{password:'nested-secret'}]});
+  assert.deepEqual(result.tag,['safe tag','token=[REDACTED]']);
+  assert.equal(JSON.stringify(result).includes('example-secret'),false);
+  assert.equal(JSON.stringify(result).includes('nested-secret'),false);
+  assert.deepEqual(result.redactions.map(row=>row.path),['/tag/1','/tag/2']);
+});

@@ -50,6 +50,10 @@ function redactMcpDocumentation(dto) {
   }
   const result={...dto};
   for(const key of ['title','path','desc','markdown'])if(typeof result[key]==='string')result[key]=prose(result[key],'/'+key);
+  if (Array.isArray(result.tag)) result.tag=result.tag.flatMap((value,index)=>{
+    if(typeof value==='string')return [prose(value,'/tag/'+index)];
+    note('/tag/'+index,'Non-text tag metadata omitted');return [];
+  });
   for(const key of ['req_query','req_headers','req_params','req_body_form'])if(result[key])result[key]=result[key].map((item,index)=>{
     const next={...item};if(typeof next.desc==='string')next.desc=prose(next.desc,'/'+key+'/'+index+'/desc');
     note('/'+key+'/'+index+'/value','Runtime values and examples are not exposed');return next;
