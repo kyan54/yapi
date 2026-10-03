@@ -46,6 +46,7 @@ export class GroupList extends Component {
 
   state = {
     addGroupModalVisible: false,
+    addingGroup: false,
     newGroupName: '',
     newGroupDesc: '',
     currGroupName: '',
@@ -133,13 +134,16 @@ export class GroupList extends Component {
 
   @autobind
   showModal() {
+    this.modalVersion = (this.modalVersion || 0) + 1;
     this.setState({
       addGroupModalVisible: true
     });
   }
   @autobind
   hideModal() {
+    this.modalVersion = (this.modalVersion || 0) + 1;
     this.setState({
+      newGroupDesc: '',
       newGroupName: '',
       group_name: '',
       owner_uids: [],
@@ -148,21 +152,27 @@ export class GroupList extends Component {
   }
   @autobind
   async addGroup() {
+    if (this.addingGroup) return;
+    this.addingGroup = true;
+    const version = this.modalVersion;
+    this.setState({ addingGroup: true });
     const { newGroupName: group_name, newGroupDesc: group_desc, owner_uids } = this.state;
-    const res = await axios.post('/api/group/add', { group_name, group_desc, owner_uids });
-    if (!this.mounted) return;
-    if (!res.data.errcode) {
-      this.setState({
-        newGroupName: '',
-        group_name: '',
-        owner_uids: [],
-        addGroupModalVisible: false
-      });
-      await this.loadGroupList();
-      const id = resourceId(routeGroupId(this.props));
-      if (this.mounted && id) this.props.fetchNewsData(id, 'group', 1, 10);
-    } else {
-      message.error(res.data.errmsg);
+    try {
+      const res = await axios.post('/api/group/add', { group_name, group_desc, owner_uids });
+      if (!this.mounted) return;
+      if (!res.data.errcode) {
+        if (version === this.modalVersion) this.hideModal();
+        await this.loadGroupList();
+        const id = resourceId(routeGroupId(this.props));
+        if (this.mounted && id) this.props.fetchNewsData(id, 'group', 1, 10);
+      } else {
+        message.error(res.data.errmsg);
+      }
+    } catch (error) {
+      if (this.mounted) message.error('创建分组失败，请重试');
+    } finally {
+      this.addingGroup = false;
+      if (this.mounted) this.setState({ addingGroup: false });
     }
   }
   @autobind
@@ -216,7 +226,7 @@ export class GroupList extends Component {
       this.setState({ groupList });
     } else {
       this.setState({
-        groupList: groupList.filter(group => new RegExp(v, 'i').test(group.group_name))
+        groupList: groupList.filter(group => group.group_name.toLowerCase().includes(v.toLowerCase()))
       });
     }
   }
@@ -301,6 +311,7 @@ export class GroupList extends Component {
             title="添加分组"
             visible={this.state.addGroupModalVisible}
             onOk={this.addGroup}
+            confirmLoading={this.state.addingGroup}
             onCancel={this.hideModal}
             className="add-group-modal"
           >

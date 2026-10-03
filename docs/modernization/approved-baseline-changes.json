@@ -161,6 +161,10 @@
     "server/controllers/log.js": {
       "baselineSha256": "d0004b3b9224d814fe59b45fb67f62d86116c1746a9a7d2dfe5878fbfcdfdfd9",
       "reason": "Authorize live project log reads and import history before snapshots or counts; filter group history and pagination to currently visible projects and authorized group activity, preserving public and guest reads."
+    },
+    "exts/yapi-plugin-swagger-auto-sync/swaggerAutoSync/swaggerAutoSync.js": {
+      "baselineSha256": "e4bd147a72808687a8e28ba56c7244d0aae1b4a010886a92ba9ded2f27b08b63",
+      "reason": "Restore saved Swagger form values using the route project ID; enforce source edit UI gates, validate business responses, guard duplicate saves, retain committed refresh receipts, and show failed local sync execution status from authorized activity history."
     }
   },
   "dependencies": {
