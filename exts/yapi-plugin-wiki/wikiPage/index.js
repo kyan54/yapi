@@ -176,23 +176,31 @@ class WikiPage extends Component {
 
   // 数据上传
   onUpload = async (desc, markdown) => {
+    if (this.uploading) return;
+    this.uploading = true;
     const currProjectId = this.props.match.params.id;
-    let option = {
+    const option = {
       project_id: currProjectId,
       desc,
       markdown,
       email_notice: this.state.notice
     };
-    let result = await axios.post('/api/plugin/wiki_desc/up', option);
-    if (result.data.errcode === 0) {
-      await this.handleData({ project_id: currProjectId });
-      this.setState({ isEditor: false });
-    } else {
-      message.error(`更新失败： ${result.data.errmsg}`);
+    try {
+      const result = await axios.post('/api/plugin/wiki_desc/up', option);
+      if (result.data.errcode === 0) {
+        await this.handleData({ project_id: currProjectId });
+        this.setState({ isEditor: false });
+        this.endWebSocket();
+      } else {
+        message.error(`更新失败： ${result.data.errmsg}`);
+      }
+    } catch (error) {
+      message.error('更新失败，请重试');
+    } finally {
+      this.uploading = false;
     }
-    this.endWebSocket();
-    // this.WebSocket.send('end');
   };
+
   // 取消编辑
   onCancel = () => {
     this.setState({ isEditor: false });

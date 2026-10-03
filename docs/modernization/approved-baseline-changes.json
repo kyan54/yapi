@@ -153,6 +153,10 @@
     "server/controllers/group.js": {
       "baselineSha256": "50cbbd60c6da38fef6fb326880e2a585af1b2b3a83a8be7ebcdcc4119d8977e0",
       "reason": "Require existing owner or administrator danger authorization before admitting group members, preventing developer or guest privilege escalation while preserving legitimate membership management."
+    },
+    "exts/yapi-plugin-wiki/wikiPage/index.js": {
+      "baselineSha256": "6a60d07f3ab39918a83e06886ab840e41e5435df09e7b1d4957c5be576f40367",
+      "reason": "Prevent concurrent Wiki update requests and duplicate notifications with an in-flight guard; retain the editing session and draft after failed saves so a deliberate retry remains possible."
     }
   },
   "dependencies": {
