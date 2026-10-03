@@ -973,6 +973,14 @@ class interfaceController extends baseController {
     let waitingForPong = false;
     let renewing = false;
     let projectId;
+    const authenticatedUid = this.getUid();
+    const refreshPrincipal = async () => {
+      const current = await this.userModel.findById(authenticatedUid);
+      if (!current || Number(current._id) !== authenticatedUid) return false;
+      // The socket keeps the authenticated ID, but account existence and role are live.
+      this.$user = current;
+      return true;
+    };
     const send = data => {
       try { if (!closed && socket.readyState === 1) socket.send(JSON.stringify(data)); } catch (_) {}
     };
@@ -1002,7 +1010,7 @@ class interfaceController extends baseController {
         return;
       }
       projectId = result.project_id;
-      if ((await this.checkAuth(projectId, 'project', 'view')) !== true) {
+      if (!(await refreshPrincipal()) || (await this.checkAuth(projectId, 'project', 'view')) !== true) {
         send({ errno: 403, errmsg: '没有访问权限', data: {} });
         return;
       }
@@ -1013,7 +1021,7 @@ class interfaceController extends baseController {
       }
       if (closed) return;
       const now = Date.now();
-      const claimed = await this.Model.claimEditLock(id, projectId, this.getUid(), token, now, now + leaseMs);
+      const claimed = await this.Model.claimEditLock(id, projectId, authenticatedUid, token, now, now + leaseMs);
       if (!claimed) {
         send({ errno: 423, data: { username: '其他窗口或用户' } });
         return;
@@ -1029,7 +1037,7 @@ class interfaceController extends baseController {
         waitingForPong = false;
         renewing = true;
         try {
-          if ((await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+          if (!(await refreshPrincipal()) || (await this.checkAuth(projectId, 'project', 'edit')) !== true) {
             await stop('编辑权限已失效，请重新打开编辑页面。');
             return;
           }
