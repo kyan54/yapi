@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-4",
+  "scope": "A/interfaces/batches-1-5",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -28,48 +28,44 @@
     "final_ids": {
       "old": {
         "rows": [
-          940325,
-          940332
+          940633,
+          940640
         ],
         "paths": [
-          940339,
-          940346
+          940647,
+          940654
+        ],
+        "typed": [
+          940661,
+          940668
         ],
         "projects": [
-          930046,
-          930049,
-          930052
+          930085,
+          930088,
+          930091,
+          930094
         ]
       },
       "new": {
         "rows": [
-          940150,
-          940151
+          940317,
+          940321
         ],
         "paths": [
-          940152,
-          940153
+          940325,
+          940329
+        ],
+        "typed": [
+          940333,
+          940337
         ],
         "projects": [
-          930035,
-          930036,
-          930037
+          930059,
+          930061,
+          930063,
+          930065
         ]
       }
-    },
-    "final_list_projects": {
-      "old": [
-        930070,
-        930073,
-        930076,
-        930079
-      ],
-      "new": [
-        930049,
-        930051,
-        930053,
-        930055
-      ]
     },
     "reviewable_proxy_sources": {
       "old": "test-browser/fixtures/parity-interfaces/proxy-old.cjs",
@@ -77,7 +73,7 @@
     }
   },
   "tests": {
-    "passed": 24,
+    "passed": 28,
     "failed": 0,
     "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
     "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs.",
@@ -85,7 +81,7 @@
     "unit_command": "node --test test-modernization/interface-bulk-parameters.test.js test-modernization/interface-path-parameters.test.js test-modernization/interface-parity-preflight.test.js",
     "default_ci": "The three new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched.",
     "breakdown": {
-      "parameters": 14,
+      "parameters": 18,
       "list_filters_geometry_and_nonmember_boundaries": 10
     }
   },
@@ -137,6 +133,30 @@
         "guest"
       ],
       "checks": "Rename before to after, save/reload exact metadata; remove placeholder, save/reload empty metadata; guest path/metadata mutation denied."
+    },
+    {
+      "id": "interface_params-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Form file/text and required/optional toggles, automatic multipart/urlencoded Content-Type, save errcode0, visible success, API readback and reload; guest type write rejected with original fields retained."
+    },
+    {
+      "id": "interface_params-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Real drag reorder and rapid double-add/middle-delete for Query/Header/form rows; exact surviving values/order after successful save and reload; guest reordered query write rejected."
     }
   ],
   "legacy_defects": [
@@ -150,23 +170,24 @@
   ],
   "evidence": {
     "directory": "/Users/hujinwu/Documents/Codex/2026-10-03/task-4/interfaces",
-    "browser": "results.json",
+    "browser": "final-suite-results.json",
     "baseline_tagged_save": "baseline-results.json",
     "legacy_empty": "legacy-empty-trace.zip",
     "direct_db_readback": [
       "old-db-final.json",
       "new-db-final.json"
     ],
-    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed. Stable parameter screenshots normalized to scrollY=0 were captured separately; no whole-page equivalence claimed. List old/new owner screenshots manually reviewed: no row-selection/sort controls; category select layout differs and is pending local alignment. Final list layout restored single-line centered category arrow and borderless selectors; table row height aligned closely. Shared project navigation difference reported separately to integration owner.",
+    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed. Stable parameter screenshots normalized to scrollY=0 were captured separately; no whole-page equivalence claimed. List old/new owner screenshots manually reviewed: no row-selection/sort controls; category select layout differs and is pending local alignment. Final list layout restored single-line centered category arrow and borderless selectors; table row height aligned closely. Shared project navigation difference reported separately to integration owner. Final 1920x1080 typed/reordered Header screenshots manually viewed old/new: three rows readable without clipping; row alignment differs and scroll offsets differ, so no whole-page visual equivalence claimed.",
     "candidate_source": "image-source-sha256.txt matches baseline client/server/common/exts before local fix",
     "list_filters": "list-results.json",
-    "core_fixture_rerun": "results.json, all14 passed after missing-group repair and final proxy guard",
+    "core_fixture_rerun": "final-suite-results.json: formal guarded suite 28/28 passed",
     "list_db_readback": [
       "old-list-db.json",
       "new-list-db.json"
-    ]
+    ],
+    "final_source": "final-image-source-sha256.txt: running candidate source matches worktree product bytes"
   },
-  "remaining": "All assigned scenario IDs other than the six listed here remain notrun by this increment. Keep existing main-matrix evidence; no main matrix overwrite.",
+  "remaining": "All assigned scenario IDs other than the eight listed here remain notrun by this increment. Keep existing main-matrix evidence; no main matrix overwrite.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
