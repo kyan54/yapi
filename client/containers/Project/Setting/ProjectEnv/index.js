@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import axios from 'axios';
 import './index.scss';
 import { Icon, Layout, Tooltip, message, Row, Popconfirm, Empty, Button } from 'antd';
 const { Content, Sider } = Layout;
@@ -27,6 +28,7 @@ class ProjectEnv extends Component {
     getProject: PropTypes.func,
     projectMsg: PropTypes.object,
     onOk: PropTypes.func,
+    inline: PropTypes.bool,
     getEnv: PropTypes.func
   };
 
@@ -34,6 +36,10 @@ class ProjectEnv extends Component {
     super(props);
     this.state = {
       env: [],
+      canEdit: false,
+      loadFailed: false,
+      saving: false,
+      savedPendingRefresh: false,
       _id: null,
       currentEnvMsg: {},
       delIcon: null,
@@ -53,12 +59,34 @@ class ProjectEnv extends Component {
 
   async componentWillMount() {
     this._isMounted = true;
-    await this.props.getProject(this.props.projectId);
-    const { _id } = this.props.projectMsg;
-    const env = Array.isArray(this.props.projectMsg.env) ? this.props.projectMsg.env : [];
-    this.initState(env, _id);
-    this.handleClick(env.length ? 0 : -1, env[0] || {});
+    await this.loadLocalProject();
   }
+
+  isInline = () => this.props.inline || typeof this.props.onOk === 'function';
+
+  readLocalProject = async () => {
+    const res = await axios.get('/api/project/get', { params: { id: this.props.projectId } });
+    if (!res.data || res.data.errcode !== 0 || !res.data.data) {
+      throw new Error('环境加载失败，请重试');
+    }
+    return res.data.data;
+  };
+
+  loadLocalProject = async () => {
+    try {
+      const project = await this.readLocalProject();
+      if (!this._isMounted) return;
+      const env = Array.isArray(project.env) ? project.env : [];
+      this.initState(env, project._id);
+      this.handleClick(env.length ? 0 : -1, env[0] || {});
+      this.setState({ canEdit: ['admin', 'owner', 'dev'].includes(project.role), loadFailed: false });
+    } catch (err) {
+      if (this._isMounted) this.setState({ loadFailed: true });
+      message.error('环境加载失败，请重试');
+    }
+  };
+
+  canMutate = () => this.state.canEdit && !this.saving && !this.savedReceipt;
 
   componentWillUnmount() {
     this._isMounted = false;
@@ -73,6 +101,7 @@ class ProjectEnv extends Component {
 
   // 增加环境变量项
   addParams = (name, data) => {
+    if (!this.canMutate()) return;
     let newValue = {};
     data = { name: '新环境', domain: '', header: [] };
     newValue[name] = [].concat(data, this.state[name]);
@@ -82,6 +111,7 @@ class ProjectEnv extends Component {
 
   // 删除提示信息
   showConfirm(key, name) {
+    if (!this.canMutate()) return;
     let assignValue = this.delParams(key, name);
     this.onSave(assignValue);
   }
@@ -104,36 +134,68 @@ class ProjectEnv extends Component {
   };
 
   // 保存设置
-  async onSave(assignValue) {
-    await this.props
-      .updateEnv(assignValue)
-      .then(res => {
-        if (res.payload.data.errcode == 0) {
-          this.props.getProject(this.props.projectId);
-          this.props.getEnv(this.props.projectId);
-          message.success('修改成功! ');
-          if(this._isMounted) {
-            this.setState({ ...assignValue });
-          }
-        }
-      })
-      .catch(() => {
-        message.error('环境设置不成功 ');
-      });
+  async onSave(assignValue, index) {
+    if (!this.canMutate()) return false;
+    this.saving = true;
+    this.setState({ saving: true });
+    try {
+      const res = await this.props.updateEnv(assignValue);
+      if (!res.payload || !res.payload.data || res.payload.data.errcode !== 0) {
+        message.error('环境设置不成功，请重试');
+        return false;
+      }
+      this.savedReceipt = { assignValue, index };
+      if (this._isMounted) this.setState({ ...assignValue, savedPendingRefresh: true });
+      return await this.refreshSaved();
+    } catch (err) {
+      message.error('环境设置不成功，请重试');
+      return false;
+    } finally {
+      this.saving = false;
+      if (this._isMounted) this.setState({ saving: false });
+    }
   }
 
-  //  提交保存信息
-  onSubmit = (value, index) => {
-    let assignValue = {};
-    assignValue['env'] = [].concat(this.state.env);
-    assignValue['env'].splice(index, 1, value['env']);
-    assignValue['_id'] = this.state._id;
-    this.onSave(assignValue);
-    this.props.onOk && this.props.onOk(assignValue['env'], index);
+  refreshSaved = async () => {
+    if (!this.savedReceipt || this.refreshing) return false;
+    this.refreshing = true;
+    try {
+      const project = await this.readLocalProject();
+      // Inline source projects must never replace the route project's Redux state.
+      if (!this.isInline()) {
+        for (const read of [this.props.getProject, this.props.getEnv]) {
+          const res = await read(this.props.projectId);
+          if (!res.payload || !res.payload.data || res.payload.data.errcode !== 0) {
+            throw new Error('refresh failed');
+          }
+        }
+      }
+      if (!this._isMounted) return false;
+      const { index } = this.savedReceipt;
+      this.savedReceipt = null;
+      const env = Array.isArray(project.env) ? project.env : [];
+      this.setState({ env, savedPendingRefresh: false, canEdit: ['admin', 'owner', 'dev'].includes(project.role) });
+      message.success('修改成功! ');
+      if (this.props.onOk && Number.isInteger(index)) this.props.onOk(env, index);
+      return true;
+    } catch (err) {
+      message.error('已保存，但加载失败，请重新加载');
+      return false;
+    } finally {
+      this.refreshing = false;
+    }
+  };
+
+  // Only confirmed persistence and refresh may close the inline editor.
+  onSubmit = async (value, index) => {
+    const assignValue = { env: [].concat(this.state.env), _id: this.state._id };
+    assignValue.env.splice(index, 1, value.env);
+    return await this.onSave(assignValue, index);
   };
 
   // 动态修改环境名称
   handleInputChange = (value, currentKey) => {
+    if (!this.canMutate()) return;
     let newValue = [].concat(this.state.env);
     newValue[currentKey].name = value || '新环境';
     this.setState({ env: newValue });
@@ -142,6 +204,7 @@ class ProjectEnv extends Component {
   // 侧边栏拖拽
   handleDragMove = name => {
     return (data, from, to) => {
+      if (!this.canMutate()) return;
       let newValue = {
         [name]: data
       };
@@ -153,7 +216,9 @@ class ProjectEnv extends Component {
   };
 
   render() {
-    const { env, currentKey } = this.state;
+    const { env, currentKey, canEdit, loadFailed, saving, savedPendingRefresh } = this.state;
+    if (loadFailed) return <Button onClick={this.loadLocalProject}>重新加载环境</Button>;
+    if (!canEdit) return <Empty description="没有源项目环境编辑权限" />;
 
     const envSettingItems = env.map((item, index) => {
       return (
@@ -191,6 +256,9 @@ class ProjectEnv extends Component {
 
     return (
       <div className="m-env-panel">
+        {savedPendingRefresh && <div role="status">已保存，但加载尚未完成。
+          <Button onClick={this.refreshSaved}>重新加载</Button>
+        </div>}
         <Layout className="project-env">
           <Sider width={195} style={{ background: '#fff' }}>
             <div style={{ height: '100%', borderRight: 0 }}>
@@ -218,6 +286,7 @@ class ProjectEnv extends Component {
                   <Button type="primary" onClick={() => this.addParams('env')}>添加环境</Button>
                 </Empty>
               ) : <ProjectEnvContent
+                disabled={saving || savedPendingRefresh}
                 projectMsg={this.state.currentEnvMsg}
                 onSubmit={e => this.onSubmit(e, currentKey)}
                 handleEnvInput={e => this.handleInputChange(e, currentKey)}
