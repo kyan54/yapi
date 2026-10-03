@@ -89,6 +89,10 @@
     "server/controllers/interfaceCol.js": {
       "baselineSha256": "b53557299e3c31e90060320496c27e042a401e854040e9088f3a40e173b8db70",
       "reason": "Verify authenticated collection and interface project access before minting isolated HTTP broker scope; never trust client-supplied scope."
+    },
+    "server/middleware/mockServer.js": {
+      "baselineSha256": "1c9145c82518e3570e21c90d584b3b40495e3ba33f1f32cf6271911aa6b001c8",
+      "reason": "Koa3 strict response-header compatibility: omit absent CORS origin/requested headers and vary reflected origins; preserve actual Mock request handling."
     }
   },
   "dependencies": {

@@ -77,12 +77,24 @@ function parseCookie(str) {
   return null;
 }
 
+function setMockCors(ctx) {
+  const origin = ctx.request.header.origin;
+  // Koa 3 passes header values directly to Node. Missing Origin is normal for
+  // server-side/API clients and must not become an undefined response header.
+  if (typeof origin === 'string' && origin) {
+    ctx.set('Access-Control-Allow-Origin', origin);
+    ctx.set('Access-Control-Allow-Credentials', 'true');
+    ctx.vary('Origin');
+  }
+}
+
 function handleCorsRequest(ctx) {
   let header = ctx.request.header;
-  ctx.set('Access-Control-Allow-Origin', header.origin);
+  setMockCors(ctx);
   ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, HEADER, PATCH, OPTIONS');
-  ctx.set('Access-Control-Allow-Headers', header['access-control-request-headers']);
-  ctx.set('Access-Control-Allow-Credentials', true);
+  if (header['access-control-request-headers']) {
+    ctx.set('Access-Control-Allow-Headers', header['access-control-request-headers']);
+  }
   ctx.set('Access-Control-Max-Age', 1728000);
   ctx.body = 'ok';
 }
@@ -158,8 +170,7 @@ module.exports = async (ctx, next) => {
   paths.splice(0, 3);
   path = '/' + paths.join('/');
 
-  ctx.set('Access-Control-Allow-Origin', header.origin);
-  ctx.set('Access-Control-Allow-Credentials', true);
+  setMockCors(ctx);
 
   // ctx.set('Access-Control-Allow-Origin', '*');
 
