@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-12",
+  "scope": "A/interfaces/batches-1-13",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -154,6 +154,16 @@
       "default_skipped": 6,
       "default_failed": 0,
       "note": "Controller-only refinement. Prior full59 is batch11, not rerun as current61."
+    },
+    "batch13_current_candidate": {
+      "pending_browser_passed": 9,
+      "role_browser_passed": 10,
+      "failed": 0,
+      "validation_unit_passed": 12,
+      "default_passed": 325,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "Two current targeted browser runs; not a new full64 aggregate."
     }
   },
   "scenarios": [
@@ -290,7 +300,7 @@
       "status": "failed",
       "old": "failed",
       "new": "passed",
-      "checks": "Owner tree and developer table entry, guest boundary: cancel/close/Escape/reopen no writes; delayed in-flight double-click creates two legacy records but one candidate record/request. Candidate network+503 failures preserve form and allow retry. Batch11 menu/list/category in-flight guards with explicit pending hint and disabled Cancel/X/Escape/mask; real SPA back/cross-project late completion does not navigate or close new draft. Network/503 same-form retry passes. Six new cases, exact scoped DB readback; legacy duplicate defect retained failed."
+      "checks": "Owner tree and developer table entry, guest boundary: cancel/close/Escape/reopen no writes; delayed in-flight double-click creates two legacy records but one candidate record/request. Candidate network+503 failures preserve form and allow retry. Batch11 menu/list/category in-flight guards with explicit pending hint and disabled Cancel/X/Escape/mask; real SPA back/cross-project late completion does not navigate or close new draft. Network/503 same-form retry passes. Six new cases, exact scoped DB readback; legacy duplicate defect retained failed. Batch13 pending ownership starts before async validation; captured project/modal generation and disposed check suppress old validation callbacks. Three real-browser delayed validateFields Promise cases switch project then release old callback: zero stale POSTs, current draft still submits correctly;12 unit and10 role regressions pass."
     },
     {
       "id": "interface_edit_meta-02",
@@ -397,6 +407,14 @@
       "database": "interfaces/principal-final-db.json",
       "source_sha256": "interfaces/principal-source-sha256.json",
       "default": "interfaces/principal-default-tests.log"
+    },
+    "batch13": {
+      "pending_report": "interfaces/validation-final-results.json",
+      "role_report": "interfaces/validation-role-results.json",
+      "before": "interfaces/validation-before-results.json",
+      "database": "interfaces/validation-final-db.json",
+      "default": "interfaces/validation-default-tests.log",
+      "source_sha256": "interfaces/validation-source-sha256.json"
     }
   },
   "remaining": "Unlisted original assertions remain notrun: metadata validation/save lifecycle, Body/JSON5/preview/F9, notes, remaining tree navigation and additional Schema controls. Raw hidden-Schema flag overwrite reproduced; Docs active-type counterpart coordinated with B. Preserve original246 matrix.",
