@@ -219,19 +219,25 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
 export default function SchemaEditor({ data, onChange, onValidityChange }) {
   const input = data === '' || data == null ? JSON.stringify({ type: 'object', properties: {} }, null, 2) : typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   const [text, setText] = React.useState(input);
+  const [generation, setGeneration] = React.useState(0);
   const [error, setError] = React.useState('');
   const [importOpen, setImportOpen] = React.useState(false);
   const [importText, setImportText] = React.useState('');
   const [importKind, setImportKind] = React.useState('example');
   const [importError, setImportError] = React.useState('');
-  React.useEffect(() => { setText(input); setError(''); }, [input]);
+  React.useEffect(() => {
+    // An external document replacement retires all node dialogs, including
+    // ones still closing. A controlled echo of our own Apply keeps focus.
+    if (input !== text) { setGeneration(value => value + 1); setText(input); }
+    setError('');
+  }, [input]);
   const parsed = React.useMemo(() => { try { return { value: parseSchema(text), valid: true }; } catch (_) { return { valid: false }; } }, [text]);
   React.useEffect(() => { if (onValidityChange) onValidityChange(parsed.valid); }, [parsed.valid, onValidityChange]);
   const update = value => { const next = JSON.stringify(value, null, 2); setText(next); setError(''); onChange(next); };
   return <div className="schema-editor-modern">
     <Button type="primary" onClick={() => { setImportOpen(true); setImportText(''); setImportError(''); }}>导入 JSON</Button>
     <Tabs items={[
-      { key: 'visual', label: '可视化 Schema', children: parsed.valid ? <div className="schema-tree-scroll"><NodeEditor schema={parsed.value} onChange={update} /></div> : <Alert type="error" title="Schema JSON 无效，请在 JSON 模式修复。" /> },
+      { key: 'visual', label: '可视化 Schema', children: parsed.valid ? <div className="schema-tree-scroll"><NodeEditor key={generation} schema={parsed.value} onChange={update} /></div> : <Alert type="error" title="Schema JSON 无效，请在 JSON 模式修复。" /> },
       { key: 'json', label: 'JSON（完整 Schema）', children: <React.Fragment><Input.TextArea aria-label="JSON Schema" rows={14} value={text} onChange={event => { const next = event.target.value; setText(next); try { parseSchema(next); setError(''); onChange(next); } catch (e) { setError(e.message); } }} />{error && <Alert type="error" title={error} />}</React.Fragment> }
     ]} />
     <Modal title="导入 JSON" open={importOpen} mask={{ closable: false }} onCancel={() => setImportOpen(false)} okText="导入并替换" cancelText="取消" onOk={() => {
