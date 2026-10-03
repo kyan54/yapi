@@ -1,6 +1,5 @@
 const yapi = require('yapi.js');
 const baseModel = require('models/base.js');
-const  mongoose = require('mongoose');
 
 class syncModel extends baseModel {
   getName() {
@@ -28,16 +27,14 @@ class syncModel extends baseModel {
     };
   }
 
+  get(id) {
+    return this.model.findOne({ _id: id });
+  }
+
   getByProjectId(id) {
     return this.model.findOne({
       project_id: id
     }) 
-  }
-
-  delByProjectId(project_id){
-    return this.model.remove({
-      project_id: project_id
-    })
   }
 
   save(data) {
@@ -56,31 +53,31 @@ class syncModel extends baseModel {
       .exec();
   }
 
-  up(data) {
+  up(data, scope = {}) {
+    data = Object.assign({}, data);
     let id = data.id;
     delete data.id;
     data.up_time = yapi.commons.time();
-    return this.model.update({
-      _id: id
-    }, data)
+    return this.updateDocuments(Object.assign({ _id: id }, scope), data)
   }
 
   upById(id, data) {
+    data = Object.assign({}, data);
     delete data.id;
     data.up_time = yapi.commons.time();
-    return this.model.update({
+    return this.updateDocuments({
       _id: id
     }, data)
   }
 
   del(id){
-    return this.model.remove({
+    return this.removeDocuments({
       _id: id
     })
   }
 
   delByProjectId(projectId){
-    return this.model.remove({
+    return this.removeDocuments({
       project_id: projectId
     })
   }

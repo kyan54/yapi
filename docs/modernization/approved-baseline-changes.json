@@ -72,7 +72,7 @@
     },
     "exts/yapi-plugin-wiki/controller.js": {
       "baselineSha256": "1285859200eb0aa5c7d2ea25f879b98d7a8351e7d2477ceefbdcda4b552c19e2",
-      "reason": "Koa3 origin-header semantic change: build trusted site URL from protocol and host."
+      "reason": "Resolve actual project/interface/record before read/write ACL; reject forged IDs and capture authenticated scheduled-job owner."
     },
     "exts/yapi-plugin-import-swagger/run.js": {
       "baselineSha256": "feb266090545252bd7a4f640a9247e94045a157027741add851ac6491e5bab61",
@@ -93,6 +93,34 @@
     "server/middleware/mockServer.js": {
       "baselineSha256": "1c9145c82518e3570e21c90d584b3b40495e3ba33f1f32cf6271911aa6b001c8",
       "reason": "Koa3 strict response-header compatibility: omit absent CORS origin/requested headers and vary reflected origins; preserve actual Mock request handling."
+    },
+    "exts/yapi-plugin-advanced-mock/advMockModel.js": {
+      "baselineSha256": "ae0adceaff799987c5b3db6eb2935e81c2276b9764927b6014c24edcb01b5158",
+      "reason": "Migrate removed Mongoose update/remove APIs using legacy-result-preserving helpers; scope plugin writes to verified target identity."
+    },
+    "exts/yapi-plugin-advanced-mock/caseModel.js": {
+      "baselineSha256": "419d4e3a8e1c6a35a6cf6d14391a926d2b291c4c648e48f18e033dcf40de3895",
+      "reason": "Migrate removed Mongoose update/remove APIs using legacy-result-preserving helpers; scope plugin writes to verified target identity."
+    },
+    "exts/yapi-plugin-swagger-auto-sync/syncModel.js": {
+      "baselineSha256": "a998089c0f2ca8729fcdacff75c4fdb6abbbb8a9681e71dee098fa784df8a646",
+      "reason": "Migrate removed Mongoose update/remove APIs using legacy-result-preserving helpers; scope plugin writes to verified target identity."
+    },
+    "exts/yapi-plugin-wiki/wikiModel.js": {
+      "baselineSha256": "6fa08065de6186032e04cb0714832c4cccd8adaaf8447ee866d663b48f35ff23",
+      "reason": "Migrate removed Mongoose update/remove APIs using legacy-result-preserving helpers; scope plugin writes to verified target identity."
+    },
+    "exts/yapi-plugin-advanced-mock/controller.js": {
+      "baselineSha256": "481f1cbb33d4c06ab48368c1e789d64b83ee33588874fba946ba633d3fe1765c",
+      "reason": "Resolve actual project/interface/record before read/write ACL; reject forged IDs and capture authenticated scheduled-job owner."
+    },
+    "exts/yapi-plugin-swagger-auto-sync/controller/syncController.js": {
+      "baselineSha256": "566905fc135d4839ca2b9e68f6ace73a97f5228d8c1256b6ab9a96e2d5a9352d",
+      "reason": "Resolve actual project/interface/record before read/write ACL; reject forged IDs and capture authenticated scheduled-job owner."
+    },
+    "exts/yapi-plugin-swagger-auto-sync/interfaceSyncUtils.js": {
+      "baselineSha256": "11d015c0a94b6e11a7a6b0ce141b6f85a486f71f0387746a4c438f70b1828354",
+      "reason": "Preserve actual scheduled Swagger imports with validated cron, normalized timer keys, safe async failure propagation and current hash/timestamp persistence."
     }
   },
   "dependencies": {

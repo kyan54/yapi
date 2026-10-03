@@ -25,13 +25,13 @@ class advMockModel extends baseModel {
   }
 
   delByInterfaceId(interface_id) {
-    return this.model.remove({
+    return this.removeDocuments({
       interface_id: interface_id
     });
   }
 
   delByProjectId(project_id){
-    return this.model.remove({
+    return this.removeDocuments({
       project_id: project_id
     })
   }
@@ -43,9 +43,11 @@ class advMockModel extends baseModel {
   }
 
   up(data) {
+    data = Object.assign({}, data);
     data.up_time = yapi.commons.time();
-    return this.model.update({
-      interface_id: data.interface_id
+    return this.updateDocuments({
+      interface_id: data.interface_id,
+      project_id: data.project_id
     }, {
         uid: data.uid,
         up_time: data.up_time,

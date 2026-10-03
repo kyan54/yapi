@@ -18,18 +18,18 @@ class syncUtils {
         this.syncModel = yapi.getInst(syncModel);
         this.tokenModel = yapi.getInst(tokenModel)
         this.projectModel = yapi.getInst(projectModel);
-        this.init()
+        // Startup has no caller to await it, so keep a handled promise for errors.
+        this.ready = this.init().catch(error => {
+            yapi.commons.log('初始化自动同步任务失败: ' + error.message, 'error');
+        });
     }
 
     //初始化定时任务
     async init() {
         let allSyncJob = await this.syncModel.listAll();
-        for (let i = 0, len = allSyncJob.length; i < len; i++) {
-            let syncItem = allSyncJob[i];
-            if (syncItem.is_sync_open) {
-                this.addSyncJob(syncItem.project_id, syncItem.sync_cron, syncItem.sync_json_url, syncItem.sync_mode, syncItem.uid);
-            }
-        }
+        await Promise.all(allSyncJob.filter(item => item.is_sync_open).map(item =>
+            this.addSyncJob(item.project_id, item.sync_cron, item.sync_json_url, item.sync_mode, item.uid)
+        ));
     }
 
     /**
@@ -41,99 +41,124 @@ class syncUtils {
      * @param {*} uid 用户id
      */
     async addSyncJob(projectId, cronExpression, swaggerUrl, syncMode, uid) {
-        if(!swaggerUrl)return;
-        let projectToken = await this.getProjectToken(projectId, uid);
-        //立即执行一次
-        this.syncInterface(projectId, swaggerUrl, syncMode, uid, projectToken);
-        let scheduleItem = schedule.scheduleJob(cronExpression, async () => {
-            this.syncInterface(projectId, swaggerUrl, syncMode, uid, projectToken);
-        });
+        const run = async () => {
+            try {
+                // Derive the token with the scheduled owner's uid on every run.
+                const projectToken = await this.getProjectToken(projectId, uid);
+                if (!projectToken) throw new Error('获取项目 token 失败');
+                return await this.syncInterface(projectId, swaggerUrl, syncMode, uid, projectToken);
+            } catch (error) {
+                return this.reportSyncFailure(error, syncMode, uid, projectId);
+            }
+        };
 
-        //判断是否已经存在这个任务
-        let jobItem = jobMap.get(projectId);
-        if (jobItem) {
-            jobItem.cancel();
+        try {
+            if (!swaggerUrl) throw new Error('缺少 Swagger URL');
+            const scheduleItem = schedule.scheduleJob(cronExpression, run);
+            if (!scheduleItem) throw new Error('无效的自动同步 cron 表达式');
+
+            // Do not replace a working job with node-schedule's null result.
+            this.deleteSyncJob(projectId);
+            jobMap.set(String(projectId), scheduleItem);
+            await run();
+            return scheduleItem;
+        } catch (error) {
+            await this.reportSyncFailure(error, syncMode, uid, projectId);
+            return null;
         }
-        jobMap.set(projectId, scheduleItem);
     }
 
     //同步接口
     async syncInterface(projectId, swaggerUrl, syncMode, uid, projectToken) {
         yapi.commons.log('定时器触发, syncJsonUrl:' + swaggerUrl + ",合并模式:" + syncMode);
-        let oldPorjectData;
         try {
-            oldPorjectData = await this.projectModel.get(projectId);
-        } catch(e) {
-            yapi.commons.log('获取项目:' + projectId + '失败');
-            this.deleteSyncJob(projectId);
-            //删除数据库定时任务
-            await this.syncModel.delByProjectId(projectId);
-            return;
-        }
-        //如果项目已经删除了
-        if (!oldPorjectData) {
-            yapi.commons.log('项目:' + projectId + '不存在');
-            this.deleteSyncJob(projectId);
-            //删除数据库定时任务
-            await this.syncModel.delByProjectId(projectId);
-            return;
-        }
-        let newSwaggerJsonData;
-        try {
-            newSwaggerJsonData = await this.getSwaggerContent(swaggerUrl)
-            if (!newSwaggerJsonData || typeof newSwaggerJsonData !== 'object') {
-                yapi.commons.log('数据格式出错，请检查')
-                this.saveSyncLog(0, syncMode, "数据格式出错，请检查", uid, projectId);
+            const project = await this.projectModel.get(projectId);
+            // Only a confirmed missing project permits deleting its saved job.
+            // A rejected database query is transient and must retain the job.
+            if (!project) {
+                await this.syncModel.delByProjectId(projectId);
+                this.deleteSyncJob(projectId);
+                throw new Error('项目:' + projectId + '不存在');
             }
-            newSwaggerJsonData = JSON.stringify(newSwaggerJsonData)
-        } catch (e) {
-            this.saveSyncLog(0, syncMode, "获取数据失败，请检查", uid, projectId);
-            yapi.commons.log('获取数据失败' + e.message)
-        }
 
-        let oldSyncJob = await this.syncModel.getByProjectId(projectId);
+            const oldSyncJob = await this.syncModel.getByProjectId(projectId);
+            if (!oldSyncJob || oldSyncJob.is_sync_open === false) {
+                this.deleteSyncJob(projectId);
+                if (!oldSyncJob) throw new Error('项目:' + projectId + '的自动同步配置不存在');
+                return { errcode: 0, skipped: true };
+            }
 
-        //更新之前判断本次swagger json数据是否跟上次的相同,相同则不更新
-        if (newSwaggerJsonData && oldSyncJob.old_swagger_content && oldSyncJob.old_swagger_content == md5(newSwaggerJsonData)) {
-            //记录日志
-            // this.saveSyncLog(0, syncMode, "接口无更新", uid, projectId);
-            oldSyncJob.last_sync_time = yapi.commons.time();
-            await this.syncModel.upById(oldSyncJob._id, oldSyncJob);
-            return;
-        }
+            const swaggerContent = await this.getSwaggerContent(swaggerUrl);
+            if (!swaggerContent || typeof swaggerContent !== 'object' || Array.isArray(swaggerContent)) {
+                throw new Error('数据格式出错，请检查 Swagger JSON');
+            }
+            const newSwaggerJsonData = JSON.stringify(swaggerContent);
+            const hash = md5(newSwaggerJsonData);
+            if (oldSyncJob.old_swagger_content === hash) {
+                const updated = await this.syncModel.upById(oldSyncJob._id, {
+                    last_sync_time: yapi.commons.time()
+                });
+                if (updated && (updated.n === 0 || updated.ok === 0)) {
+                    throw new Error('更新自动同步时间失败，配置可能已删除');
+                }
+                return { errcode: 0, unchanged: true };
+            }
 
-        let _params = {
-            type: 'swagger',
-            json: newSwaggerJsonData,
-            project_id: projectId,
-            merge: syncMode,
-            token: projectToken
-        }
-        let requestObj = {
-            params: _params
-        };
-        await this.openController.importData(requestObj);
+            const requestObj = {
+                params: {
+                    type: 'swagger',
+                    json: newSwaggerJsonData,
+                    project_id: projectId,
+                    merge: syncMode,
+                    token: projectToken
+                }
+            };
+            await this.openController.importData(requestObj);
+            const result = requestObj.body;
+            if (!result || result.errcode === undefined || result.errcode === null) {
+                throw new Error('Swagger 导入未返回有效结果');
+            }
+            if (result.errcode !== 0 && result.errcode !== '0') {
+                throw new Error('Swagger 导入失败 (' + result.errcode + '): ' + (result.errmsg || '未知错误'));
+            }
 
-        //同步成功就更新同步表的数据
-        if (requestObj.body.errcode == 0) {
-            //修改sync_model的属性
-            oldSyncJob.last_sync_time = yapi.commons.time();
-            oldSyncJob.old_swagger_content = md5(newSwaggerJsonData);
-            await this.syncModel.upById(oldSyncJob._id, oldSyncJob);
+            // Do not pass a Mongoose document to the update helper or overwrite
+            // concurrent configuration changes with the pre-import snapshot.
+            const updated = await this.syncModel.upById(oldSyncJob._id, {
+                last_sync_time: yapi.commons.time(),
+                old_swagger_content: hash
+            });
+            if (updated && (updated.n === 0 || updated.ok === 0)) {
+                throw new Error('更新自动同步状态失败，配置可能已删除');
+            }
+            await this.saveSyncLog(0, syncMode, result.errmsg, uid, projectId);
+            return result;
+        } catch (error) {
+            return this.reportSyncFailure(error, syncMode, uid, projectId);
         }
-        //记录日志
-        this.saveSyncLog(requestObj.body.errcode, syncMode, requestObj.body.errmsg, uid, projectId);
+    }
+
+    async reportSyncFailure(error, syncMode, uid, projectId) {
+        const message = error && error.message ? error.message : String(error);
+        yapi.commons.log('自动同步项目:' + projectId + '失败: ' + message, 'error');
+        try {
+            await this.saveSyncLog(1, syncMode, message, uid, projectId);
+        } catch (logError) {
+            yapi.commons.log('保存自动同步日志失败: ' + logError.message, 'error');
+        }
+        return { errcode: 1, errmsg: message };
     }
 
     getSyncJob(projectId) {
-        return jobMap.get(projectId);
+        return jobMap.get(String(projectId));
     }
 
     deleteSyncJob(projectId) {
-        let jobItem = jobMap.get(projectId);
+        let jobItem = jobMap.get(String(projectId));
         if (jobItem) {
             jobItem.cancel();
         }
+        jobMap.delete(String(projectId));
     }
 
     /**
@@ -145,7 +170,7 @@ class syncUtils {
      * @param {*} projectId 
      */
     saveSyncLog(errcode, syncMode, moremsg, uid, projectId) {
-        yapi.commons.saveLog({
+        return yapi.commons.saveLog({
             content: '自动同步接口状态:' + (errcode == 0 ? '成功,' : '失败,') + "合并模式:" + this.getSyncModeName(syncMode) + ",更多信息:" + moremsg,
             type: 'project',
             uid: uid,
@@ -179,6 +204,7 @@ class syncUtils {
 
             return token;
         } catch (err) {
+            yapi.commons.log('获取项目:' + project_id + ' token 失败: ' + err.message, 'error');
             return "";
         }
     }
@@ -203,16 +229,17 @@ class syncUtils {
     }
 
     async getSwaggerContent(swaggerUrl) {
-        const axios = require('axios')
+        const axios = require('axios');
         try {
-            let response = await axios.get(swaggerUrl);
-            if (response.status > 400) {
-                throw new Error(`http status "${response.status}"` + '获取数据失败，请确认 swaggerUrl 是否正确')
+            // Private-network Swagger URLs are an intentional deployment feature.
+            const response = await axios.get(swaggerUrl, { timeout: 30000 });
+            if (!response || !Number.isInteger(response.status) || response.status < 200 || response.status >= 300) {
+                throw new Error('http status "' + (response && response.status) + '"');
             }
             return response.data;
-        } catch (e) {
-            let response = e.response || {status: e.message || 'error'};
-            throw new Error(`http status "${response.status}"` + '获取数据失败，请确认 swaggerUrl 是否正确')
+        } catch (error) {
+            const detail = error.response ? 'http status "' + error.response.status + '"' : error.message;
+            throw new Error('获取 Swagger 数据失败，请确认 swaggerUrl 是否正确: ' + detail);
         }
     }
 
