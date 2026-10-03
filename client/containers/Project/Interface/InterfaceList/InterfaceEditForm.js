@@ -409,6 +409,7 @@ class InterfaceEditForm extends Component {
     this.editor = new Editor({
       el: this.remarkEditorElement,
       initialEditType: 'wysiwyg',
+      autofocus: false,
       usageStatistics: false,
       height: '500px',
       initialValue: this.state.markdown || ''
