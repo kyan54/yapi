@@ -1,0 +1,64 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "base": "e5f163ac21ff1eb5a110e09f83ce98733eb14956",
+  "scope": "B confirmed Docs save receipt and nested sequential variables",
+  "complete": false,
+  "rows": [
+    {
+      "id": "ai_proposal-03",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "newOnly": true,
+      "detail": "Amends stage7 with confirmed mutation success followed by business/network get failures. Immediate proposal/consent/confirmation clear and exactly one parent refresh; two read retries issue no further mutation. Version advances once and scoped Mongo readback matches. Restore also covers history read failure."
+    },
+    {
+      "id": "ai_history-03",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "newOnly": true,
+      "detail": "Amends stage7 with confirmed mutation success followed by business/network get failures. Immediate proposal/consent/confirmation clear and exactly one parent refresh; two read retries issue no further mutation. Version advances once and scoped Mongo readback matches. Restore also covers history read failure."
+    },
+    {
+      "id": "ai_history-04",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "newOnly": true,
+      "detail": "Amends stage7 with confirmed mutation success followed by business/network get failures. Immediate proposal/consent/confirmation clear and exactly one parent refresh; two read retries issue no further mutation. Version advances once and scoped Mongo readback matches. Restore also covers history read failure."
+    }
+  ],
+  "partialEvidence": [
+    {
+      "ids": [
+        "runner_variables-01",
+        "runner_variables-02",
+        "runner_variables-03",
+        "collection_rules-02",
+        "collection_run-01"
+      ],
+      "old": "passed",
+      "new": "passed",
+      "detail": "UI selects previous-case body.query.first, upper function, cancel preserves input; explicitly included optional query persists. Actual sequential run resolves global.seed then prior response, second run and refreshed Request/Response/validation report match Mongo. Other compound fields and C global-variable CRUD still require composition; no whole-compound pass claimed."
+    }
+  ],
+  "fixes": [
+    "Confirmed Docs mutation acknowledged before follow-up reads; recovery read-only until get and history both succeed.",
+    "Nested variable selection preserves ancestor expansion keys in modern Tree."
+  ],
+  "validation": {
+    "basicPassed": 32,
+    "modernizationPassed": 318,
+    "modernizationSkipped": 6,
+    "docs": "docs-stage9.json: new5pass",
+    "sequential": "sequential-stage9-final.json: old1pass/new1pass",
+    "visual": "1920x1080 Docs failure receipt readable, one-shot actions absent; paired collection report table layout reviewed. New order column and typography differ from old; no pixel-equality claim."
+  },
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "limits": [
+    "No custom scripts, no vm2. Declarative variables and upper filter only.",
+    "Test image retains C ffecc5e ProjectEnv overlay, not included in B branch.",
+    "Earlier sequential-stage9 failure was harness omission of optional query inclusion after clearing, superseded by explicit checkbox final run."
+  ]
+}

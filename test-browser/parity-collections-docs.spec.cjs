@@ -32,3 +32,57 @@ test('AI history renders incomplete legacy snapshots explicitly and safe field t
 test('AI restore lost response retry never creates a duplicate revision',async({page},info)=>{const f=await setup(page,0);await api(page,'/api/interface/up',{id:f.iface,markdown:'Restore transport fixture'});const before=await docs(page,f,'get');const d=await openDocs(page,f);await d.getByRole('button',{name:'查看历史与恢复',exact:true}).click();await d.getByRole('button',{name:'恢复原始文档（版本 0）',exact:true}).click();const confirm=page.getByRole('dialog',{name:'确认恢复文档',exact:true});const requests=[];await page.route('**/api/documentation/restore',async r=>{requests.push(r.request().postDataJSON());if(requests.length===1){const response=await r.fetch();expect((await response.json()).errcode).toBe(0);await r.abort('failed');}else await r.continue();});await confirm.getByRole('button',{name:/确认恢复$/}).click();await expect(d).toContainText('Network Error');await expect(confirm).toBeVisible();const retry=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/documentation/restore');await confirm.getByRole('button',{name:/确认恢复$/}).click();expect((await(await retry).json()).errcode).toBe(409);expect(requests[0].expectedVersion).toBe(before.document.version);expect(requests[1]).toEqual(requests[0]);expect((await docs(page,f,'get')).document.version).toBe(before.document.version+1);await expect(confirm).toHaveCount(0);await page.screenshot({path:info.outputPath('ai-restore-retry.png'),animations:'disabled'});});
 
 test('AI guest reads review but cannot generate accept or restore',async({page},info)=>{const f=await setup(page,0);await api(page,'/api/project/add_member',{id:f.project,member_uids:[910004],role:'guest'});await login(page,'outsider');const d=await openDocs(page,f);await d.getByRole('checkbox').check();const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/documentation/proposal');await d.getByRole('button',{name:/生成文档建议$/}).click();expect((await(await response).json()).errcode).toBe(403);await expect(d).toContainText('FORBIDDEN');const before=await docs(page,f,'get');for(const [action,body] of[['accept',{proposalId:'synthetic-invalid'}],['restore',{version:0,expectedVersion:before.document.version}]]){const denied=await(await page.request.post('/api/documentation/'+action,{headers:{'X-YApi-Docs-Intent':'review'},data:{projectId:f.project,interfaceId:f.iface,...body}})).json();expect(denied.errcode).toBe(403);}expect((await docs(page,f,'get')).document.version).toBe(before.document.version);await page.screenshot({path:info.outputPath('ai-guest-denied.png'),animations:'disabled'});});
+
+for(const action of ['accept','restore'])for(const failure of ['business','network'])test(`AI saved ${action} receipt survives ${failure} read failures and retries reads only`,async({page},info)=>{
+  const f=await setup(page,0);
+  await api(page,'/api/project/add_member',{id:f.project,member_uids:[910003],role:'dev'});
+  await login(page,'developer');
+  const before=await docs(page,f,'get');
+  const d=await openDocs(page,f);
+  if(action==='accept'){
+    await d.getByRole('checkbox').check();
+    await saveResponse(page,'/api/documentation/proposal',()=>d.getByRole('button',{name:/生成文档建议$/}).click());
+  }else{
+    await d.getByRole('button',{name:'查看历史与恢复',exact:true}).click();
+    await d.getByRole('checkbox').check();
+    await d.getByRole('button',{name:'恢复原始文档（版本 0）',exact:true}).click();
+  }
+  let writes=0,parentReads=0,readFailures=0;
+  page.on('request',r=>{const u=new URL(r.url());if(u.pathname==='/api/documentation/'+action)writes++;if(writes&&u.pathname==='/api/interface/get'&&u.searchParams.get('id')===String(f.iface))parentReads++;});
+  await page.route('**/api/documentation/get?*',async r=>{
+    if(writes&&readFailures<2){readFailures++;if(failure==='network')await r.abort('failed');else await r.fulfill({json:{errcode:500,errmsg:'Synthetic read failure'}});}
+    else await r.continue();
+  });
+  await saveResponse(page,'/api/documentation/'+action,()=>action==='accept'?d.getByRole('button',{name:'审核完成，采纳此建议',exact:true}).click():page.getByRole('dialog',{name:'确认恢复文档',exact:true}).getByRole('button',{name:/确认恢复$/}).click());
+  await expect(d).toContainText('文档已保存，但读取失败');
+  await expect(d.getByRole('region',{name:'AI 文档建议预览'})).toHaveCount(0);
+  await expect(page.getByRole('dialog',{name:'确认恢复文档',exact:true})).toHaveCount(0);
+  await expect(d.getByRole('checkbox')).not.toBeChecked();
+  await expect(d.getByRole('checkbox')).toBeDisabled();
+  await expect.poll(()=>parentReads).toBe(1);
+  const retry=d.getByRole('button',{name:'重新加载已保存文档',exact:true});
+  await retry.click();await expect.poll(()=>readFailures).toBe(2);await expect(retry).toBeEnabled();
+  await expect(d).toContainText('文档已保存，但读取失败');expect(writes).toBe(1);expect(parentReads).toBe(1);
+  await page.screenshot({path:info.outputPath(`ai-${action}-${failure}-saved-receipt.png`),animations:'disabled'});
+  await retry.click();await expect(retry).toHaveCount(0);await expect(d.getByRole('checkbox')).toBeEnabled();
+  expect(writes).toBe(1);expect(parentReads).toBe(1);
+  await page.unroute('**/api/documentation/get?*');
+  const after=await docs(page,f,'get');expect(after.document.version).toBe(before.document.version+1);
+  if(action==='accept')expect(after.document.markdown).toContain('Controlled local fixture');
+  else expect(after.document.markdown||'').toBe('');
+  await d.locator('.ant-modal-close').click();await page.getByTestId('documentation-ai-button').click();await expect(d).toContainText('版本 '+after.document.version);
+  expect(writes).toBe(1);
+});
+
+test('AI saved restore history failure keeps receipt until document and history reload',async({page},info)=>{
+  const f=await setup(page,0),before=await docs(page,f,'get'),d=await openDocs(page,f);
+  await d.getByRole('button',{name:'查看历史与恢复',exact:true}).click();
+  await d.getByRole('button',{name:'恢复原始文档（版本 0）',exact:true}).click();
+  let writes=0,failures=0;page.on('request',r=>{if(new URL(r.url()).pathname==='/api/documentation/restore')writes++;});
+  await page.route('**/api/documentation/history?*',async r=>{if(writes&&failures++<1)await r.fulfill({json:{errcode:500,errmsg:'Synthetic history failure'}});else await r.continue();});
+  await saveResponse(page,'/api/documentation/restore',()=>page.getByRole('dialog',{name:'确认恢复文档',exact:true}).getByRole('button',{name:/确认恢复$/}).click());
+  await expect(d).toContainText('文档已保存，但读取失败');await expect(d.getByRole('button',{name:'恢复原始文档（版本 0）',exact:true})).toBeDisabled();
+  await d.getByRole('button',{name:'重新加载已保存文档',exact:true}).click();await expect(d.getByRole('button',{name:'重新加载已保存文档',exact:true})).toHaveCount(0);
+  expect(writes).toBe(1);expect((await docs(page,f,'get')).document.version).toBe(before.document.version+1);
+  await page.screenshot({path:info.outputPath('ai-restored-history-recovered.png'),animations:'disabled'});
+});
