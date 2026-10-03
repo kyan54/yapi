@@ -1,10 +1,11 @@
 {
-  "scope": "A/interfaces/batch-1",
+  "scope": "A/interfaces/batches-1-2",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
     "owner",
-    "developer"
+    "developer",
+    "guest"
   ],
   "ports": {
     "old": 4184,
@@ -19,13 +20,42 @@
     "date": "2026-10-03",
     "interface_id": 901016,
     "tag": [],
-    "note": "Dedicated synthetic DBs only. Baseline tag save errors retained separately; tag cleared equally to isolate bulk behavior."
+    "note": "Dedicated synthetic DBs only. Baseline tag save errors retained separately; tag cleared equally to isolate bulk behavior.",
+    "seed_method": "makeFixture({date}) is an offline object generator. Its generated collections were inserted directly into task-created parity_fast_interfaces_* DBs (per-record legacy insert to avoid shell line limits), not via bindFixture/renderMongoScript whose ui_parity_* naming differs from the explicitly assigned prefix. No shared fixture or DB was reset.",
+    "identity_guard": "parity-interfaces.preflight.cjs verifies internal application/Mongo network, no socket mount, read-only config actual DB hostname/name, disabled mail, exact loopback proxy port, and _ui_parity_fixture marker synthetic/run/database/state/hash before suite mutations.",
+    "run": "interfaces_20261003",
+    "fixtureSha256": "df5dd7dea9fd9b4eba357a38fc29af43cce9bdbe31c8a90d7d3bfb96e82e2a2a",
+    "final_ids": {
+      "old": {
+        "rows": [
+          940108,
+          940115
+        ],
+        "paths": [
+          940122,
+          940129
+        ]
+      },
+      "new": {
+        "rows": [
+          940110,
+          940111
+        ],
+        "paths": [
+          940112,
+          940113
+        ]
+      }
+    }
   },
   "tests": {
-    "passed": 4,
+    "passed": 14,
     "failed": 0,
     "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
-    "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs."
+    "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs.",
+    "unit_passed": 10,
+    "unit_command": "node --test test-modernization/interface-bulk-parameters.test.js test-modernization/interface-path-parameters.test.js test-modernization/interface-parity-preflight.test.js",
+    "default_ci": "The three new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched."
   },
   "scenarios": [
     {
@@ -51,6 +81,30 @@
       "status": "passed",
       "old": "passed",
       "new": "passed"
+    },
+    {
+      "id": "interface_params-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Query/header/form rows add, edit, middle deletion, exact surviving order and values, errcode 0, visible success, API readback, refresh; guest writes denied and all original fields retained."
+    },
+    {
+      "id": "interface_params-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Rename before to after, save/reload exact metadata; remove placeholder, save/reload empty metadata; guest path/metadata mutation denied."
     }
   ],
   "legacy_defects": [
@@ -71,8 +125,29 @@
       "old-db-final.json",
       "new-db-final.json"
     ],
-    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed.",
+    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed. Stable parameter screenshots normalized to scrollY=0 were captured separately; no whole-page equivalence claimed.",
     "candidate_source": "image-source-sha256.txt matches baseline client/server/common/exts before local fix"
   },
-  "remaining": "All other assigned scenario IDs remain notrun in this increment; main 246 scenario matrix unchanged."
+  "remaining": "All assigned scenario IDs other than the six listed here remain notrun by this increment. Keep existing main-matrix evidence; no main matrix overwrite.",
+  "fixed_regressions": [
+    {
+      "id": "interface_params-02",
+      "before": "New form kept before after changing path to {after}; old UI updated correctly. Reproduced owner/developer.",
+      "after": "Synchronize path and req_params into form; reconcile against live unsaved metadata.",
+      "evidence": [
+        "path-before-results.json",
+        "path-before-trace.zip",
+        "path-before.png"
+      ]
+    }
+  ],
+  "review_notes": [
+    {
+      "id": "interface_list-03",
+      "status": "notrun",
+      "classification": "not-applicable pending integration-owner review",
+      "reason": "Both baseline and candidate InterfaceList Table have no rowSelection or bulk-action configuration. Preserve original assertion; do not invent a new product feature or count as pass.",
+      "source": "client/containers/Project/Interface/InterfaceList/InterfaceList.js Table configuration"
+    }
+  ]
 }

@@ -16,6 +16,8 @@ import Editor from '@toast-ui/editor';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import SchemaEditor from 'client/components/SchemaEditor';
 import checkIsJsonSchema from './normalizeSchema';
+import parseBulkParameters from './parseBulkParameters';
+import reconcilePathParameters from './reconcilePathParameters';
 const ResBodySchema = SchemaEditor;
 const ReqBodySchema = SchemaEditor;
 const TabPane = Tabs.TabPane;
@@ -442,42 +444,11 @@ class InterfaceEditForm extends Component {
   };
 
   handlePath = e => {
-    let val = e.target.value,
-      queue = [];
-
-    let insertParams = name => {
-      let findExist = _.find(this.state.req_params, { name: name });
-      if (findExist) {
-        queue.push(findExist);
-      } else {
-        queue.push({ name: name, desc: '' });
-      }
-    };
-    val = handlePath(val);
-    this.props.form.setFieldsValue({
-      path: val
-    });
-    if (val && val.indexOf(':') !== -1) {
-      let paths = val.split('/'),
-        name,
-        i;
-      for (i = 1; i < paths.length; i++) {
-        if (paths[i][0] === ':') {
-          name = paths[i].substr(1);
-          insertParams(name);
-        }
-      }
-    }
-
-    if (val && val.length > 3) {
-      val.replace(/\{(.+?)\}/g, function(str, match) {
-        insertParams(match);
-      });
-    }
-
-    this.setState({
-      req_params: queue
-    });
+    const path = handlePath(e.target.value);
+    const current = this.props.form.getFieldValue('req_params') || this.state.req_params;
+    const req_params = reconcilePathParameters(path, current);
+    this.props.form.setFieldsValue({ path, req_params });
+    this.setState({ req_params });
   };
 
   // 点击切换radio
@@ -537,25 +508,16 @@ class InterfaceEditForm extends Component {
 
   // 处理批量导入参数
   handleBulkOk = () => {
-    let curValue = this.props.form.getFieldValue(this.state.bulkName)||[];
-    // { name: '', required: '1', desc: '', example: '' }
-    let newValue = [];
-
-    const lines = this.state.bulkValue.split('\n');
-    const invalidLine = lines.findIndex(item => item.trim() && (item.indexOf(':') < 1 || !item.slice(0, item.indexOf(':')).trim()));
-    if (invalidLine !== -1) {
-      message.error(`第 ${invalidLine + 1} 行格式错误，请输入 name:example，参数名称不能为空`);
+    const parsed = parseBulkParameters(
+      this.state.bulkValue,
+      this.props.form.getFieldValue(this.state.bulkName) || [],
+      dataTpl[this.state.bulkName]
+    );
+    if (parsed.invalidLine) {
+      message.error(`第 ${parsed.invalidLine} 行格式错误，请输入 name:example，参数名称不能为空`);
       return;
     }
-    lines.filter(item => item.trim()).forEach((item, index) => {
-      let valueItem = Object.assign({}, curValue[index] || dataTpl[this.state.bulkName]);
-      let indexOfColon = item.indexOf(':');
-      if (indexOfColon!==-1) {
-        valueItem.name = item.substring(0, indexOfColon);
-        valueItem.example = item.substring(indexOfColon + 1) || '';
-        newValue.push(valueItem);
-      }
-    });
+    const newValue = parsed.values;
 
     this.props.form.setFieldsValue({[this.state.bulkName]: newValue});
     this.setState({
