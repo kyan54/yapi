@@ -39,6 +39,9 @@ export default (state = initialState, action) => {
       };
     }
     case FETCH_CASE_DATA: {
+      if (action.error || !action.payload || action.payload.data.errcode !== 0 ||
+          Number(action.meta.caseId) !== Number(state.currCaseId) ||
+          (action.meta.load && action.meta.load !== state.caseLoad)) return state;
       return {
         ...state,
         currCase: action.payload.data.data
@@ -88,9 +91,10 @@ export function fetchInterfaceColList(projectId) {
   };
 }
 
-export function fetchCaseData(caseId) {
+export function fetchCaseData(caseId, load) {
   return {
     type: FETCH_CASE_DATA,
+    meta: { caseId, load },
     payload: axios.get('/api/col/case?caseid=' + caseId)
   };
 }

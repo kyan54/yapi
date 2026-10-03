@@ -14,7 +14,8 @@ import {
   Switch,
   Row,
   Col,
-  Alert
+  Alert,
+  message
 } from 'antd';
 import constants from '../../constants/variable.js';
 import AceEditor from 'client/components/AceEditor/AceEditor';
@@ -133,6 +134,7 @@ export default class Run extends Component {
       inputValue: '',
       cursurPosition: { row: 1, column: -1 },
       envModalVisible: false,
+      envDropdownOpen: false,
       test_res_header: null,
       test_res_body: null,
       autoPreviewHTML: true,
@@ -193,6 +195,8 @@ export default class Run extends Component {
     this.activeRequest = null;
     const initialization = {};
     this.activeInitialization = initialization;
+    this.envModalContext = null;
+    this.setState({ envModalVisible: false, envDropdownOpen: false });
     if (!this.checkInterfaceData(data)) {
       return null;
     }
@@ -325,6 +329,7 @@ export default class Run extends Component {
   };
 
   componentWillUnmount() {
+    this.envModalContext = null;
     this.activeRequest = null;
     this.activeInitialization = null;
   }
@@ -560,22 +565,40 @@ export default class Run extends Component {
 
   // 环境变量模态框相关操作
   showEnvModal = () => {
+    this.envModalContext = {};
     this.setState({
-      envModalVisible: true
+      envModalVisible: true,
+      envDropdownOpen: false
     });
   };
 
   handleEnvOk = (newEnv, index) => {
+    this.envModalContext = null;
+    const case_env = (newEnv[index] && newEnv[index].name) || '';
     this.setState({
       envModalVisible: false,
-      case_env: (newEnv[index] && newEnv[index].name) || ''
+      envDropdownOpen: false,
+      env: newEnv,
+      req_headers: this.handleReqHeader(case_env, newEnv),
+      case_env
     });
   };
 
-  handleEnvCancel = () => {
-    this.setState({
-      envModalVisible: false
-    });
+  handleEnvCancel = async () => {
+    const context = this.envModalContext;
+    this.setState({ envModalVisible: false, envDropdownOpen: false });
+    try {
+      const result = await axios.get('/api/project/get_env', {
+        params: { project_id: this.props.data.source_project_id || this.props.data.project_id }
+      });
+      if (this.envModalContext !== context) return;
+      if (result.data.errcode !== 0) throw new Error('环境加载失败');
+      const env = result.data.data.env || [];
+      const selected = env.findIndex(item => item.name === this.state.case_env);
+      this.handleEnvOk(env, selected < 0 ? 0 : selected);
+    } catch (_) {
+      if (this.envModalContext === context) message.error('环境加载失败，请刷新重试');
+    }
   };
 
   render() {
@@ -617,7 +640,7 @@ export default class Run extends Component {
             width={800}
             className="env-modal"
           >
-            <ProjectEnv projectId={this.props.data.project_id} onOk={this.handleEnvOk} />
+            <ProjectEnv inline projectId={this.props.data.source_project_id || this.props.data.project_id} onOk={this.handleEnvOk} />
           </Modal>
         )}
         <div className="url">
@@ -629,6 +652,8 @@ export default class Run extends Component {
             </Select>
             <Select
               value={case_env}
+              open={this.state.envDropdownOpen}
+              onOpenChange={envDropdownOpen => this.setState({ envDropdownOpen })}
               style={{ flexBasis: 180, flexGrow: 1 }}
               onSelect={this.selectDomain}
               popupRender={menu => (

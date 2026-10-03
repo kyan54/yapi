@@ -1,0 +1,47 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "scope": "B stage5 incremental; original246 retained",
+  "base": "235c5fb637918d6e7703c99b35f5acca7a516eb9",
+  "complete": false,
+  "rows": [
+    {
+      "id": "case_editor-03",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Source query replacement refreshes; deleting source then reloading displays missing-case error without invalid link or request/save controls."
+    },
+    {
+      "id": "project_envs-03",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "composition": "C ffecc5e environment CRUD + B imported-case actual request/cancel deletion/confirm deletion/close reconciliation/save/reload/scoped DB readback."
+    },
+    {
+      "id": "project_envs-04",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "composition": "C ffecc5e receipt failure and readonly evidence + B source-project edit, dropdown close, draft cancel/reopen, fresh save and target project unchanged."
+    }
+  ],
+  "validation": {
+    "basicPassed": 32,
+    "modernizationPassed": 311,
+    "modernizationSkipped": 6,
+    "caseSourcePair": "cases-stage5.json: new pass / old undefined-link failure",
+    "environment": "env-stage5-final.json: new1pass; old env-stage5.json cannot activate configuration control",
+    "visual": "1920x1080 screenshots actually inspected; missing source has readable error and empty content; imported environment backup source ID and response readable, no popup remaining"
+  },
+  "dependencies": {
+    "COverlay": "ffecc5e0f5fcb2a558b6a8a4e5867dba1e350a00: ProjectEnv/index.js and ProjectEnvContent.js; copied only to test image, not B Git files"
+  },
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "remainingMap": "remaining-B-ownership-map.json (43 real IDs; provisional exact-ID mapping, AI12 independent new-only still incomplete)",
+  "limitations": [
+    "No whole-matrix completion claim. Script-runner prerequisite remains blocked; normal request/UI work continues.",
+    "Environment callback tests require C exact overlay when replaying B branch alone.",
+    "Earlier env-stage5.json new failure was test button whitespace matching; superseded by env-stage5-final.json."
+  ]
+}
