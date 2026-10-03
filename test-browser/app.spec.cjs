@@ -629,3 +629,49 @@ test('case endpoints use live collection scope and deny inaccessible source copi
   expect(await connection.db.collection('interface_case').find({}).sort({_id:1}).toArray()).toEqual(before);
   expect((await(await page.request.get(baseURL+'/api/col/case?caseid=44')).json()).errcode).toBe(0);
 });
+
+test('search visibility and member admission respect independent real roles',async({browser})=>{
+  const db=connection.db, prefix='SyntheticScopeSearch';
+  const roles=[['owner',740001],['developer',740002],['outsider',740003],['guest',740004]];
+  const password='synthetic-scope-password',passsalt='synthetic-scope-salt';
+  await db.collection('user').insertMany(roles.map(([name,_id])=>({_id,username:'Synthetic '+name,email:name+'-scope@example.invalid',password:sha1(password+sha1(passsalt)),passsalt,role:'member',type:'site',study:true})));
+  await db.collection('group').insertOne({_id:743001,uid:740001,group_name:prefix+' group',type:'public',members:[]});
+  await db.collection('project').insertMany([['private',741001],['public',741002]].map(([visibility,_id])=>({_id,uid:740001,group_id:743001,name:prefix+' '+visibility,project_type:visibility,members:visibility==='private'?[{uid:740002,role:'dev'},{uid:740004,role:'guest'}]:[],env:[{name:'synthetic-secret-marker',domain:'http://127.0.0.1',header:[]}],basepath:''})));
+  await db.collection('interface').insertMany([['private',742001,741001],['public',742002,741002]].map(([visibility,_id,project_id])=>({...fixture,_id,project_id,uid:740001,title:prefix+' '+visibility+' interface',path:'/scope-'+visibility})));
+  const contexts=[];
+  try {
+    await Promise.all(roles.map(async([role])=>{
+      const context=await browser.newContext();contexts.push(context);const p=await context.newPage();await p.goto(baseURL+'/login');await p.getByPlaceholder('Email',{exact:true}).fill(role+'-scope@example.invalid');await p.getByPlaceholder('Password',{exact:true}).fill(password);await p.getByRole('button',{name:/^登\s*录$/}).click();await p.waitForURL('**/group**');
+      const pending=p.waitForResponse(r=>new URL(r.url()).pathname==='/api/project/search');await p.getByPlaceholder('搜索分组/项目/接口').fill(prefix);const result=await(await pending).json();expect(result.errcode).toBe(0);expect(result.data.project.map(x=>x._id).sort()).toEqual(role==='outsider'?[741002]:[741001,741002]);expect(result.data.interface.map(x=>x._id).sort()).toEqual(role==='outsider'?[742002]:[742001,742002]);for(const item of result.data.project)expect(Object.keys(item).sort()).toEqual(['_id','groupId','name']);for(const item of result.data.interface)expect(Object.keys(item).sort()).toEqual(['_id','projectId','title']);expect(JSON.stringify(result)).not.toContain('synthetic-secret-marker');await expect(p.getByText('项目: '+prefix+' private',{exact:true})).toHaveCount(role==='outsider'?0:1);
+      if(role!=='owner'){
+        const before=await db.collection('project').findOne({_id:741001});
+        for(const targetRole of ['owner','dev','guest'])expect((await(await p.request.post(baseURL+'/api/project/add_member',{data:{id:741001,member_uids:[740003],role:targetRole}})).json()).errcode).not.toBe(0);
+        expect((await(await p.request.post(baseURL+'/api/project/change_member_role',{data:{id:741001,member_uid:740002,role:'owner'}})).json()).errcode).not.toBe(0);
+        expect((await db.collection('project').findOne({_id:741001})).members).toEqual(before.members);
+      }
+    }));
+    const p=await contexts[0].newPage();expect((await(await p.request.post(baseURL+'/api/user/login',{data:{email:'owner-scope@example.invalid',password}})).json()).errcode).toBe(0);
+    expect((await(await p.request.post(baseURL+'/api/project/add_member',{data:{id:741001,member_uids:[740003],role:'owner'}})).json()).errcode).toBe(0);expect((await db.collection('project').findOne({_id:741001})).members.find(m=>m.uid===740003).role).toBe('owner');
+    expect((await(await p.request.post(baseURL+'/api/user/login',{data:{email:'browser@example.invalid',password:'synthetic-browser-password'}})).json()).errcode).toBe(0);expect((await(await p.request.post(baseURL+'/api/project/add_member',{data:{id:741002,member_uids:[740004],role:'guest'}})).json()).errcode).toBe(0);
+  }finally{await Promise.all(contexts.map(c=>c.close()));}
+});
+
+test('profile username and email cancellation discard drafts without writes',async({page})=>{
+  const email='profile-draft@example.invalid',password='synthetic-profile-password',passsalt='synthetic-profile-salt';
+  await connection.db.collection('user').insertOne({_id:740010,username:'Synthetic profile baseline',email,password:sha1(password+sha1(passsalt)),passsalt,role:'member',type:'site',study:true});
+  expect((await(await page.request.post(baseURL+'/api/user/login',{data:{email,password}})).json()).errcode).toBe(0);await page.goto(baseURL+'/user/profile/740010');
+  for(const [label,placeholder,value]of[['用户名','用户名','Synthetic profile baseline'],['Email','Email',email]]){
+    const row=page.locator('.user-item').filter({has:page.getByText(label,{exact:true})});await row.getByRole('button',{name:/修\s*改/}).click();await row.getByPlaceholder(placeholder,{exact:true}).fill('discarded@example.invalid');await row.getByRole('button',{name:/取\s*消/}).click();await row.getByRole('button',{name:/修\s*改/}).click();await expect(row.getByPlaceholder(placeholder,{exact:true})).toHaveValue(value);await row.getByRole('button',{name:/取\s*消/}).click();
+  }
+  const saved=await connection.db.collection('user').findOne({_id:740010});expect(saved.username).toBe('Synthetic profile baseline');expect(saved.email).toBe(email);
+});
+
+test('profile email saves and reloads while avatar validation rejects invalid files',async({page})=>{
+  const email='profile-avatar@example.invalid',password='synthetic-avatar-password',passsalt='synthetic-avatar-salt';
+  await connection.db.collection('user').insertOne({_id:740011,username:'Synthetic avatar user',email,password:sha1(password+sha1(passsalt)),passsalt,role:'member',type:'site',study:true});
+  expect((await(await page.request.post(baseURL+'/api/user/login',{data:{email,password}})).json()).errcode).toBe(0);await page.goto(baseURL+'/user/profile/740011');
+  const row=page.locator('.user-item').filter({has:page.getByText('Email',{exact:true})});await row.getByRole('button',{name:/修\s*改/}).click();await row.getByPlaceholder('Email',{exact:true}).fill('profile-avatar-saved@example.invalid');const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/user/update');await row.getByRole('button',{name:/确\s*定/}).click();expect((await(await saved).json()).errcode).toBe(0);await page.reload();await expect(row).toContainText('profile-avatar-saved@example.invalid');
+  let uploads=0;page.on('request',r=>{if(new URL(r.url()).pathname==='/api/user/upload_avatar')uploads++});
+  const input=page.locator('input[type=file]');await input.setInputFiles({name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('synthetic')});await expect(page.getByText('图片的格式只能为 jpg、png！',{exact:true})).toBeVisible();await input.setInputFiles({name:'too-big.png',mimeType:'image/png',buffer:Buffer.alloc(220000)});await expect(page.getByText('图片必须小于 200kb!',{exact:true})).toBeVisible();expect(uploads).toBe(0);
+  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jT1sAAAAASUVORK5CYII=','base64');const upload=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/user/upload_avatar'&&r.request().headers()['content-type']?.includes('application/json'));await input.setInputFiles({name:'synthetic-pixel.png',mimeType:'image/png',buffer:image});expect((await(await upload).json()).errcode).toBe(0);await page.reload();const avatar=await page.request.get(baseURL+'/api/user/avatar?uid=740011');expect(avatar.headers()['content-type']).toContain('image/png');expect(await avatar.body()).toEqual(image);
+});

@@ -145,6 +145,10 @@
     "exts/yapi-plugin-export-swagger2-data/controller.js": {
       "baselineSha256": "eacf166ba9b7b9565cb3c8d2cc8354c0ee06449f9c7f2d57e0869b8ab52fa80e",
       "reason": "Deny private-project export to nonmembers before reading interfaces or Wiki; preserve project view roles, public exports and authenticated project-token scope. Verified with real paired browser requests and controller regression tests."
+    },
+    "server/controllers/project.js": {
+      "baselineSha256": "d857f2153fa9a3ad8a8e3bb8fc7f2419c60150c282d4c7d855e4546d8f3b3da8",
+      "reason": "Search checks live project visibility and returns only navigation labels/IDs, never environment or member payloads. Member addition requires existing owner/admin danger rights; real independent-role browser tests verify no denied writes and legitimate owner admission."
     }
   },
   "dependencies": {

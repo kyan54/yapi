@@ -100,9 +100,13 @@ class Profile extends Component {
   }
 
   handleEdit = (key, val) => {
-    var s = {};
-    s[key] = val;
-    this.setState(s);
+    this.setState(state => {
+      const field = key === 'usernameEdit' ? 'username' : key === 'emailEdit' ? 'email' : null;
+      return {
+        [key]: val,
+        ...(field ? { _userinfo: { ...state._userinfo, [field]: state.userinfo[field] } } : {})
+      };
+    });
   };
 
   getUserInfo = id => {
@@ -112,7 +116,7 @@ class Profile extends Component {
     axios.get('/api/user/find?id=' + id).then(res => {
       _this.setState({
         userinfo: res.data.data,
-        _userinfo: res.data.data
+        _userinfo: { ...res.data.data }
       });
       if (curUid === +id) {
         this.props.setBreadcrumb([{ name: res.data.data.username }]);

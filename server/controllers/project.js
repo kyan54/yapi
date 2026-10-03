@@ -394,7 +394,7 @@ class projectController extends baseController {
    */
   async addMember(ctx) {
     let params = ctx.params;
-    if ((await this.checkAuth(params.id, 'project', 'edit')) !== true) {
+    if ((await this.checkAuth(params.id, 'project', 'danger')) !== true) {
       return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
     }
 
@@ -1081,33 +1081,30 @@ class projectController extends baseController {
     let groupList = await this.groupModel.search(q);
     let interfaceList = await this.interfaceModel.search(q);
 
-    let projectRules = [
-      '_id',
-      'name',
-      'basepath',
-      'uid',
-      'env',
-      'members',
-      { key: 'group_id', alias: 'groupId' },
-      { key: 'up_time', alias: 'upTime' },
-      { key: 'add_time', alias: 'addTime' }
-    ];
-    let groupRules = [
-      '_id',
-      'uid',
-      { key: 'group_name', alias: 'groupName' },
-      { key: 'group_desc', alias: 'groupDesc' },
-      { key: 'add_time', alias: 'addTime' },
-      { key: 'up_time', alias: 'upTime' }
-    ];
-    let interfaceRules = [
-      '_id',
-      'uid',
-      { key: 'title', alias: 'title' },
-      { key: 'project_id', alias: 'projectId' },
-      { key: 'add_time', alias: 'addTime' },
-      { key: 'up_time', alias: 'upTime' }
-    ];
+    // Search is a read boundary, not an unrestricted model serialization.
+    const visibility = new Map();
+    const canReadProject = async id => {
+      const key = String(id);
+      if (!visibility.has(key)) {
+        const project = await this.Model.get(id);
+        visibility.set(key, !!project && (project.project_type !== 'private' ||
+          await this.checkAuth(project._id, 'project', 'view')));
+      }
+      return visibility.get(key);
+    };
+    const visibleProjects = [];
+    for (const project of projectList) {
+      if (await canReadProject(project._id)) visibleProjects.push(project);
+    }
+    const visibleInterfaces = [];
+    for (const entry of interfaceList) {
+      if (await canReadProject(entry.project_id)) visibleInterfaces.push(entry);
+    }
+    projectList = visibleProjects;
+    interfaceList = visibleInterfaces;
+    const projectRules = ['_id', 'name', { key: 'group_id', alias: 'groupId' }];
+    const groupRules = ['_id', { key: 'group_name', alias: 'groupName' }];
+    const interfaceRules = ['_id', 'title', { key: 'project_id', alias: 'projectId' }];
 
     projectList = commons.filterRes(projectList, projectRules);
     groupList = commons.filterRes(groupList, groupRules);
