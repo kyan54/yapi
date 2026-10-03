@@ -96,3 +96,33 @@ for (const close of ['Cancel','Apply']) test('ordinary '+close+' motion restores
  await waitFor(()=>assert.equal(document.activeElement,trigger));
  assert.equal(screen.getByLabelText('根节点 描述').value,close==='Apply'?'beforeapplied':'before');
 });
+
+const normalizeSchema=require('../client/containers/Project/Interface/InterfaceList/normalizeSchema');
+for(const [name,draft] of [
+ ['implicit object',{properties:{leaf:{type:'string'}}}],
+ ['uppercase type',{type:'OBJECT',properties:{leaf:{type:'string'}}}]
+]) test('actual form normalization preserves Apply focus for '+name,async()=>{
+ let published;
+ const Demo=()=>{const [data,setData]=React.useState(initial);return h(Editor,{data:normalizeSchema(data,{preserveFormatting:true}),onChange:v=>{published=v;setData(v);}});};
+ render(h(Demo));const trigger=screen.getByRole('button',{name:'高级设置 根节点'});trigger.focus();fireEvent.click(trigger);
+ const dialog=screen.getByRole('dialog');await finishMotion(dialog,'appear');
+ fireEvent.change(screen.getByLabelText('根节点 高级设置内容'),{target:{value:JSON.stringify(draft)}});
+ fireEvent.click(within(dialog).getByRole('button',{name:/^应\s*用$/}));
+ await finishMotion(dialog,'leave');
+ await waitFor(()=>assert.equal(document.activeElement,trigger));
+ assert.deepEqual(JSON.parse(published),draft);assert.ok(trigger.isConnected);
+ fireEvent.click(trigger);const reopened=screen.getByRole('dialog');await finishMotion(reopened,'appear');
+ assert.deepEqual(JSON.parse(screen.getByLabelText('根节点 高级设置内容').value),{...draft,type:'object'});
+ fireEvent.click(within(reopened).getByRole('button',{name:/^取\s*消$/}));await finishMotion(reopened,'leave');
+});
+
+test('reopen during closing motion retains a fresh dialog and ignores the old close',async()=>{
+ render(h(Editor,{data:initial,onChange(){}}));const {trigger,dialog}=await openDescription('根节点');
+ fireEvent.change(within(dialog).getByRole('textbox'),{target:{value:'discard'}});
+ fireEvent.click(within(dialog).getByRole('button',{name:/^取\s*消$/}));
+ await waitFor(()=>assert.match(dialog.className,/leave-active/));
+ assert.ok(dialog.isConnected);fireEvent.click(trigger);
+ await waitFor(()=>assert.doesNotMatch(dialog.className,/leave-active/));
+ fireEvent.animationEnd(dialog);await act(async()=>{await new Promise(resolve=>setTimeout(resolve,80));});
+ assert.ok(screen.getByRole('dialog'));assert.equal(screen.getByLabelText('根节点 描述内容').value,'before');
+});

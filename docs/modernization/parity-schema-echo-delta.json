@@ -1,0 +1,72 @@
+{
+  "scope": "A SchemaEditor own normalized Apply receipt",
+  "status": "passed",
+  "previous_remote_commit": "1a30292e0f18de59060b0ea71e7a9f8bbfba3cb0",
+  "product_paths": [
+    "client/components/SchemaEditor.js"
+  ],
+  "fix": "Reuse existing normalizeSchema without modifying it. Record normalized value of latest local publish; consume once on incoming input change. Matching normalized own echo retains node generation; nonmatching external replacement retires node dialogs.",
+  "component_regression": {
+    "environment": "Real React/AntD/dialog/rc-motion and real normalizeSchema parent in jsdom, explicit animationend events",
+    "candidate_passed": 9,
+    "baseline_passed": 7,
+    "baseline_failed": 2,
+    "preserved": [
+      "root and nested Cancel/Apply external replacement during leave-active (4)",
+      "ordinary Cancel/Apply (2)",
+      "actual reopen while leave-active (1)"
+    ],
+    "new": [
+      "implicit object type normalized echo",
+      "uppercase root type normalized echo"
+    ]
+  },
+  "browser_regression": {
+    "runtime": "Independent 4185 with B4 overlay",
+    "passed": 36,
+    "failed": 0,
+    "new_cases": 6,
+    "new_cases_scope": "owner/dev/guest x implicit/uppercase root type; both request and response; Apply focus, normalized reopen, save errcode and visible success/denial, immediate DB read and reload",
+    "baseline": "Actual InterfaceEditForm on 1a302 runtime: synthetic owner implicit and uppercase failed trigger focus assertion on request-side Apply; no response-side baseline claim",
+    "source_files_verified": 335,
+    "post_run_db_records": 15,
+    "viewport": "1920x1080",
+    "screenshot_visually_reviewed": true
+  },
+  "modernization": {
+    "passed": 361,
+    "skipped": 6,
+    "failed": 0
+  },
+  "limits": [
+    "Same-instance external replacement during close remains exact component-motion proof, not a reproduced production navigation flow.",
+    "Shared4175/compat/ProjectMessage/normalizer unchanged.",
+    "Parent must integrate and revalidate; original246 matrix not promoted."
+  ],
+  "evidence": [
+    {
+      "file": "schema-echo-browser-results.json",
+      "sha256": "e420ee26c505f16b2aeb04cb1f37461137dede3c0c4b625ec60917fbe8402684"
+    },
+    {
+      "file": "schema-echo-baseline-browser-results.json",
+      "sha256": "9d947fec969a43d61339e5183c613123871d1c9e6215577ac05ec368c680bd2e"
+    },
+    {
+      "file": "schema-echo-source-sha256.json",
+      "sha256": "2751dd11a7b4f355730be7b1a792dae0298da050db44d880a25a96bdaeb8404f"
+    },
+    {
+      "file": "schema-echo-db-readback.json",
+      "sha256": "d495e3bedd28cf3c30d7fc485ad38fb287ea63f82f623779e11dddb31c92138a"
+    },
+    {
+      "file": "schema-echo-modernization.log",
+      "sha256": "33b2bb64c89c3372ee100f51a2e95d981a8ca39a341029c676415aac456b47ae"
+    },
+    {
+      "file": "schema-echo-baseline.log",
+      "sha256": "7a83a0fbfee5b1e24b8d31eb95d95c87b86e464f05b00cfb408a7572263bf715"
+    }
+  ]
+}

@@ -54,3 +54,24 @@ for(const role of ['owner','developer','guest'])test('Schema close then interfac
  const firstURL=page.url(),secondURL=firstURL.replace(/\/\d+$/,'/'+second._id);await page.goto(secondURL);await page.goto(firstURL);await page.getByRole('tab',{name:'编辑',exact:true}).click();await expect(page.locator('.schema-editor-modern').first()).toBeVisible();await page.locator('#title').click();
  const trigger=page.locator('.schema-editor-modern').last().getByRole('button',{name:'编辑 根节点 描述',exact:true});await nativeReach(page,trigger);await page.keyboard.press('Enter');await page.locator('.ant-modal:visible textarea').fill('Stale modal draft');await page.keyboard.press('Escape');await page.goBack();await expect(page).toHaveURL(secondURL);await page.getByRole('tab',{name:'编辑',exact:true}).click();await page.locator('#title').click();await page.waitForTimeout(450);await expect(page.locator('#title')).toBeFocused();await expect(page.locator('.ant-modal:visible')).toHaveCount(0);await expect(page.locator('.schema-editor-modern').last().getByLabel('根节点 描述',{exact:true})).toHaveValue('Second');expect(JSON.parse((await f.read()).res_body)).toEqual(schema);await info.attach('schema-focus-navigation',{body:JSON.stringify({first:f.item._id,second:second._id,role,firstUnchanged:true,newTitleFocused:true}),contentType:'application/json'});
 });
+
+for(const role of ['owner','developer','guest'])for(const [kind,draft] of [
+ ['implicit',{properties:{leaf:{type:'string'}}}],
+ ['uppercase',{type:'OBJECT',properties:{leaf:{type:'string'}}}]
+])test('actual InterfaceEditForm normalized Schema Apply '+kind+' '+role,async({page,request},info)=>{
+ test.skip(info.project.name!=='new');
+ const schema={type:'object',description:'Original'},expected={...draft,type:'object'},f=await setup(page,request,info,role,schema),modal=page.locator('.ant-modal:visible');
+ for(const side of [0,1]){
+  const trigger=page.locator('.schema-editor-modern').nth(side).getByRole('button',{name:'高级设置 根节点',exact:true});
+  await nativeReach(page,trigger);await page.keyboard.press('Enter');await modal.getByLabel('根节点 高级设置内容',{exact:true}).fill(JSON.stringify(draft));
+  await modal.getByRole('button',{name:/^应\s*用$/}).click();await expect(modal).toHaveCount(0);await expect(trigger).toBeFocused();
+  await page.keyboard.press('Enter');expect(JSON.parse(await modal.getByLabel('根节点 高级设置内容',{exact:true}).inputValue())).toEqual(expected);
+  await page.keyboard.press('Escape');await expect(modal).toHaveCount(0);await expect(trigger).toBeFocused();
+ }
+ const reply=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/interface/up'&&r.request().method()==='POST');await page.getByRole('button',{name:/^保\s*存$/}).click();const result=await(await reply).json();expect(result.errcode===0).toBe(role!=='guest');await expect(page.getByText(role==='guest'?/没有权限/:'保存成功').first()).toBeVisible();
+ const after=await f.read(),persisted=role==='guest'?schema:expected;expect(JSON.parse(after.res_body)).toEqual(persisted);expect(JSON.parse(after.req_body_other)).toEqual(persisted);
+ const {execFileSync}=require('node:child_process'),db=JSON.parse(execFileSync('docker',['exec','parity-fast-interfaces-mongo-new','mongosh','--quiet','--eval','db=db.getSiblingDB("parity_fast_interfaces_new");print(JSON.stringify(db.interface.findOne({_id:'+f.item._id+'},{_id:1,res_body:1,req_body_other:1})));'],{encoding:'utf8'}));expect(db.res_body).toBe(after.res_body);expect(db.req_body_other).toBe(after.req_body_other);
+ await page.reload();await page.getByRole('tab',{name:'编辑',exact:true}).click();
+ for(const side of [0,1]){await page.locator('.schema-editor-modern').nth(side).getByRole('button',{name:'高级设置 根节点',exact:true}).click();expect(JSON.parse(await modal.getByLabel('根节点 高级设置内容',{exact:true}).inputValue())).toEqual(persisted);await page.keyboard.press('Escape');await expect(modal).toHaveCount(0);}
+ await page.screenshot({path:info.outputPath('normalized-apply-reopened.png')});await info.attach('schema-normalized-final',{body:JSON.stringify({id:f.item._id,role,kind,expected:persisted,result,db}),contentType:'application/json'});
+});
