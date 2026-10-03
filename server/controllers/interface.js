@@ -889,7 +889,9 @@ class interfaceController extends baseController {
     }
 
     yapi.emitHook('interface_update', id).then();
-    await this.autoAddTag(params);
+    // The edit form does not submit project_id. Use the authorized stored owner,
+    // never a missing or caller-supplied project scope, for project tag updates.
+    await this.autoAddTag({ ...params, project_id: interfaceData.project_id });
 
     ctx.body = yapi.commons.resReturn(result);
     return 1;

@@ -160,7 +160,11 @@ test('editing preserves parameter rows, schema semantics and description through
   await editor.getByLabel('JSON Schema',{exact:true}).fill(JSON.stringify(edited));
   await editor.getByRole('tab',{name:'可视化 Schema',exact:true}).click();
   await page.locator('#desc .toastui-editor-ww-container [contenteditable="true"]').fill('Synthetic edited description');
+  const saveReply = page.waitForResponse(response => response.url().endsWith('/api/interface/up') && response.request().method() === 'POST');
   await page.getByRole('button',{name:/^保\s*存$/}).click();
+  expect((await (await saveReply).json()).errcode).toBe(0);
+  await expect(page.getByText('保存成功', {exact:true})).toBeVisible();
+  await expect(page.getByText('服务器出错...', {exact:true})).toHaveCount(0);
   await expect.poll(async()=> (await connection.db.collection('interface').findOne({_id:18})).markdown).toContain('Synthetic edited description');
   const saved=await connection.db.collection('interface').findOne({_id:18});expect(saved.req_body_form[0].example).toBe('S20261003-002');expect(saved.req_query[0].desc).toBe('Edited query description');expect(saved.req_headers.some(h=>h.name==='X-Synthetic'&&h.value==='fixture')).toBe(true);expect(JSON.parse(saved.res_body)).toEqual(edited);
   await page.getByRole('tab',{name:'预览',exact:true}).first().click();

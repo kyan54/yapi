@@ -47,3 +47,27 @@ test('import save propagates add/update and validation errors instead of success
   await InterfaceController.prototype.save.call({$tokenAuth:true,schemaMap:{up:{}},Model:{getByPath:async()=>[{_id:17}]},up:()=>assert.fail('invalid write')},ctx);
   assert.equal(ctx.body.errcode,400);
 });
+
+test('session edit tags use the persisted authorized project when project_id is absent or spoofed', async()=>{
+  const oldHook=yapi.emitHook;
+  yapi.emitHook=async()=>{};
+  yapi.commons={...yapi.commons,time:()=>100,saveLog:()=>{}};
+  try {
+    for (const supplied of [undefined,99]) {
+      const doc={_id:17,project_id:12,catid:13,title:'same',toObject:()=>({_id:17,project_id:12,catid:13,title:'same'})};
+      const seen=[];
+      const controller={Model:{get:async()=>doc,up:async()=>({ok:1})},checkAuth:async id=>id===12,getUsername:()=> 'synthetic',getUid:()=>9,
+        catModel:{get:async()=>({project_id:12,name:'test'})},projectModel:{get:async id=>{assert.equal(id,12);return {tag:[]};},up:async(id,data)=>{seen.push({id,data});}},autoAddTag:InterfaceController.prototype.autoAddTag};
+      const ctx={params:{id:17,tag:['synthetic'],...(supplied===undefined?{}:{project_id:supplied})}};
+      await InterfaceController.prototype.up.call(controller,ctx);
+      assert.equal(ctx.body.errcode,0);
+      assert.ok(seen.some(entry=>entry.id===12&&entry.data.tag?.[0].name==='synthetic'));
+      assert.ok(seen.every(entry=>entry.id===12));
+    }
+  } finally {yapi.emitHook=oldHook;}
+});
+
+test('missing project remains a null result instead of throwing in environment normalization',()=>{
+  const Project=require('../server/models/project');
+  assert.equal(Project.prototype.handleEnvNullData.call({},null),null);
+});
