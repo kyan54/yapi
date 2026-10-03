@@ -45,6 +45,9 @@ export default (state = initialState, action) => {
       };
     }
     case FETCH_CASE_LIST: {
+      if (action.error || !action.payload || action.payload.data.errcode !== 0 ||
+          Number(action.meta.colId) !== Number(state.currColId) ||
+          (action.meta.load && action.meta.load !== state.collectionLoad)) return state;
       return {
         ...state,
         currCaseList: action.payload.data.data
@@ -64,6 +67,9 @@ export default (state = initialState, action) => {
       };
     }
     case FETCH_CASE_ENV_LIST: {
+      if (action.error || !action.payload || action.payload.data.errcode !== 0 ||
+          Number(action.meta.colId) !== Number(state.currColId) ||
+          (action.meta.load && action.meta.load !== state.collectionLoad)) return state;
       return {
         ...state,
         envList: action.payload.data.data
@@ -89,16 +95,18 @@ export function fetchCaseData(caseId) {
   };
 }
 
-export function fetchCaseList(colId) {
+export function fetchCaseList(colId, load) {
   return {
     type: FETCH_CASE_LIST,
+    meta: { colId, load },
     payload: axios.get('/api/col/case_list/?col_id=' + colId)
   };
 }
 
-export function fetchCaseEnvList(col_id) {
+export function fetchCaseEnvList(col_id, load) {
   return {
     type: FETCH_CASE_ENV_LIST,
+    meta: { colId: col_id, load },
     payload: axios.get('/api/col/case_env_list', {
       params: { col_id }
     })

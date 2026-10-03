@@ -1,0 +1,259 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "scope": "B stage2 only; compose matching IDs over prior B delta, never replace original246",
+  "base": "e8cd5a1e104d3fcf5c46190594323323767cd2a0",
+  "complete": false,
+  "rows": [
+    {
+      "id": "add_case-02",
+      "assertion": "inline create collection validates and updates destination options",
+      "status": "passed",
+      "new": "passed",
+      "old": "notrun",
+      "detail": "Inline blank-name validation, real create, refresh failure, retry-refresh without a second create, selected new ID and one saved case.",
+      "evidence": [
+        "stage2-paired.json"
+      ],
+      "oldDetail": "Paired original controls pass; additional refresh-failure/route identity contract tested only on new."
+    },
+    {
+      "id": "add_case-03",
+      "assertion": "Cancel/reopen preserves documented defaults without creating collection/case",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "Cancel and close discard draft case name; reopen restores source title; no case created.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "add_case-04",
+      "assertion": "repeated submit or response failure cannot duplicate case",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "Repeated create case from stage1 plus application rejection, retry, refresh and DB readback.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "collection_table-02",
+      "assertion": "drag reorder and new up/down buttons persist exact order",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "Legacy real drag; new real drag and delayed repeated down clicks serialize exact DB order.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "collection_table-03",
+      "assertion": "first/last buttons disable correctly and repeated clicks never lose/duplicate rows",
+      "status": "passed",
+      "new": "passed",
+      "old": "notrun",
+      "detail": "New-only first/last buttons disabled, repeated moves preserve every ID exactly once.",
+      "evidence": [
+        "stage2-paired.json"
+      ],
+      "comparable": false
+    },
+    {
+      "id": "collection_table-04",
+      "assertion": "rerun, reload and browser Back preserve saved ordering and cases",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "Run, reload, case link and browser Back preserve exact saved order.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "collection_rules-04",
+      "assertion": "Cancel/reopen and guest permissions preserve baseline with no hidden unauthorized write",
+      "status": "passed",
+      "new": "passed",
+      "old": "notrun",
+      "detail": "Owner/developer cancel from stage1; guest UI/API denied; stale open rules close on collection navigation and cannot write next collection.",
+      "evidence": [
+        "stage2-paired.json"
+      ],
+      "oldDetail": "Paired original controls pass; additional refresh-failure/route identity contract tested only on new."
+    },
+    {
+      "id": "collection_run-02",
+      "assertion": "start loading/progress and final per-case report reflect actual results",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "Delayed proxy shows loading; final per-case report and stored report correspond to actual HTTP response.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "collection_run-03",
+      "assertion": "repeated start, cancelled modal and route change do not overlap or corrupt run state",
+      "status": "passed",
+      "new": "passed",
+      "old": "failed",
+      "detail": "Stage1 repeated start guard; close/reopen reports and delayed route cancellation do not save into destination collection.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "collection_run-04",
+      "assertion": "open/close/reopen report and inspect request/response/assertion data including failures",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "Actual 404 response/header/Unicode body and builtin assertion; request/response/validation tabs visibly checked, close/reopen, fresh rerun then refresh.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "collection_server-01",
+      "assertion": "Generate/copy exact test URL with selected environment/output/notification options",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "Exact selected environment, json/html mode, copy clipboard, notification/download switches; notification turned off before any execution.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "collection_server-03",
+      "assertion": "download JSON/report data matches selected collection and preserves encoding",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "Downloaded json/html contain collection case ID and Chinese body; actual Content-Disposition checked.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "case_editor-04",
+      "assertion": "repeated Save, rejected permissions and late responses leave consistent state",
+      "status": "passed",
+      "new": "passed",
+      "old": "failed",
+      "detail": "Double save yields one request; delayed route switch cannot rename another case; denial/retry and exact persisted identities.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "mock_expectation-01",
+      "assertion": "Set expectation name/IP/parameter filters and response status/delay/headers/body then save and verify matching request",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "IP toggle/value, matching/nonmatching parameter, 201, delay, response header and Unicode JSON body persist and match real request.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "mock_expectation-02",
+      "assertion": "add/remove condition/header rows with correct values and ordering",
+      "status": "passed",
+      "new": "passed",
+      "old": "passed",
+      "detail": "Two condition/header rows, delete first, retained second exact name/value; save/reopen and actual response verified.",
+      "evidence": [
+        "stage2-paired.json"
+      ]
+    },
+    {
+      "id": "collection_import-03",
+      "assertion": "submit creates expected cases only and reports duplicate/inaccessible entries",
+      "status": "notrun",
+      "new": "notrun",
+      "old": "notrun",
+      "detail": "Imported persisted target case now executes in server and browser modes using source environment/link, builtin assertions succeed, revoked/forged contexts deny. UI duplicate/inaccessible-entry reporting remains incomplete."
+    },
+    {
+      "id": "collection_server-02",
+      "assertion": "valid token runs intended project only and invalid token shows denial",
+      "status": "failed",
+      "new": "failed",
+      "old": "failed",
+      "detail": "Same-project token and foreign collection denial covered (legacy accepts foreign collection). Additional cross-source imported case automation still uses target env and lacks live source visibility preflight in open.runAutoTest; reported to integration owner, not closed."
+    }
+  ],
+  "supplemental": [
+    "New-only guarded cross-project case identity contract: target edit + persisted case/collection/interface match + live source read; both request modes; revoked source denies reads and requests.",
+    "No enabled custom scripts or external network used; five original B script-dependent blockers unchanged.",
+    "Readonly runtime guard verifies exact origin/proxy/app connection/database marker and digest before any fixture mutation."
+  ],
+  "mappingReview": [
+    {
+      "id": "collection_rules-02",
+      "substep": "collection global-variable CRUD",
+      "observation": "No such collection modal control; project environment global variables belong to C plus B execution. Await owner mapping."
+    },
+    {
+      "id": "mock_advanced-03",
+      "substep": "expectation reorder",
+      "observation": "No reorder control in either version; actual priority still pending."
+    },
+    {
+      "id": "case_editor-01",
+      "substep": "case description edit",
+      "observation": "No description control in either version; actual name/request editing remains applicable."
+    }
+  ],
+  "validation": {
+    "unit": {
+      "basicPass": 32,
+      "modernizationPass": 301,
+      "modernizationSkipped": 6,
+      "fail": 0
+    },
+    "browser": {
+      "report": "stage2-paired.json",
+      "new": {
+        "passed": 14,
+        "failed": 0
+      },
+      "old": {
+        "passed": 7,
+        "failed": 3,
+        "skippedNewContract": 4
+      },
+      "extra": "created-db-verified.json verifies one case in newly-created destination directly in DB"
+    }
+  },
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "composition": {
+    "passed": 23,
+    "failed": 1,
+    "blocked": 5,
+    "notrun": 23,
+    "ownedTotal": 52
+  },
+  "sha256": {
+    "stage2-paired.json": "8e03b9c43728e73cffae0bed057e90bfc4c384a4de02ee7d2b4ff5dcfd29fadc",
+    "identity-stage2-paired.json": "f47908c3a14244ce553e567277b9918cd5b39f615bc53dd3c45be78a5a193e66",
+    "unit-stage2-contract-final.log": "5fceae37aaee1047380f63657c6ef92a9274aae3629b6f5061096ec64443c6fe",
+    "created-db-verified.json": "fe4d2f3bb36b304f9405eff9a9f5b26069ce8a06373068a44027dba5e942838a"
+  },
+  "visualReview": {
+    "resolution": "1920x1080",
+    "reviewed": [
+      "stage2-paired-results/*old/mock-full-fields.png",
+      "stage2-paired-results/*new/mock-full-fields.png",
+      "stage2-paired-results/*old/failed-report.png",
+      "contracts-targeted-results/*new/failed-report.png"
+    ],
+    "differences": "Both edited expectation dialogs and failure report are readable. New IP value wraps to the next line; labels and tab spacing differ. No claim of pixel equality; shared styles unchanged."
+  }
+}

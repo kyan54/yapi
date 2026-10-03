@@ -346,6 +346,7 @@ export default class Run extends Component {
         options.pre_script || this.state.pre_script,
         options.after_script || this.state.after_script,
         createContext(this.props.curUid, this.props.projectId, this.props.interfaceId, {
+          ...(this.props.type === 'case' ? { caseId: this.props.data._id, colId: this.props.data.col_id } : {}),
           requestMode: this.state.requestMode
         })
       );

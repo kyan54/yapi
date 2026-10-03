@@ -48,7 +48,11 @@ export default class AddColModal extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (!nextProps.interfaceColList.some(col => col._id === this.state.id)) this.setState({ id: nextProps.interfaceColList.length ? nextProps.interfaceColList[0]._id : 0 });
+    if (nextProps.match.params.id !== this.props.match.params.id) {
+      this.createdCollection = null;
+      this.setState({ id: 0, collectionRefreshPending: false });
+    }
+    if (!this.createdCollection && !nextProps.interfaceColList.some(col => col._id === this.state.id)) this.setState({ id: nextProps.interfaceColList.length ? nextProps.interfaceColList[0]._id : 0 });
     if ((!this.props.visible && nextProps.visible) || nextProps.caseName !== this.props.caseName) {
       this.setState({ caseName: nextProps.caseName });
     }
@@ -56,21 +60,29 @@ export default class AddColModal extends Component {
 
   addCol = async () => {
     if (this.addingCol) return;
-    if (!this.state.addColName.trim()) return message.error('请输入集合名称');
+    if (!this.createdCollection && !this.state.addColName.trim()) return message.error('请输入集合名称');
     this.addingCol = true;
     this.setState({ addingCol: true });
     try {
-    const { addColName: name, addColDesc: desc } = this.state;
-    const project_id = this.props.match.params.id;
-    const res = await axios.post('/api/col/add_col', { name, desc, project_id });
-    if (!res.data.errcode) {
-      message.success('添加集合成功');
-      await this.props.fetchInterfaceColList(project_id);
-
-      this.setState({ id: res.data.data._id });
-    } else {
-      message.error(res.data.errmsg);
-    }
+      const project_id = this.props.match.params.id;
+      if (!this.createdCollection) {
+        const { addColName: name, addColDesc: desc } = this.state;
+        const res = await axios.post('/api/col/add_col', { name, desc, project_id });
+        if (res.data.errcode !== 0) return message.error(res.data.errmsg);
+        this.createdCollection = { id: res.data.data._id, projectId: project_id };
+        this.setState({ id: res.data.data._id, collectionRefreshPending: true });
+        message.success('添加集合成功');
+      }
+      const created = this.createdCollection;
+      try {
+        const refreshed = await this.props.fetchInterfaceColList(created.projectId);
+        if (refreshed && refreshed.payload && refreshed.payload.data.errcode !== 0) throw Error('refresh failed');
+        if (String(this.props.match.params.id) !== String(created.projectId)) return;
+        this.setState({ id: created.id, collectionRefreshPending: false, addColName: '', addColDesc: '' });
+        this.createdCollection = null;
+      } catch (_) {
+        message.error('集合已创建，但列表加载失败，请重试刷新');
+      }
     } catch (_) {
       message.error('添加集合失败，请重试');
     } finally {
@@ -156,7 +168,7 @@ export default class AddColModal extends Component {
             </Row>
             <Row type="flex" justify="end">
               <Button style={{ float: 'right' }} type="primary" loading={this.state.addingCol} onClick={this.addCol}>
-                添 加
+                {this.state.collectionRefreshPending ? '重试刷新' : '添 加'}
               </Button>
             </Row>
           </Panel>

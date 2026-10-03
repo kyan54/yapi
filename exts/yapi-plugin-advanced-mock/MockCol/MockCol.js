@@ -95,8 +95,13 @@ export default class MockCol extends Component {
     await axios.post('/api/plugin/advmock/case/save', caseData).then(async res => {
       if (res.data.errcode === 0) {
         message.success(this.state.isAdd ? '添加成功' : '保存成功');
-        await this.props.fetchMockCol(interface_id);
         this.setState({ caseDesModalVisible: false });
+        try {
+          const refreshed = await this.props.fetchMockCol(interface_id);
+          if (refreshed && refreshed.payload && refreshed.payload.errcode !== 0) throw Error('refresh failed');
+        } catch (_) {
+          message.error('期望已保存，但列表加载失败，请刷新页面');
+        }
       } else {
         message.error(res.data.errmsg);
       }

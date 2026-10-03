@@ -146,7 +146,16 @@ class interfaceColController extends baseController {
         }
       }
 
+      const cases = await this.caseModel.list(id, 'all');
+      const sources = new Map();
+      for (const record of cases) {
+        if (Number(record.project_id) !== Number(colData.project_id)) throw new Error('用例项目不一致');
+        sources.set(Number(record._id), await this.requireInterfaceRead(record.interface_id));
+      }
       ctx.body = await yapi.commons.getCaseList(id);
+      if (ctx.body.errcode === 0) ctx.body.data.forEach(record => {
+        record.source_project_id = sources.get(Number(record._id)).project_id;
+      });
     } catch (e) {
       ctx.body = yapi.commons.resReturn(null, 402, e.message);
     }
@@ -177,16 +186,16 @@ class interfaceColController extends baseController {
         }
       }
 
-      // 通过col_id 找到 caseList
-      let projectList = await this.caseModel.list(id, 'project_id');
-      // 对projectList 进行去重处理
-      projectList = this.unique(projectList, 'project_id');
-
-      // 遍历projectList 找到项目和env
-      let projectEnvList = [];
-      for (let i = 0; i < projectList.length; i++) {
-        let result = await this.projectModel.getBaseInfo(projectList[i], 'name  env');
-        projectEnvList.push(result);
+      const cases = await this.caseModel.list(id, 'all');
+      const sourceIds = new Set();
+      for (const record of cases) {
+        if (Number(record.project_id) !== Number(colData.project_id)) throw new Error('用例项目不一致');
+        const source = await this.requireInterfaceRead(record.interface_id);
+        sourceIds.add(Number(source.project_id));
+      }
+      const projectEnvList = [];
+      for (const sourceId of sourceIds) {
+        projectEnvList.push(await this.projectModel.getBaseInfo(sourceId, 'name env'));
       }
       ctx.body = yapi.commons.resReturn(projectEnvList);
     } catch (e) {
@@ -683,6 +692,7 @@ class interfaceColController extends baseController {
       data = data.toObject();
 
       let projectData = await this.projectModel.getBaseInfo(data.project_id);
+      result.source_project_id = data.project_id;
       result.path = projectData.basepath + data.path;
       result.method = data.method;
       result.req_body_type = data.req_body_type;
@@ -908,15 +918,18 @@ class interfaceColController extends baseController {
   }
 
   async runCaseScript(ctx) {
-    let params = ctx.request.body;
-    const collection = await this.colModel.get(params.col_id);
-    const target = await this.interfaceModel.get(params.interface_id);
-    if (!collection || !target || Number(collection.project_id) !== Number(target.project_id) ||
-        await this.checkAuth(collection.project_id, 'project', 'view') !== true) {
-      ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'); return;
+    const params = ctx.request.body || {};
+    try {
+      const record = await this.caseModel.get(params.case_id);
+      if (!record || Number(record.col_id) !== Number(params.col_id) ||
+          Number(record.interface_id) !== Number(params.interface_id)) throw new Error('Forbidden');
+      const collection = await this.requireCollectionEdit(record.col_id, record.project_id);
+      await this.requireInterfaceRead(record.interface_id);
+      const scope = require('../sandbox/trusted-scope').create(this.getUid(), Number(collection.project_id));
+      ctx.body = await yapi.commons.runCaseScript(params, collection._id, record.interface_id, scope);
+    } catch (_) {
+      ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden');
     }
-    const scope = require('../sandbox/trusted-scope').create(this.getUid(), Number(collection.project_id));
-    ctx.body = await yapi.commons.runCaseScript(params, params.col_id, params.interface_id, scope);
   }
 
   // 数组去重

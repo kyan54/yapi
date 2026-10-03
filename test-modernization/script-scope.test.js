@@ -8,11 +8,20 @@ test('actual collection assertion route derives broker scope from authenticated 
  const original=yapi.commons;let called=0;
  yapi.commons={...original,resReturn:(data,errcode=0,errmsg='')=>({data,errcode,errmsg}),runCaseScript:async(params,col,interfaceId,scope)=>{called++;assert.deepEqual(read(scope),{userId:'9',projectId:'11'});return{errcode:0};}};
  try {
-  const controller={colModel:{get:async()=>({project_id:11})},interfaceModel:{get:async()=>({project_id:11})},checkAuth:async(project,type,mode)=>{assert.equal(project,11);assert.equal(mode,'view');return true;},getUid:()=>9};
-  const ctx={request:{body:{col_id:21,interface_id:17,networkScope:{userId:'1',projectId:'1'}}}};
-  await Collection.prototype.runCaseScript.call(controller,ctx);assert.equal(called,1);assert.equal(ctx.body.errcode,0);
-  await Collection.prototype.runCaseScript.call({...controller,checkAuth:async()=>false},ctx);assert.equal(ctx.body.errcode,403);assert.equal(called,1);
-  await Collection.prototype.runCaseScript.call({...controller,interfaceModel:{get:async()=>({project_id:12})}},ctx);assert.equal(ctx.body.errcode,403);assert.equal(called,1);
+  const controller=Object.assign(Object.create(Collection.prototype), {
+    colModel:{get:async()=>({_id:21,project_id:11})},
+    caseModel:{get:async()=>({_id:31,col_id:21,project_id:11,interface_id:17})},
+    interfaceModel:{get:async()=>({_id:17,project_id:11})},
+    projectModel:{get:async()=>({_id:11,project_type:'private'})},
+    checkAuth:async(project,type,mode)=>{assert.equal(project,11);assert.ok(['edit','view'].includes(mode));return true;},getUid:()=>9
+  });
+  const ctx={request:{body:{case_id:31,col_id:21,interface_id:17,networkScope:{userId:'1',projectId:'1'}}}};
+  await controller.runCaseScript(ctx);assert.equal(called,1);assert.equal(ctx.body.errcode,0);
+  const rejected=Object.assign(Object.create(Collection.prototype),controller,{checkAuth:async()=>false});
+  await rejected.runCaseScript(ctx);assert.equal(ctx.body.errcode,403);assert.equal(called,1);
+  const foreign=Object.assign(Object.create(Collection.prototype),controller,{interfaceModel:{get:async()=>({_id:17,project_id:12})},projectModel:{get:async()=>({_id:12,project_type:'private'})},checkAuth:async project=>project===11});
+  await foreign.runCaseScript(ctx);assert.equal(ctx.body.errcode,403);assert.equal(called,1);
+
  }finally{yapi.commons=original;}
 });
 test('verified-token auto-test rejects a collection belonging to another project before execution',async()=>{

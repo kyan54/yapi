@@ -148,18 +148,23 @@ class InterfaceColContent extends Component {
 
   async handleColIdChange(newColId){
     this.activeRun = null;
+    this.commonSettingIdentity = null;
+    this.loadedCollectionId = null;
     const load = {};
     this.activeCollectionLoad = load;
     this.reports = {};
     this.records = {};
-    this.setState({ running: false, rows: [] });
+    this.setState({ running: false, rows: [], commonSettingModalVisible: false, visible: false, advVisible: false });
     this.props.setColData({
       currColId: +newColId,
+      collectionLoad: load,
+      currCaseList: [],
+      envList: [],
       isShowCol: true,
       isRander: false
     });
 
-    let result = await this.props.fetchCaseList(newColId);
+    let result = await this.props.fetchCaseList(newColId, load);
     if (this.activeCollectionLoad !== load) return;
     if (result.payload.data.errcode === 0) {
       this.reports = handleReport(result.payload.data.colData.test_report);
@@ -167,8 +172,9 @@ class InterfaceColContent extends Component {
       this.setState({ commonSetting: this.ruleSettings(this.savedCommonSetting) });
     }
 
-    await this.props.fetchCaseEnvList(newColId);
+    await this.props.fetchCaseEnvList(newColId, load);
     if (this.activeCollectionLoad !== load) return;
+    this.loadedCollectionId = Number(newColId);
     this.changeCollapseClose();
     this.handleColdata(result.payload.data.data || []);
   }
@@ -232,10 +238,10 @@ class InterfaceColContent extends Component {
       draftRows.map(item => {
         item.id = item._id;
         item._test_status = item.test_status;
-        if(currColEnvObj[item.project_id]){
-          item.case_env =currColEnvObj[item.project_id];
+        if(currColEnvObj[item.source_project_id || item.project_id]){
+          item.case_env =currColEnvObj[item.source_project_id || item.project_id];
         }
-        item.req_headers = that.handleReqHeader(item.project_id, item.req_headers, item.case_env);
+        item.req_headers = that.handleReqHeader(item.source_project_id || item.project_id, item.req_headers, item.case_env);
         return item;
       });
     });
@@ -243,6 +249,7 @@ class InterfaceColContent extends Component {
   };
 
   componentWillUnmount() {
+    this.latestOrderSave = null;
     this.activeCollectionLoad = null;
     this.activeRun = null;
   }
@@ -261,14 +268,14 @@ class InterfaceColContent extends Component {
       if (this.activeRun !== run) return;
 
       let envItem = _.find(this.props.envList, item => {
-        return item._id === rows[i].project_id;
+        return item._id === (rows[i].source_project_id || rows[i].project_id);
       });
 
       curitem = Object.assign(
         {},
         rows[i],
         {
-          env: envItem.env,
+          env: envItem ? envItem.env : [],
           runColId: run.colId,
           runToken: run,
           pre_script: this.props.currProject.pre_script,
@@ -348,6 +355,8 @@ class InterfaceColContent extends Component {
         interfaceData.pre_script,
         interfaceData.after_script,
         createContext(this.props.curUid, this.props.match.params.id, interfaceData.interface_id, {
+          caseId: interfaceData._id,
+          colId: interfaceData.runColId || this.props.currColId,
           requestMode: this.state.requestMode
         })
       );
@@ -434,11 +443,14 @@ class InterfaceColContent extends Component {
         records: this.records,
         script: interfaceData.test_script,
         params: requestParams,
+        case_id: interfaceData._id,
         col_id: interfaceData.runColId || this.props.currColId,
         interface_id: interfaceData.interface_id
       });
       if (test.data.errcode !== 0) {
-        test.data.data.logs.forEach(item => {
+        const logs = test.data.data && Array.isArray(test.data.data.logs)
+          ? test.data.data.logs : [test.data.errmsg || '验证请求失败'];
+        logs.forEach(item => {
           validRes.push({ message: item });
         });
       }
@@ -480,13 +492,24 @@ class InterfaceColContent extends Component {
   }
 
   onDrop = () => {
-    let changes = [];
-    this.state.rows.forEach((item, index) => {
-      changes.push({ id: item._id, index: index });
+    const changes = this.state.rows.map((item, index) => ({ id: item._id, index }));
+    const projectId = this.props.match.params.id;
+    const colId = this.props.currColId;
+    const save = {};
+    this.latestOrderSave = save;
+    // Keep snapshots in user-action order, even when a previous response is slow.
+    this.orderSave = (this.orderSave || Promise.resolve()).catch(() => {}).then(async () => {
+      const res = await axios.post('/api/col/up_case_index', changes);
+      if (res.data.errcode !== 0) throw new Error(res.data.errmsg || '保存排序失败');
+      if (this.latestOrderSave === save && this.props.currColId === colId) {
+        await this.props.fetchInterfaceColList(projectId);
+      }
+    }).catch(error => {
+      if (this.latestOrderSave === save && this.props.currColId === colId) {
+        message.error(error.message || '保存排序失败，请重试');
+      }
     });
-    axios.post('/api/col/up_case_index', changes).then(() => {
-      this.props.fetchInterfaceColList(this.props.match.params.id);
-    });
+    return this.orderSave;
   };
   onMoveRow({ sourceRowId, targetRowId }) {
     const rows = [...this.state.rows];
@@ -651,32 +674,45 @@ class InterfaceColContent extends Component {
 
   handleCommonSetting = async () => {
     if (this.savingCommonSetting) return;
-    const colId = this.props.currColId;
+    const identity = this.commonSettingIdentity;
+    const colId = identity && identity.colId;
+    if (!identity || !this.isCurrentCommonSetting(identity)) return;
     const setting = this.ruleSettings(this.state.commonSetting);
     this.savingCommonSetting = true;
     this.setState({ commonSettingSaving: true });
     try {
       const res = await axios.post('/api/col/up_col', { col_id: colId, ...setting });
-      if (colId !== this.props.currColId) return;
+      if (!this.isCurrentCommonSetting(identity)) return;
       if (res.data.errcode !== 0) return message.error(res.data.errmsg || '保存通用规则失败');
       this.savedCommonSetting = this.ruleSettings(setting);
       this.setState({ commonSettingModalVisible: false });
       message.success('配置测试集成功');
     } catch (_) {
-      if (colId === this.props.currColId) message.error('保存通用规则失败，请重试');
+      if (this.isCurrentCommonSetting(identity)) message.error('保存通用规则失败，请重试');
     } finally {
       this.savingCommonSetting = false;
       this.setState({ commonSettingSaving: false });
     }
   };
 
+  isCurrentCommonSetting = identity => Boolean(identity &&
+    this.commonSettingIdentity === identity &&
+    Number(this.props.currColId) === identity.colId &&
+    Number(this.props.match.params.actionId || this.props.currColId) === identity.colId &&
+    this.loadedCollectionId === identity.colId);
+
   cancelCommonSetting = () => {
     if (this.savingCommonSetting) return;
+    this.commonSettingIdentity = null;
     this.setState({ commonSettingModalVisible: false,
       commonSetting: this.ruleSettings(this.savedCommonSetting || this.state.commonSetting) });
   };
 
   openCommonSetting = () => {
+    const colId = Number(this.props.currColId);
+    if (this.loadedCollectionId !== colId ||
+      Number(this.props.match.params.actionId || colId) !== colId) return;
+    this.commonSettingIdentity = { colId };
     this.setState({ commonSettingModalVisible: true,
       commonSetting: this.ruleSettings(this.savedCommonSetting || this.state.commonSetting) });
   };
@@ -861,7 +897,7 @@ class InterfaceColContent extends Component {
               let record = rowData;
               return (
                 <Tooltip title="跳转到对应接口">
-                  <Link to={`/project/${record.project_id}/interface/api/${record.interface_id}`}>
+                  <Link to={`/project/${record.source_project_id || record.project_id}/interface/api/${record.interface_id}`}>
                     {record.path.length > 23 ? record.path + '...' : record.path}
                   </Link>
                 </Tooltip>
