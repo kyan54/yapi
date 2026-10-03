@@ -1054,3 +1054,15 @@ test('Schema dialogs restore native trigger focus after animated close and disca
  }
 
 });
+
+test('interface detail tabs retain legacy spacing and switch views at desktop widths',async({page},testInfo)=>{
+ await login(page);await page.goto(baseURL+'/project/11/interface/api/17');
+ const tabs=page.locator('.interface-content > .tabs-large'),nav=tabs.locator(':scope > .ant-tabs-nav'),preview=tabs.getByRole('tab',{name:'预览',exact:true});
+ for(const width of [1920,1024]){
+  await page.setViewportSize({width,height:1080});await preview.click();await expect(nav.locator('.ant-tabs-tab').first()).toHaveCSS('font-size','16px');await expect(nav.locator('.ant-tabs-tab').first()).toHaveCSS('padding','12px 16px');await expect(nav).toHaveCSS('margin-bottom','0px');
+  const boxes=await nav.locator('.ant-tabs-tab').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,width:r.width,height:r.height};}));expect(boxes).toHaveLength(4);expect(boxes[0].width).toBe(64);expect(boxes[0].height).toBe(48);expect(boxes[1].x-boxes[0].x).toBe(96);await expect(nav.locator('.ant-tabs-ink-bar')).toHaveCSS('width','64px');await expect(page.getByTestId('documentation-ai-button')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);await page.screenshot({path:testInfo.outputPath('detail-tabs-'+width+'.png'),fullPage:false});await nav.screenshot({path:testInfo.outputPath('detail-tabstrip-'+width+'.png')});
+ }
+ for(const name of ['编辑','运行','高级Mock','预览']){const tab=tabs.getByRole('tab',{name,exact:true});await tab.click();await expect(tab).toHaveAttribute('aria-selected','true');}
+ await preview.focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');await expect(tabs.getByRole('tab',{name:'编辑',exact:true})).toHaveAttribute('aria-selected','true');await preview.click();await expect(page.locator('.caseContainer')).toBeVisible();
+});
