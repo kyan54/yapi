@@ -51,20 +51,33 @@ class logController extends baseController {
     if (!type) {
       return (ctx.body = yapi.commons.resReturn(null, 400, 'type不能为空'));
     }
+    typeid = Number(typeid);
+    if (!Number.isSafeInteger(typeid) || typeid <= 0 || !['group', 'project'].includes(type)) {
+      return (ctx.body = yapi.commons.resReturn(null, 400, '动态类型或ID有误'));
+    }
     try {
       if (type === 'group') {
+        if (!(await this.groupModel.get(typeid))) {
+          return (ctx.body = yapi.commons.resReturn(null, 404, '分组不存在'));
+        }
+        const includeGroup = (await this.checkAuth(typeid, 'group', 'view')) === true;
         let projectList = await this.projectModel.list(typeid);
         let projectIds = [],
           projectDatas = {};
         for (let i in projectList) {
-          projectDatas[projectList[i]._id] = projectList[i];
-          projectIds[i] = projectList[i]._id;
+          const project = projectList[i];
+          if (project.project_type === 'public' ||
+              (await this.checkAuth(project._id, 'project', 'view')) === true) {
+            projectDatas[project._id] = project;
+            projectIds.push(project._id);
+          }
         }
         let projectLogList = await this.Model.listWithPagingByGroup(
           typeid,
           projectIds,
           page,
-          limit
+          limit,
+          includeGroup
         );
         projectLogList.forEach((item, index) => {
           item = item.toObject();
@@ -75,12 +88,18 @@ class logController extends baseController {
           }
           projectLogList[index] = item;
         });
-        let total = await this.Model.listCountByGroup(typeid, projectIds);
+        let total = await this.Model.listCountByGroup(typeid, projectIds, includeGroup);
         ctx.body = yapi.commons.resReturn({
           list: projectLogList,
           total: Math.ceil(total / limit)
         });
       } else if (type === "project") {
+        const project = await this.projectModel.getBaseInfo(typeid, '_id project_type');
+        if (!project) return (ctx.body = yapi.commons.resReturn(null, 404, '项目不存在'));
+        if (project.project_type !== 'public' &&
+            (await this.checkAuth(typeid, 'project', 'view')) !== true) {
+          return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+        }
         let result = await this.Model.listWithPaging(typeid, type, page, limit, selectValue);
         let count = await this.Model.listCount(typeid, type, selectValue);
 
@@ -109,8 +128,17 @@ class logController extends baseController {
 
     try {
       let { typeid, type, apis } = params;
+      typeid = Number(typeid);
+      if (type !== 'project' || !Number.isSafeInteger(typeid) || typeid <= 0) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, '动态类型或ID有误'));
+      }
+      let projectDatas = await this.projectModel.getBaseInfo(typeid, '_id basepath project_type');
+      if (!projectDatas) return (ctx.body = yapi.commons.resReturn(null, 404, '项目不存在'));
+      if (projectDatas.project_type !== 'public' &&
+          (await this.checkAuth(typeid, 'project', 'view')) !== true) {
+        return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+      }
       let list = [];
-      let projectDatas = await this.projectModel.getBaseInfo(typeid, 'basepath');
       let basePath = projectDatas.toObject().basepath;
 
       for (let i = 0; i < apis.length; i++) {

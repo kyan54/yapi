@@ -214,6 +214,24 @@ class openController extends baseController {
     this.scriptNetworkScope = require('../sandbox/trusted-scope').create(this.getUid(), Number(projectId));
     let projectData = await this.projectModel.get(projectId);
 
+    // A project token grants its own collection, not private foreign projects.
+    // Preflight every persisted source before any case can perform network I/O.
+    const authorizeCase = async record => {
+      if (!record || Number(record.col_id) !== Number(id) ||
+          Number(record.project_id) !== Number(projectId)) throw new Error('Forbidden');
+      const source = await this.interfaceModel.get(record.interface_id);
+      if (!source) throw new Error('Forbidden');
+      const sourceProject = await this.projectModel.get(source.project_id);
+      if (!sourceProject || (Number(source.project_id) !== Number(projectId) &&
+          sourceProject.project_type !== 'public')) throw new Error('Forbidden');
+      return Number(source.project_id);
+    };
+    try {
+      const storedCases = await this.interfaceCaseModel.list(id, 'all');
+      for (const record of storedCases) await authorizeCase(record);
+    } catch (_) {
+      return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+    }
     let caseList = await yapi.commons.getCaseList(id);
     if (caseList.errcode !== 0) {
       ctx.body = caseList; return;
@@ -224,11 +242,20 @@ class openController extends baseController {
     }
     for (let i = 0, l = caseList.length; i < l; i++) {
       let item = caseList[i];
-      let projectEvn = await this.projectModel.getByEnv(item.project_id);
+      let sourceProjectId;
+      try {
+        const current = await this.interfaceCaseModel.get(item._id);
+        if (!current || Number(current.interface_id) !== Number(item.interface_id)) throw new Error('Forbidden');
+        sourceProjectId = await authorizeCase(current);
+      } catch (_) {
+        return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+      }
+      item.source_project_id = sourceProjectId;
+      let projectEvn = await this.projectModel.getByEnv(sourceProjectId);
 
       item.id = item._id;
       let curEnvItem = _.find(curEnvList, key => {
-        return key.project_id == item.project_id;
+        return Number(key.project_id) === sourceProjectId;
       });
 
       item.case_env = curEnvItem ? curEnvItem.curEnv || item.case_env : item.case_env;

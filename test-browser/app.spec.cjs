@@ -836,3 +836,22 @@ test('normal login accepts an existing synthetic plus-address email', async ({pa
     await connection.db.collection('user').updateOne({_id:9},{$set:{email:'browser@example.invalid'}});
   }
 });
+
+test('real log APIs exclude private project snapshots and counts after visibility revocation', async ({page}) => {
+  const db=connection.db,group=795000,privateProject=795001,publicProject=795002;
+  await db.collection('group').insertOne({_id:group,uid:97,group_name:'Synthetic log ACL',type:'public',members:[]});
+  await db.collection('project').insertMany([privateProject,publicProject].map(id=>({_id:id,uid:97,group_id:group,name:'Synthetic log '+id,project_type:id===publicProject?'public':'private',members:[],basepath:'',env:[]})));
+  await db.collection('log').insertMany([privateProject,publicProject].map((id,index)=>({_id:795010+index,uid:97,username:'Synthetic log writer',typeid:id,type:'project',content:id===publicProject?'public-synthetic-marker':'private-synthetic-marker',data:{synthetic:id},add_time:1700000000})));
+  await db.collection('user').updateOne({_id:9},{$set:{role:'member'}});
+  try {
+    await login(page);
+    const hidden=await (await page.request.get(baseURL+'/api/log/list?type=project&typeid='+privateProject)).json();
+    expect(hidden.errcode).not.toBe(0);expect(JSON.stringify(hidden)).not.toContain('private-synthetic-marker');
+    const latest=await (await page.request.post(baseURL+'/api/log/list_by_update',{data:{type:'project',typeid:privateProject,apis:[]}})).json();
+    expect(latest.errcode).not.toBe(0);
+    const list=async()=>await (await page.request.get(baseURL+'/api/log/list?type=group&typeid='+group+'&page=1&limit=1')).json();
+    const visible=await list();expect(visible.errcode).toBe(0);expect(visible.data.total).toBe(1);expect(visible.data.list).toHaveLength(1);expect(visible.data.list[0].typeid).toBe(publicProject);expect(JSON.stringify(visible)).not.toContain('private-synthetic-marker');
+    await db.collection('project').updateOne({_id:publicProject},{$set:{project_type:'private'}});
+    const revoked=await list();expect(revoked.errcode).toBe(0);expect(revoked.data.total).toBe(0);expect(revoked.data.list).toEqual([]);
+  } finally {await db.collection('user').updateOne({_id:9},{$set:{role:'admin'}});}
+});
