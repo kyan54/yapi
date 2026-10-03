@@ -628,8 +628,10 @@ test('environment no-op save preserves row ordering and synthetic cookie equals 
 test('empty environment component exposes add and safely saves its first record', async () => {
   const Environment = require('../client/containers/Project/Setting/ProjectEnv').default.WrappedComponent;
   let saved;
-  const project={_id:91,env:[]};
-  render(h(Environment,{projectId:91,projectMsg:project,getProject:async()=>{},getEnv(){},updateEnv:async value=>{saved=value;return {payload:{data:{errcode:0}}};}}));
+  const project={_id:91,role:'owner',env:[]};
+  axios.get=async(url,options)=>{assert.equal(url,'/api/project/get');assert.equal(options.params.id,91);return {data:{errcode:0,data:project}};};
+  const refresh=async()=>({payload:{data:{errcode:0,data:project}}});
+  render(h(Environment,{projectId:91,projectMsg:project,getProject:refresh,getEnv:refresh,updateEnv:async value=>{saved=value;project.env=value.env;return {payload:{data:{errcode:0}}};}}));
   await screen.findByText('暂无环境配置');
   fireEvent.click(screen.getByRole('button',{name:'添加环境'}));
   await userEvent.type(screen.getByPlaceholderText('请输入环境名称'),'first');

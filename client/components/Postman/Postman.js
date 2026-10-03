@@ -14,7 +14,8 @@ import {
   Switch,
   Row,
   Col,
-  Alert
+  Alert,
+  message
 } from 'antd';
 import constants from '../../constants/variable.js';
 import AceEditor from 'client/components/AceEditor/AceEditor';
@@ -133,6 +134,7 @@ export default class Run extends Component {
       inputValue: '',
       cursurPosition: { row: 1, column: -1 },
       envModalVisible: false,
+      envDropdownOpen: false,
       test_res_header: null,
       test_res_body: null,
       autoPreviewHTML: true,
@@ -156,6 +158,7 @@ export default class Run extends Component {
 
   // 整合header信息
   handleReqHeader = (value, env) => {
+    env = Array.isArray(env) ? env : [];
     let index = value
       ? env.findIndex(item => {
           return item.name === value;
@@ -164,7 +167,7 @@ export default class Run extends Component {
     index = index === -1 ? 0 : index;
 
     let req_header = [].concat(this.props.data.req_headers || []);
-    let header = [].concat(env[index].header || []);
+    let header = [].concat((env[index] && env[index].header) || []);
     header.forEach(item => {
       if (!checkNameIsExistInArray(item.name, req_header)) {
         item = {
@@ -189,6 +192,11 @@ export default class Run extends Component {
   };
 
   async initState(data) {
+    this.activeRequest = null;
+    const initialization = {};
+    this.activeInitialization = initialization;
+    this.envModalContext = null;
+    this.setState({ envModalVisible: false, envDropdownOpen: false });
     if (!this.checkInterfaceData(data)) {
       return null;
     }
@@ -236,9 +244,11 @@ export default class Run extends Component {
       )
     }
 
+    if (this.activeInitialization !== initialization) return;
     this.setState(
       {
         ...this.state,
+        loading: false,
         test_res_header: null,
         test_res_body: null,
         ...data,
@@ -253,6 +263,7 @@ export default class Run extends Component {
   }
 
   initEnvState(case_env, env) {
+    env = Array.isArray(env) ? env : [];
     let headers = this.handleReqHeader(case_env, env);
 
     this.setState(
@@ -264,7 +275,7 @@ export default class Run extends Component {
         let s = !_.find(env, item => item.name === this.state.case_env);
         if (!this.state.case_env || s) {
           this.setState({
-            case_env: this.state.env[0].name
+            case_env: (env[0] && env[0].name) || ''
           });
         }
       }
@@ -317,21 +328,28 @@ export default class Run extends Component {
     this.setState({ requestMode });
   };
 
+  componentWillUnmount() {
+    this.envModalContext = null;
+    this.activeRequest = null;
+    this.activeInitialization = null;
+  }
+
   reqRealInterface = async () => {
-    if (this.state.loading === true) {
+    if (this.activeRequest) {
+      this.activeRequest = null;
       this.setState({
         loading: false
       });
       return null;
     }
-    this.setState({
-      loading: true
-    });
+    const request = { id: this.props.data._id };
+    this.activeRequest = request;
+    this.setState({ loading: true, test_res_header: null, test_res_body: null,
+      resStatusCode: null, resStatusText: null, test_valid_msg: null });
 
-    let options = handleParams(this.state, this.handleValue),
-      result;
-
-
+    let options, result;
+    try {
+    options = handleParams(this.state, this.handleValue);
     await plugin.emitHook('before_request', options, {
       type: this.props.type,
       caseId: options.caseId,
@@ -339,7 +357,7 @@ export default class Run extends Component {
       interfaceId: this.props.interfaceId
     });
 
-    try {
+      if (this.activeRequest !== request) return;
       options.taskId = this.props.curUid;
       result = await crossRequest(
         options,
@@ -351,6 +369,7 @@ export default class Run extends Component {
         })
       );
 
+      if (this.activeRequest !== request || this.props.data._id !== request.id) return;
       await plugin.emitHook('after_request', result, {
         type: this.props.type,
         caseId: options.caseId,
@@ -368,19 +387,15 @@ export default class Run extends Component {
 
     } catch (data) {
       result = {
-        header: data.header,
-        body: data.body,
+        header: data.header || {},
+        body: data.body || data.message,
         status: null,
         statusText: data.message
       };
     }
-    if (this.state.loading === true) {
-      this.setState({
-        loading: false
-      });
-    } else {
-      return null;
-    }
+    if (this.activeRequest !== request || this.props.data._id !== request.id) return;
+    this.activeRequest = null;
+    this.setState({ loading: false });
 
     let tempJson = result.body;
     if (tempJson && typeof tempJson === 'object') {
@@ -550,22 +565,40 @@ export default class Run extends Component {
 
   // 环境变量模态框相关操作
   showEnvModal = () => {
+    this.envModalContext = {};
     this.setState({
-      envModalVisible: true
+      envModalVisible: true,
+      envDropdownOpen: false
     });
   };
 
   handleEnvOk = (newEnv, index) => {
+    this.envModalContext = null;
+    const case_env = (newEnv[index] && newEnv[index].name) || '';
     this.setState({
       envModalVisible: false,
-      case_env: newEnv[index].name
+      envDropdownOpen: false,
+      env: newEnv,
+      req_headers: this.handleReqHeader(case_env, newEnv),
+      case_env
     });
   };
 
-  handleEnvCancel = () => {
-    this.setState({
-      envModalVisible: false
-    });
+  handleEnvCancel = async () => {
+    const context = this.envModalContext;
+    this.setState({ envModalVisible: false, envDropdownOpen: false });
+    try {
+      const result = await axios.get('/api/project/get_env', {
+        params: { project_id: this.props.data.source_project_id || this.props.data.project_id }
+      });
+      if (this.envModalContext !== context) return;
+      if (result.data.errcode !== 0) throw new Error('环境加载失败');
+      const env = result.data.data.env || [];
+      const selected = env.findIndex(item => item.name === this.state.case_env);
+      this.handleEnvOk(env, selected < 0 ? 0 : selected);
+    } catch (_) {
+      if (this.envModalContext === context) message.error('环境加载失败，请刷新重试');
+    }
   };
 
   render() {
@@ -607,7 +640,7 @@ export default class Run extends Component {
             width={800}
             className="env-modal"
           >
-            <ProjectEnv projectId={this.props.data.project_id} onOk={this.handleEnvOk} />
+            <ProjectEnv inline projectId={this.props.data.source_project_id || this.props.data.project_id} onOk={this.handleEnvOk} />
           </Modal>
         )}
         <div className="url">
@@ -619,6 +652,8 @@ export default class Run extends Component {
             </Select>
             <Select
               value={case_env}
+              open={this.state.envDropdownOpen}
+              onOpenChange={envDropdownOpen => this.setState({ envDropdownOpen })}
               style={{ flexBasis: 180, flexGrow: 1 }}
               onSelect={this.selectDomain}
               popupRender={menu => (
@@ -999,6 +1034,8 @@ export default class Run extends Component {
                     this.state.autoPreviewHTML && this.testResponseBodyIsHTML
                       ? <iframe
                           className="pretty-editor-body"
+                          title="HTML response preview"
+                          sandbox=""
                           srcDoc={this.state.test_res_body}
                         />
                       : <AceEditor

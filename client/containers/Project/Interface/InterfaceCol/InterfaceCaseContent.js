@@ -5,7 +5,6 @@ import { withRouter } from 'react-router';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { message, Tooltip, Input } from 'antd';
-import { getEnv } from '../../../../reducer/modules/project';
 import {
   fetchInterfaceColList,
   setColData,
@@ -25,7 +24,6 @@ import './InterfaceCaseContent.scss';
       currCase: state.interfaceCol.currCase,
       isShowCol: state.interfaceCol.isShowCol,
       currProject: state.project.currProject,
-      projectEnv: state.project.projectEnv,
       curUid: state.user.uid
     };
   },
@@ -33,8 +31,7 @@ import './InterfaceCaseContent.scss';
     fetchInterfaceColList,
     fetchCaseData,
     setColData,
-    fetchCaseList,
-    getEnv
+    fetchCaseList
   }
 )
 @withRouter
@@ -52,14 +49,16 @@ export default class InterfaceCaseContent extends Component {
     currCase: PropTypes.object,
     isShowCol: PropTypes.bool,
     currProject: PropTypes.object,
-    getEnv: PropTypes.func,
-    projectEnv: PropTypes.object,
     curUid: PropTypes.number
   };
 
   state = {
     isEditingCasename: true,
-    editCasename: ''
+    editCasename: '',
+    caseLoading: true,
+    caseLoadError: '',
+    loadedCaseId: null,
+    caseEnv: []
   };
 
   constructor(props) {
@@ -79,41 +78,64 @@ export default class InterfaceCaseContent extends Component {
   }
 
   async componentWillMount() {
-    const result = await this.props.fetchInterfaceColList(this.props.match.params.id);
-    let { currCaseId } = this.props;
-    const params = this.props.match.params;
-    const { actionId } = params;
-    currCaseId = +actionId || +currCaseId || result.payload.data.data[0].caseList[0]._id;
-    let currColId = this.getColId(result.payload.data.data, currCaseId);
-    // this.props.history.push('/project/' + params.id + '/interface/case/' + currCaseId);
-    await this.props.fetchCaseData(currCaseId);
-    this.props.setColData({ currCaseId: +currCaseId, currColId, isShowCol: false });
-    // 获取当前case 下的环境变量
-    await this.props.getEnv(this.props.currCase.source_project_id || this.props.currCase.project_id);
-    // await this.getCurrEnv()
-
-    this.setState({ editCasename: this.props.currCase.casename });
-  }
-
-  async componentWillReceiveProps(nextProps) {
-    const oldCaseId = this.props.match.params.actionId;
-    const newCaseId = nextProps.match.params.actionId;
-    const { interfaceColList } = nextProps;
-    let currColId = this.getColId(interfaceColList, newCaseId);
-    if (oldCaseId !== newCaseId) {
-      await this.props.fetchCaseData(newCaseId);
-      this.props.setColData({ currCaseId: +newCaseId, currColId, isShowCol: false });
-      await this.props.getEnv(this.props.currCase.source_project_id || this.props.currCase.project_id);
-      // await this.getCurrEnv()
-      this.setState({ editCasename: this.props.currCase.casename });
+    const initial = {};
+    this.initialLoad = initial;
+    try {
+      const result = await this.props.fetchInterfaceColList(this.props.match.params.id);
+      if (this.initialLoad !== initial) return;
+      const list = result.payload.data.data || [];
+      const first = list.find(col => col.caseList && col.caseList.length);
+      const caseId = +this.props.match.params.actionId || +this.props.currCaseId ||
+        (first && first.caseList[0]._id);
+      await this.loadCase(caseId, this.getColId(list, caseId));
+    } catch (_) {
+      if (this.initialLoad === initial) this.setState({ caseLoading: false, caseLoadError: '加载测试用例失败，请刷新重试' });
     }
   }
+
+  componentWillReceiveProps(nextProps) {
+    const oldCaseId = this.props.match.params.actionId;
+    const newCaseId = nextProps.match.params.actionId;
+    if (oldCaseId !== newCaseId) {
+      this.initialLoad = null;
+      this.loadCase(newCaseId, this.getColId(nextProps.interfaceColList, newCaseId));
+    }
+  }
+
+  loadCase = async (caseId, currColId) => {
+    const load = {};
+    this.activeCaseLoad = load;
+    this.activeCaseSave = null;
+    this.setState({ caseLoading: true, caseLoadError: '', loadedCaseId: null, caseEnv: [] });
+    this.props.setColData({ currCaseId: +caseId, currColId, isShowCol: false, currCase: {}, caseLoad: load });
+    try {
+      if (!caseId) throw new Error('不存在的case');
+      const result = await this.props.fetchCaseData(caseId, load);
+      if (this.activeCaseLoad !== load) return;
+      const response = result.payload.data;
+      const current = response.data;
+      if (response.errcode !== 0 || !current || !current._id || !current.interface_id) {
+        throw new Error(response.errmsg || '来源接口不存在');
+      }
+      const env = await axios.get('/api/project/get_env', {
+        params: { project_id: current.source_project_id || current.project_id }
+      });
+      if (this.activeCaseLoad !== load) return;
+      if (env.data.errcode !== 0) throw new Error(env.data.errmsg || '加载环境失败');
+      this.setState({ caseLoading: false, loadedCaseId: +caseId, caseEnv: env.data.data.env || [], editCasename: current.casename });
+    } catch (error) {
+      if (this.activeCaseLoad !== load) return;
+      this.setState({ caseLoading: false, caseLoadError: error.message || '加载测试用例失败，请刷新重试' });
+    }
+  };
 
   savePostmanRef = postman => {
     this.postman = postman;
   };
 
   componentWillUnmount() {
+    this.initialLoad = null;
+    this.activeCaseLoad = null;
     this.activeCaseSave = null;
   }
 
@@ -189,14 +211,18 @@ export default class InterfaceCaseContent extends Component {
   };
 
   render() {
-    const { currCase, currProject, projectEnv } = this.props;
+    const { currCase, currProject } = this.props;
     const { isEditingCasename, editCasename } = this.state;
+
+    if (this.state.caseLoading) return <div className="case-content">正在加载测试用例…</div>;
+    if (this.state.caseLoadError) return <div className="case-content" role="alert">{this.state.caseLoadError}</div>;
+    if (+currCase._id !== this.state.loadedCaseId) return null;
 
     const data = Object.assign(
       {},
       currCase,
       {
-        env: projectEnv.env,
+        env: this.state.caseEnv,
         pre_script: currProject.pre_script,
         after_script: currProject.after_script
       },

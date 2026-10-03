@@ -60,7 +60,7 @@
     },
     "server/controllers/interface.js": {
       "baselineSha256": "784538c1166287b13f4c0be506f21cb69a26a25b9b7be22a01f6fc539e46cc98",
-      "reason": "Check project-token scope against actual interface ownership; await every import add/update and propagate errors before reporting success."
+      "reason": "Check project-token scope against actual interface ownership; await every import add/update and propagate errors before reporting success. Authorize upIndex/upCatIndex against every persisted target project before any batch write, reject mixed-project targets, and await sorting writes; proxy remains separately owned."
     },
     "server/controllers/documentation.js": {
       "baselineSha256": null,

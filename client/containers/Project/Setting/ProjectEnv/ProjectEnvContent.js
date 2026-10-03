@@ -32,6 +32,7 @@ class ProjectEnvContent extends Component {
     projectMsg: PropTypes.object,
     form: PropTypes.object,
     onSubmit: PropTypes.func,
+    disabled: PropTypes.bool,
     handleEnvInput: PropTypes.func
   };
 
@@ -348,6 +349,7 @@ class ProjectEnvContent extends Component {
             icon="save"
             type="primary"
             size="large"
+            disabled={this.props.disabled}
             onClick={this.handleOk}
           >
             保 存

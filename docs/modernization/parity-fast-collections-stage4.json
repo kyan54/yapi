@@ -1,0 +1,102 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "scope": "B stage4 only; matching IDs amend prior deltas, original246 retained",
+  "base": "d9f9ff90f1a43d4183a8672c43f851f6a004c98e",
+  "complete": false,
+  "rows": [
+    {
+      "id": "runner-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Real JSON/raw/form requests verify required query/form checkboxes remain disabled and included, optional query/form exclusions, precise path/header/method/body and environment variable substitution."
+    },
+    {
+      "id": "runner-04",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Real delayed request, cancel, restart and release old response while newer request is pending. New keeps newer result; legacy overwrites it. Interface route switch and Run reopen also preserve current result."
+    },
+    {
+      "id": "runner_response-02",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "HTML preview uses empty sandbox: returned fixed script cannot modify parent. CSS and local anchor display still work. Raw/preview off/on shows exact content without executing active content."
+    },
+    {
+      "id": "collection_rules-04",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "detail": "Additional load failure guard: old settings cleared on generation change; failed metadata/env cannot enable rules. Prior paired guest/cancel evidence still applies."
+    },
+    {
+      "id": "collection_run-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Additional delayed metadata disables start, failure never writes empty report, successful empty collection remains usable; prior loading/report evidence still applies."
+    },
+    {
+      "id": "case_editor-03",
+      "status": "failed",
+      "old": "notrun",
+      "new": "failed",
+      "detail": "Source field replacement is reflected, but deleting source then reloading leaves corresponding-interface href /project/undefined/interface/api/undefined. Follow-up pending."
+    }
+  ],
+  "validation": {
+    "basicPass": 32,
+    "modernizationPass": 309,
+    "modernizationSkipped": 6,
+    "fail": 0,
+    "runtimePaired": {
+      "newPassed": 4,
+      "oldPassed": 1,
+      "oldFailed": 2,
+      "oldSkipped": 1
+    },
+    "extraNewHtmlCssAnchor": 1,
+    "bodyRoundtrips": {
+      "oldPassed": 1,
+      "newPassed": 1
+    },
+    "responseTypesCorsFailure": {
+      "oldPassed": 1,
+      "newPassed": 1
+    }
+  },
+  "composition": {
+    "passed": 27,
+    "failed": 1,
+    "blocked": 5,
+    "notrun": 19,
+    "ownedTotal": 52
+  },
+  "limitations": [
+    "runner-01 file variants still incomplete: form-file UI explicitly unsupported; single-file transport still needs probe. Do not classify as a script dependency.",
+    "runner-03 ordinary browser/server and network failure paths now exercised, script-related boundaries remain incomplete.",
+    "No explicit raw/pretty selector or response timing label exists in this Run view; actual HTML toggle/Ace and response header/status/JSON/XML/text/HTML checked."
+  ],
+  "syntheticFixture": {
+    "name": "parity-fast-collections-echo",
+    "source": "test-browser/parity-collections-echo.cjs",
+    "network": "own internal + own proxy frontend",
+    "hostBind": "127.0.0.1 automatic unused port",
+    "restrictions": "fixed synthetic marker required, no outbound proxy, no credentials logged, readonly source verified before browser testing"
+  },
+  "visualReview": "1920x1080 actual HTML response screenshot reviewed: header pane, rendered content, local link and safe toggle readable; status banner/layout spacing still differs from old and is not pixel-equivalence proof.",
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "sha256": {
+    "unit-stage4.log": "9b5d7885d5858dbd0772e8bd1feb5c00c8a673503b9676c7826a0e93abf8669c",
+    "runtime-before.json": "805523f84b54dc190cbd4f83cd6278e5c5e41670d4423f7bbe83c0d081c74074",
+    "cancel-before.json": "ccc4dbf73d1b6c05b1534d8aa7b7cdfa3f8c90765836a7e35502c7abcfe2ede5",
+    "runtime-stage4.json": "4985310ad8e90caa7992c20bcdcaa3d98e929d4a5bc056187726450f11257d0a",
+    "html-styled-final.json": "678ea6a5dd611bff6765008bdeb30924b55c8e141366b61e8610122c876ef6ce",
+    "bodies-paired.json": "1f4cfb54121b719fa95ea2a6b83188e458f6da1feb9eea690810dc74346aaf5f",
+    "responses-paired-final.json": "cdedd1176e579c593666fe16a1112dbadf09bc7d362432a889fdda3f946fdbfb",
+    "source-removed-before.json": "3b5a0b08676c0f0713357690b3d53a86de9e421e9c34e65b0627539957ce774c"
+  }
+}

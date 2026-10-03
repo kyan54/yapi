@@ -855,3 +855,34 @@ test('real log APIs exclude private project snapshots and counts after visibilit
     const revoked=await list();expect(revoked.errcode).toBe(0);expect(revoked.data.total).toBe(0);expect(revoked.data.list).toEqual([]);
   } finally {await db.collection('user').updateOne({_id:9},{$set:{role:'admin'}});}
 });
+
+test('denied and missing profiles show recoverable errors without crashing or exposing fields', async ({page}) => {
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await connection.db.collection('user').updateOne({_id:9},{$set:{role:'member'}});
+  try {
+    await login(page);await page.goto(baseURL+'/user/profile/97');
+    await expect(page.locator('.ant-alert-error')).toContainText('没有权限');
+    await expect(page.locator('.user-profile')).toHaveCount(0);
+    await page.getByRole('button',{name:/重\s*试/}).click();
+    await expect(page.locator('.ant-alert-error')).toContainText('没有权限');
+    await page.locator('.toolbar-li').last().locator('a.dropdown-link').click();
+    await page.getByRole('link',{name:/个人中心/}).click();
+    await expect(page.getByRole('heading',{name:'个人设置',exact:true})).toBeVisible();
+  } finally {await connection.db.collection('user').updateOne({_id:9},{$set:{role:'admin'}});}
+  await page.goto(baseURL+'/user/profile/795999');
+  await expect(page.locator('.ant-alert-error')).toContainText('不存在的用户');
+  await expect(page.locator('.user-profile')).toHaveCount(0);expect(errors).toEqual([]);
+});
+
+test('late denied profile response cannot replace the profile selected from the user menu', async ({page}) => {
+  await login(page);let started=false,release;const gate=new Promise(resolve=>release=resolve);
+  await page.route('**/api/user/find?id=97',async route=>{started=true;await gate;await route.fulfill({contentType:'application/json',body:JSON.stringify({errcode:401,errmsg:'Synthetic late denial',data:null})});});
+  await page.goto(baseURL+'/user/profile/97');await expect.poll(()=>started).toBe(true);
+  await page.locator('.toolbar-li').last().locator('a.dropdown-link').click();
+  await page.getByRole('link',{name:/个人中心/}).click();
+  await expect(page.getByRole('heading',{name:'个人设置',exact:true})).toBeVisible();
+  const reply=page.waitForResponse(r=>r.url().endsWith('/api/user/find?id=97'));release();await reply;
+  await page.waitForTimeout(100);await expect(page).toHaveURL(baseURL+'/user/profile/9');
+  await expect(page.getByRole('heading',{name:'个人设置',exact:true})).toBeVisible();
+  await expect(page.getByText('Synthetic late denial',{exact:true})).toHaveCount(0);
+});

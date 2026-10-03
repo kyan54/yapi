@@ -1,0 +1,44 @@
+{
+  "scope": "C ProjectEnv inline save and source permission follow-up",
+  "priorRemoteCommit": "1012e99fb549e492ac2b5a4e48113f42261492eb",
+  "contract": {
+    "projectId": "Source project whose environments are edited",
+    "onOk": "onOk(env,index) only after mutation errcode0 and successful refresh; returned env is fresh server data",
+    "inline": "Optional boolean; supplying onOk also selects inline mode",
+    "redux": "Inline loads and refreshes never dispatch getProject/getEnv; settings mode refreshes current project normally",
+    "permission": "Local source project role must be admin/owner/dev; server up_env remains authoritative"
+  },
+  "matrixPolicy": "Independent additional evidence; do not replace the original246 matrix or mark B cross-project Run compound rows passed.",
+  "validation": {
+    "focusedUnit": {
+      "passed": 8,
+      "failed": 0
+    },
+    "build": "passed",
+    "baselineInventory": "passed",
+    "newBrowserCases": 6,
+    "settingsPaired": "both passed after awaiting initial field hydration",
+    "database": "Exact saved domains read from synthetic projects930601,930604,930607,930610",
+    "visual": "1920x1080-or-larger screenshots inspected; receipt and disabled Save visible",
+    "oldBrowserCases": {
+      "passed": 1,
+      "failed": 5,
+      "reason": "Legacy inline modal closes on write failure/refresh failure; readonly source editor remains accessible. Normal settings passed after initial hydration wait."
+    }
+  },
+  "remaining": [
+    "B cross-project case integration with Postman entry/context is not run by C.",
+    "Postman dropdown remains open beside env modal in current C baseline; B-owned entry follow-up.",
+    "Direct coordination message to B was rejected by automatic approval review; no workaround attempted."
+  ],
+  "evidenceDirectory": "/Users/hujinwu/Documents/Codex/2026-10-03/task-6/stage2",
+  "reports": [
+    "env-receipt-final-results.json",
+    "env-receipt-old-accepted-results.json",
+    "env-settings-repeat-results.json",
+    "project-env-unit.log",
+    "build-project-env.log",
+    "baseline-env.log",
+    "env-receipt-db-readback.json"
+  ]
+}

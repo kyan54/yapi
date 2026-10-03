@@ -1230,21 +1230,35 @@ class interfaceController extends baseController {
    */
   async upIndex(ctx) {
     try {
-      let params = ctx.request.body;
-      if (!params || !Array.isArray(params)) {
-        ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组');
+      const params = ctx.request.body;
+      if (!Array.isArray(params)) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组'));
       }
-      params.forEach(item => {
-        if (item.id) {
-          this.Model.upIndex(item.id, item.index).then(
-            res => {},
-            err => {
-              yapi.commons.log(err.message, 'error');
-            }
-          );
+      const targets = [];
+      const seen = new Set();
+      let projectId;
+      // Resolve every persisted owner and authorize the entire batch before writing.
+      for (const item of params) {
+        const id = item && Number(item.id);
+        if (!item || !Number.isSafeInteger(id) || id < 1 ||
+            !Number.isSafeInteger(item.index) || item.index < 0 || seen.has(id)) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '排序参数无效'));
         }
-      });
-
+        seen.add(id);
+        const target = await this.Model.get(id);
+        if (!target) {
+          return (ctx.body = yapi.commons.resReturn(null, 404, '排序目标不存在'));
+        }
+        if (projectId !== undefined && String(projectId) !== String(target.project_id)) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '排序目标必须属于同一项目'));
+        }
+        projectId = target.project_id;
+        if ((await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+          return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+        }
+        targets.push({ id, index: item.index });
+      }
+      await Promise.all(targets.map(item => this.Model.upIndex(item.id, item.index)));
       return (ctx.body = yapi.commons.resReturn('成功！'));
     } catch (e) {
       ctx.body = yapi.commons.resReturn(null, 400, e.message);
@@ -1263,21 +1277,35 @@ class interfaceController extends baseController {
    */
   async upCatIndex(ctx) {
     try {
-      let params = ctx.request.body;
-      if (!params || !Array.isArray(params)) {
-        ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组');
+      const params = ctx.request.body;
+      if (!Array.isArray(params)) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组'));
       }
-      params.forEach(item => {
-        if (item.id) {
-          this.catModel.upCatIndex(item.id, item.index).then(
-            res => {},
-            err => {
-              yapi.commons.log(err.message, 'error');
-            }
-          );
+      const targets = [];
+      const seen = new Set();
+      let projectId;
+      // Resolve every persisted owner and authorize the entire batch before writing.
+      for (const item of params) {
+        const id = item && Number(item.id);
+        if (!item || !Number.isSafeInteger(id) || id < 1 ||
+            !Number.isSafeInteger(item.index) || item.index < 0 || seen.has(id)) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '排序参数无效'));
         }
-      });
-
+        seen.add(id);
+        const target = await this.catModel.get(id);
+        if (!target) {
+          return (ctx.body = yapi.commons.resReturn(null, 404, '排序目标不存在'));
+        }
+        if (projectId !== undefined && String(projectId) !== String(target.project_id)) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '排序目标必须属于同一项目'));
+        }
+        projectId = target.project_id;
+        if ((await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+          return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+        }
+        targets.push({ id, index: item.index });
+      }
+      await Promise.all(targets.map(item => this.catModel.upCatIndex(item.id, item.index)));
       return (ctx.body = yapi.commons.resReturn('成功！'));
     } catch (e) {
       ctx.body = yapi.commons.resReturn(null, 400, e.message);

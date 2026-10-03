@@ -1,5 +1,5 @@
 import React, { PureComponent as Component } from 'react';
-import { Row, Col, Input, Button, Select, message, Upload, Tooltip } from 'antd';
+import { Row, Col, Input, Button, Select, message, Upload, Tooltip, Alert, Spin } from 'antd';
 import axios from 'axios';
 import { formatTime } from '../../common.js';
 import PropTypes from 'prop-types';
@@ -76,11 +76,13 @@ class Profile extends Component {
       emailEdit: false,
       secureEdit: false,
       roleEdit: false,
-      userinfo: {}
+      userinfo: {},
+      profileError: ''
     };
   }
 
   componentDidMount() {
+    this.mounted = true;
     this._uid = this.props.match.params.uid;
     this.handleUserinfo(this.props);
   }
@@ -90,6 +92,7 @@ class Profile extends Component {
       return;
     }
     if (this._uid !== nextProps.match.params.uid) {
+      this._uid = nextProps.match.params.uid;
       this.handleUserinfo(nextProps);
     }
   }
@@ -109,21 +112,29 @@ class Profile extends Component {
     });
   };
 
-  getUserInfo = id => {
-    var _this = this;
-    const { curUid } = this.props;
+  componentWillUnmount() {
+    this.mounted = false;
+    this.profileRequest = (this.profileRequest || 0) + 1;
+  }
 
-    axios.get('/api/user/find?id=' + id).then(res => {
-      _this.setState({
-        userinfo: res.data.data,
-        _userinfo: { ...res.data.data }
-      });
-      if (curUid === +id) {
-        this.props.setBreadcrumb([{ name: res.data.data.username }]);
-      } else {
-        this.props.setBreadcrumb([{ name: '管理: ' + res.data.data.username }]);
+  getUserInfo = async id => {
+    const request = this.profileRequest = (this.profileRequest || 0) + 1;
+    this.setState({ userinfo: {}, _userinfo: {}, profileError: '', usernameEdit: false,
+      emailEdit: false, secureEdit: false, roleEdit: false });
+    try {
+      const res = await axios.get('/api/user/find?id=' + encodeURIComponent(id));
+      if (!this.mounted || request !== this.profileRequest) return;
+      if (!res.data || res.data.errcode !== 0 || !res.data.data) {
+        throw new Error((res.data && res.data.errmsg) || '用户资料加载失败');
       }
-    });
+      const userinfo = res.data.data;
+      this.setState({ userinfo, _userinfo: { ...userinfo } });
+      this.props.setBreadcrumb([{ name: this.props.curUid === +id ? userinfo.username : '管理: ' + userinfo.username }]);
+    } catch (error) {
+      if (this.mounted && request === this.profileRequest) {
+        this.setState({ profileError: error.message || '用户资料加载失败' });
+      }
+    }
   };
 
   updateUserinfo = name => {
@@ -209,6 +220,9 @@ class Profile extends Component {
   };
 
   render() {
+    if (this.state.profileError) return <Alert type="error" message={this.state.profileError}
+      action={<Button onClick={() => this.getUserInfo(this.props.match.params.uid)}>重试</Button>} />;
+    if (!this.state.userinfo.uid) return <Spin />;
     let ButtonGroup = Button.Group;
     let userNameEditHtml, emailEditHtml, secureEditHtml, roleEditHtml;
     const Option = Select.Option;
