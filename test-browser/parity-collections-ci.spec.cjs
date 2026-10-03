@@ -76,8 +76,8 @@ for(const failure of ['business','network'])test(`project_mock-04 ${failure} sav
  await page.getByRole('button',{name:/^保\s*存$/}).click();
  // Transport and local fallback may each emit a toast. Require the exact
  // failure-specific error, not a unique generic error element or any toast.
- const expectedError=failure==='business'?'Synthetic rejected save':'Network Error';
- await expect(page.locator('.ant-message-error').filter({hasText:new RegExp('^\s*'+expectedError+'\s*$')}).first()).toBeVisible();
+ const expectedError=failure==='business'?/^\s*Synthetic rejected save\s*$/:/^\s*Network Error\s*$/;
+ await expect(page.locator('.ant-message-error').filter({hasText:expectedError}).first()).toBeVisible();
  await expect(page.locator('.ant-message-success')).toHaveCount(0);
  expect(intercepted).toBe(true);expect(saveAttempts).toBe(1);
  const unchanged=await connection.db.collection('project').findOne({_id:id});expect(unchanged.project_mock_script).toBe('');expect(unchanged.is_mock_open).toBe(false);
