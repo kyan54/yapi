@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-2",
+  "scope": "A/interfaces/batches-1-3",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -21,41 +21,55 @@
     "interface_id": 901016,
     "tag": [],
     "note": "Dedicated synthetic DBs only. Baseline tag save errors retained separately; tag cleared equally to isolate bulk behavior.",
-    "seed_method": "makeFixture({date}) is an offline object generator. Its generated collections were inserted directly into task-created parity_fast_interfaces_* DBs (per-record legacy insert to avoid shell line limits), not via bindFixture/renderMongoScript whose ui_parity_* naming differs from the explicitly assigned prefix. No shared fixture or DB was reset.",
-    "identity_guard": "parity-interfaces.preflight.cjs verifies internal application/Mongo network, no socket mount, read-only config actual DB hostname/name, disabled mail, exact loopback proxy port, and _ui_parity_fixture marker synthetic/run/database/state/hash before suite mutations.",
+    "seed_method": "makeFixture({date}) is an offline object generator. Its generated collections were inserted directly into task-created parity_fast_interfaces_* DBs (per-record legacy insert to avoid shell line limits), not via bindFixture/renderMongoScript whose ui_parity_* naming differs from the explicitly assigned prefix. No shared fixture or DB was reset. Missing legacy group records from the same initial shell truncation were subsequently inserted only if absent, under the existing task marker. All 14 parameter flows reran successfully with complete core group/project/interface fixtures.",
+    "identity_guard": "parity-interfaces.preflight.cjs verifies internal application/Mongo network, no socket mount, read-only config actual DB hostname/name, disabled mail, exact loopback proxy port, and _ui_parity_fixture marker synthetic/run/database/state/hash before suite mutations. Also verifies core fixture relations, exact six internal network participants/network ID, deployed proxy script SHA and read-only mount/start command, exact app working directory/start command, and rejects extra db keys (including connectString) or YAPI/Mongo/DB/NODE_OPTIONS/NODE_PATH environment overrides.",
     "run": "interfaces_20261003",
     "fixtureSha256": "df5dd7dea9fd9b4eba357a38fc29af43cce9bdbe31c8a90d7d3bfb96e82e2a2a",
     "final_ids": {
       "old": {
         "rows": [
-          940108,
-          940115
+          940325,
+          940332
         ],
         "paths": [
-          940122,
-          940129
+          940339,
+          940346
+        ],
+        "projects": [
+          930046,
+          930049,
+          930052
         ]
       },
       "new": {
         "rows": [
-          940110,
-          940111
+          940150,
+          940151
         ],
         "paths": [
-          940112,
-          940113
+          940152,
+          940153
+        ],
+        "projects": [
+          930035,
+          930036,
+          930037
         ]
       }
     }
   },
   "tests": {
-    "passed": 14,
+    "passed": 20,
     "failed": 0,
     "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
     "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs.",
-    "unit_passed": 10,
+    "unit_passed": 15,
     "unit_command": "node --test test-modernization/interface-bulk-parameters.test.js test-modernization/interface-path-parameters.test.js test-modernization/interface-parity-preflight.test.js",
-    "default_ci": "The three new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched."
+    "default_ci": "The three new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched.",
+    "breakdown": {
+      "parameters": 14,
+      "list_filters": 6
+    }
   },
   "scenarios": [
     {
@@ -125,8 +139,10 @@
       "old-db-final.json",
       "new-db-final.json"
     ],
-    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed. Stable parameter screenshots normalized to scrollY=0 were captured separately; no whole-page equivalence claimed.",
-    "candidate_source": "image-source-sha256.txt matches baseline client/server/common/exts before local fix"
+    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed. Stable parameter screenshots normalized to scrollY=0 were captured separately; no whole-page equivalence claimed. List old/new owner screenshots manually reviewed: no row-selection/sort controls; category select layout differs and is pending local alignment.",
+    "candidate_source": "image-source-sha256.txt matches baseline client/server/common/exts before local fix",
+    "list_filters": "list-results.json",
+    "core_fixture_rerun": "results.json, all14 passed after missing-group repair and final proxy guard"
   },
   "remaining": "All assigned scenario IDs other than the six listed here remain notrun by this increment. Keep existing main-matrix evidence; no main matrix overwrite.",
   "fixed_regressions": [
@@ -147,7 +163,42 @@
       "status": "notrun",
       "classification": "not-applicable pending integration-owner review",
       "reason": "Both baseline and candidate InterfaceList Table have no rowSelection or bulk-action configuration. Preserve original assertion; do not invent a new product feature or count as pass.",
-      "source": "client/containers/Project/Interface/InterfaceList/InterfaceList.js Table configuration"
+      "source": "client/containers/Project/Interface/InterfaceList/InterfaceList.js Table configuration",
+      "evidence": "list-results/*/list-filter-cleared.png; no tbody checkboxes and no sorter in owner/dev/guest screenshots/DOM on old/new. Filter-menu checkboxes are not row-selection controls."
+    },
+    {
+      "id": "interface_list-01",
+      "status": "notrun",
+      "reason": "status/tag subset passed; public/open-state filtering and public/private nonmember roles still require closure. Full compound assertion not promoted."
+    }
+  ],
+  "atomic_additions": [
+    {
+      "id": "interface_list-01-status-tag-owner",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "role": "owner",
+      "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
+    },
+    {
+      "id": "interface_list-01-status-tag-developer",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "role": "developer",
+      "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
+    },
+    {
+      "id": "interface_list-01-status-tag-guest",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "role": "guest",
+      "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
     }
   ]
 }
