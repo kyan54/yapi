@@ -9,7 +9,7 @@ import {
 } from '../../../../reducer/modules/interface.js';
 import { getProject } from '../../../../reducer/modules/project.js';
 import axios from 'axios';
-import { message, Modal } from 'antd';
+import { message, Modal, Alert } from 'antd';
 import './Edit.scss';
 import { withRouter, Link } from 'react-router-dom';
 import ProjectTag from '../../Setting/ProjectMessage/ProjectTag.js';
@@ -52,6 +52,9 @@ class InterfaceEdit extends Component {
         `/mock/${currProject._id}${currProject.basepath}${curdata.path}`,
       curdata: {},
       status: 0,
+      lockLost: false,
+      collaborationWarning: '',
+      initialError: '',
       visible: false
       // tag: []
     };
@@ -71,73 +74,51 @@ class InterfaceEdit extends Component {
   };
 
   componentWillUnmount() {
-    try {
-      if (this.state.status === 1) {
-        this.WebSocket.close();
-      }
-    } catch (e) {
-      return null;
-    }
+    this.disposed = true;
+    clearTimeout(this.editLoadTimer);
+    try { if (this.WebSocket) this.WebSocket.close(); } catch (_) {}
   }
 
   componentDidMount() {
-    let domain = location.hostname + (location.port !== '' ? ':' + location.port : '');
-    let s,
-      initData = false;
-    //因后端 node 仅支持 ws， 暂不支持 wss
-    let wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
-
-    setTimeout(() => {
-      if (initData === false) {
-        this.setState({
-          curdata: this.props.curdata,
-          status: 1
-        });
-        initData = true;
-      }
+    const domain = location.hostname + (location.port !== '' ? ':' + location.port : '');
+    const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+    let initData = false;
+    const failed = reason => {
+      if (this.disposed) return;
+      clearTimeout(this.editLoadTimer);
+      this.setState(state => state.status === 1
+        ? { lockLost: true, collaborationWarning: reason }
+        : { status: 3, initialError: reason });
+    };
+    this.editLoadTimer = setTimeout(() => {
+      if (!initData) failed('协作连接超时，无法确认编辑锁。请重新打开编辑页面。');
     }, 3000);
-
     try {
-      s = new WebSocket(
-        wsProtocol +
-          '://' +
-          domain +
-          '/api/interface/solve_conflict?id=' +
-          this.props.match.params.actionId
-      );
-      s.onopen = () => {
-        this.WebSocket = s;
-      };
-
-      s.onmessage = e => {
+      const socket = new WebSocket(wsProtocol + '://' + domain +
+        '/api/interface/solve_conflict?id=' + this.props.match.params.actionId);
+      this.WebSocket = socket;
+      socket.onmessage = event => {
+        if (this.disposed) return;
         initData = true;
-        let result = JSON.parse(e.data);
-        if (result.errno === 0) {
-          this.setState({
-            curdata: result.data,
-            status: 1
-          });
+        clearTimeout(this.editLoadTimer);
+        let result;
+        try { result = JSON.parse(event.data); } catch (_) {
+          failed('协作服务响应无效，请重新打开编辑页面。');
+          return;
+        }
+        if (result.errno === 0 || result.readOnly === true) {
+          this.setState({ curdata: result.data, status: 1, lockLost: false,
+            collaborationWarning: result.readOnly ? result.errmsg : '' });
+        } else if (result.errno === 423) {
+          this.setState({ curdata: result.data, status: 2 });
         } else {
-          this.setState({
-            curdata: result.data,
-            status: 2
-          });
+          failed(result.errmsg || '无法取得编辑锁，请重新打开编辑页面。');
         }
       };
-
-      s.onerror = () => {
-        this.setState({
-          curdata: this.props.curdata,
-          status: 1
-        });
-        console.warn('websocket 连接失败，将导致多人编辑同一个接口冲突。');
-      };
-    } catch (e) {
-      this.setState({
-        curdata: this.props.curdata,
-        status: 1
-      });
-      console.error('websocket 连接失败，将导致多人编辑同一个接口冲突。');
+      socket.onerror = () => failed('协作连接失败，无法确认编辑锁。请重新打开编辑页面。');
+      socket.onclose = () => failed('协作连接已断开，编辑锁不可用。请重新打开编辑页面后再保存。');
+    } catch (_) {
+      failed('协作连接失败，无法确认编辑锁。请重新打开编辑页面。');
     }
   }
 
@@ -186,6 +167,8 @@ class InterfaceEdit extends Component {
     const { cat, basepath, switch_notice, tag } = this.props.currProject;
     return (
       <div className="interface-edit">
+        {this.state.collaborationWarning && <Alert type="warning" showIcon title={this.state.collaborationWarning} />}
+        {this.state.status === 3 && <Alert type="error" showIcon title={this.state.initialError} />}
         {this.state.status === 1 ? (
           <InterfaceEditForm
             cat={cat}
@@ -193,15 +176,16 @@ class InterfaceEdit extends Component {
             basepath={basepath}
             noticed={switch_notice}
             onSubmit={this.onSubmit}
+            saveDisabled={this.state.lockLost}
             curdata={this.state.curdata}
             onTagClick={this.onTagClick}
           />
         ) : null}
         {this.state.status === 2 ? (
           <div style={{ textAlign: 'center', fontSize: '14px', paddingTop: '10px' }}>
-            <Link to={'/user/profile/' + this.state.curdata.uid}>
+            {this.state.curdata.uid ? <Link to={'/user/profile/' + this.state.curdata.uid}>
               <b>{this.state.curdata.username}</b>
-            </Link>
+            </Link> : <b>{this.state.curdata.username}</b>}
             <span>正在编辑该接口，请稍后再试...</span>
           </div>
         ) : null}

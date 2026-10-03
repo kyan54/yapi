@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-9",
+  "scope": "A/interfaces/batches-1-10",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -128,7 +128,16 @@
       "skip_reason": "Existing optional Mongo integration tests; isolated paired browser/API/DB checks ran separately."
     },
     "skipped": 6,
-    "skip_reason": "Old-version transport regression explicitly notrun; candidate6 transport tests execute."
+    "skip_reason": "Old-version transport regression explicitly notrun; candidate6 transport tests execute.",
+    "batch10_current_candidate": {
+      "new_browser_passed": 53,
+      "failed": 0,
+      "skipped": 0,
+      "default_passed": 310,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "New-only current candidate regression. Prior paired batch9 aggregate is historical, not a 106-test current run."
+    }
   },
   "scenarios": [
     {
@@ -263,8 +272,16 @@
       "id": "interface_add-04",
       "status": "failed",
       "old": "failed",
+      "new": "failed",
+      "checks": "Owner tree and developer table entry, guest boundary: cancel/close/Escape/reopen no writes; delayed in-flight double-click creates two legacy records but one candidate record/request. Candidate network+503 failures preserve form and allow retry.",
+      "open_review": "Rapid interface duplicate submit fixed. Pending dismissal/stale completion and category synchronous guard still require follow-up; do not count compound complete."
+    },
+    {
+      "id": "interface_metadata-02",
+      "status": "failed",
+      "old": "failed",
       "new": "passed",
-      "checks": "Owner tree and developer table entry, guest boundary: cancel/close/Escape/reopen no writes; delayed in-flight double-click creates two legacy records but one candidate record/request. Candidate network+503 failures preserve form and allow retry."
+      "checks": "Connection-owned atomic edit lease: rejected/same-user/guest closes cannot clear owner; simultaneous claim grants one; owner close permits next editor; disconnect/reconnect, live revocation, expired takeover/late close, legacy uid recovery and real crash/restart bounded expiry. Old rejected close clears owner and guest claims lock. Eight new browser scenarios pass; old paired observation confirms defect, seven candidate-only cases notrun."
     }
   ],
   "legacy_defects": [
@@ -340,9 +357,17 @@
     ],
     "create_before": "create-rapid-before-results.json",
     "schema_advanced_before": "schema-advanced-before-results.json",
-    "batch9_visual": "1920x1080 legacy/candidate schema screenshots manually viewed: candidate exposes full-schema tab, union type and tuple semantics; legacy displays tuple as a single Items row and union as string. Deep candidate rows accessible through13 levels; layouts/scroll differ, no whole-page equivalence claimed."
+    "batch9_visual": "1920x1080 legacy/candidate schema screenshots manually viewed: candidate exposes full-schema tab, union type and tuple semantics; legacy displays tuple as a single Items row and union as string. Deep candidate rows accessible through13 levels; layouts/scroll differ, no whole-page equivalence claimed.",
+    "batch10": {
+      "report": "interfaces/batch10-new-results.json",
+      "screenshots": "interfaces/batch10-new-results",
+      "default": "interfaces/lock-default-tests.log",
+      "source_sha256": "interfaces/lock-source-sha256.json",
+      "legacy": "interfaces/lock-all-before-transport-fix.json",
+      "visual_review": "1920x1080 blocked-editor, initial-failure, disconnected draft screenshots inspected; layout readable, draft preserved. Initial historical proxy-close injection was replaced with actual native browser socket close."
+    }
   },
-  "remaining": "Unlisted original assertions remain notrun, including metadata/WS, Body/JSON5/preview/F9, notes, remaining tree navigation and additional Schema controls. Separately reproduced collaboration-lock release bug is being coordinated with parent; not part of90-test aggregate. Preserve original246 matrix.",
+  "remaining": "Unlisted original assertions remain notrun, including metadata fields, Body/JSON5/preview/F9, notes, remaining tree navigation and additional Schema controls. Interface/category pending-create lifecycle review remains open. Preserve original246 matrix.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",

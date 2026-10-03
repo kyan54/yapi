@@ -105,6 +105,7 @@ class InterfaceEditForm extends Component {
     curdata: PropTypes.object,
     mockUrl: PropTypes.string,
     onSubmit: PropTypes.func,
+    saveDisabled: PropTypes.bool,
     basepath: PropTypes.string,
     noticed: PropTypes.bool,
     cat: PropTypes.array,
@@ -207,6 +208,7 @@ class InterfaceEditForm extends Component {
 
   handleSubmit = e => {
     e.preventDefault();
+    if (this.props.saveDisabled) return message.error('编辑锁不可用，请重新打开编辑页面后再保存。');
     const fields = this.props.form.getFieldsValue();
     if ((fields.res_body_type === 'json' && fields.res_body_is_json_schema && !this.schemaValidity.response) ||
         (fields.req_body_type === 'json' && fields.req_body_is_json_schema && !this.schemaValidity.request)) {
@@ -1303,7 +1305,7 @@ class InterfaceEditForm extends Component {
             <Affix offsetBottom={0}>
               <Button
                 className="interface-edit-submit-button"
-                disabled={this.state.submitStatus}
+                disabled={this.state.submitStatus || this.props.saveDisabled}
                 size="large"
                 htmlType="submit"
               >

@@ -15,6 +15,8 @@ class interfaceModel extends baseModel {
       project_id: { type: Number, required: true },
       catid: { type: Number, required: true },
       edit_uid: { type: Number, default: 0 },
+      edit_lock_token: { type: String, select: false },
+      edit_lock_expires_at: { type: Number, select: false },
       status: { type: String, enum: ['undone', 'done'], default: 'undone' },
       desc: String,
       markdown: String,
@@ -295,6 +297,30 @@ class interfaceModel extends baseModel {
     return writeLegacyInterface(this.model, id, data, {
       now: () => new Date(yapi.commons.time() * 1000)
     });
+  }
+
+  claimEditLock(id, projectId, uid, token, now, expiresAt) {
+    // A legacy edit_uid without a lease is recoverable on first upgraded claim.
+    return this.model.findOneAndUpdate({
+      _id: id,
+      project_id: projectId,
+      $or: [
+        { edit_lock_token: null },
+        { edit_lock_expires_at: null },
+        { edit_lock_expires_at: { $lte: now } }
+      ]
+    }, { $set: { edit_uid: uid, edit_lock_token: token, edit_lock_expires_at: expiresAt } },
+    { new: true, runValidators: true }).exec();
+  }
+
+  renewEditLock(id, projectId, token, now, expiresAt) {
+    return this.updateDocuments({ _id: id, project_id: projectId, edit_lock_token: token, edit_lock_expires_at: { $gt: now } },
+      { $set: { edit_lock_expires_at: expiresAt } });
+  }
+
+  releaseEditLock(id, token) {
+    return this.updateDocuments({ _id: id, edit_lock_token: token },
+      { $set: { edit_uid: 0 }, $unset: { edit_lock_token: '', edit_lock_expires_at: '' } });
   }
 
   upEditUid(id, uid) {

@@ -962,37 +962,104 @@ class interfaceController extends baseController {
   }
   // 处理编辑冲突
   async solveConflict(ctx) {
+    const socket = ctx.websocket;
+    const id = Number(ctx.query.id);
+    const leaseMs = 45000;
+    const heartbeatMs = 15000;
+    const token = require('node:crypto').randomUUID();
+    let held = false;
+    let closed = false;
+    let timer;
+    let waitingForPong = false;
+    let renewing = false;
+    let projectId;
+    const send = data => {
+      try { if (!closed && socket.readyState === 1) socket.send(JSON.stringify(data)); } catch (_) {}
+    };
+    const release = async () => {
+      if (timer) clearInterval(timer);
+      if (!held) return;
+      held = false;
+      await this.Model.releaseEditLock(id, token);
+    };
+    const stop = async message => {
+      send({ errno: 409, errmsg: message, data: {} });
+      await release().catch(() => yapi.commons.log('Interface edit lease release failed; lease will expire.', 'error'));
+      if (socket.readyState === 1) socket.close();
+    };
+    socket.once('close', () => {
+      closed = true;
+      release().catch(() => yapi.commons.log('Interface edit lease release failed; lease will expire.', 'error'));
+    });
     try {
-      let id = parseInt(ctx.query.id, 10),
-        result,
-        userInst,
-        userinfo,
-        data;
-      if (!id) {
-        return ctx.websocket.send('id 参数有误');
+      if (!Number.isSafeInteger(id) || id < 1) {
+        send({ errno: 400, errmsg: '接口 id 无效', data: {} });
+        return;
       }
-      result = await this.Model.get(id);
-
-      if (result.edit_uid !== 0 && result.edit_uid !== this.getUid()) {
-        userInst = yapi.getInst(userModel);
-        userinfo = await userInst.findById(result.edit_uid);
-        data = {
-          errno: result.edit_uid,
-          data: { uid: result.edit_uid, username: userinfo.username }
-        };
-      } else {
-        this.Model.upEditUid(id, this.getUid()).then();
-        data = {
-          errno: 0,
-          data: result
-        };
+      const result = await this.Model.get(id);
+      if (!result) {
+        send({ errno: 404, errmsg: '接口不存在', data: {} });
+        return;
       }
-      ctx.websocket.send(JSON.stringify(data));
-      ctx.websocket.on('close', () => {
-        this.Model.upEditUid(id, 0).then();
+      projectId = result.project_id;
+      if ((await this.checkAuth(projectId, 'project', 'view')) !== true) {
+        send({ errno: 403, errmsg: '没有访问权限', data: {} });
+        return;
+      }
+      if ((await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+        // A guest can inspect a local draft, but cannot reserve a write lease.
+        send({ errno: 403, readOnly: true, errmsg: '没有编辑权限，保存将被拒绝。', data: result });
+        return;
+      }
+      if (closed) return;
+      const now = Date.now();
+      const claimed = await this.Model.claimEditLock(id, projectId, this.getUid(), token, now, now + leaseMs);
+      if (!claimed) {
+        send({ errno: 423, data: { username: '其他窗口或用户' } });
+        return;
+      }
+      held = true;
+      if (closed) {
+        await release();
+        return;
+      }
+      send({ errno: 0, data: claimed });
+      socket.on('pong', async () => {
+        if (!held || closed || renewing) return;
+        waitingForPong = false;
+        renewing = true;
+        try {
+          if ((await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+            await stop('编辑权限已失效，请重新打开编辑页面。');
+            return;
+          }
+          const now = Date.now();
+          const renewed = await this.Model.renewEditLock(id, projectId, token, now, now + leaseMs);
+          if (!renewed || renewed.n !== 1) await stop('编辑锁已失效，请重新打开编辑页面。');
+        } catch (_) {
+          await stop('编辑锁续期失败，请重新打开编辑页面。');
+        } finally {
+          renewing = false;
+        }
       });
-    } catch (err) {
-      yapi.commons.log(err, 'error');
+      timer = setInterval(() => {
+        if (closed || !held) return;
+        // A connection without a pong cannot renew indefinitely after a partition.
+        if (waitingForPong || socket.readyState !== 1) {
+          release().catch(() => yapi.commons.log('Interface edit lease release failed; lease will expire.', 'error'));
+          socket.terminate();
+          return;
+        }
+        waitingForPong = true;
+        try { socket.ping(); } catch (_) {
+          release().catch(() => yapi.commons.log('Interface edit lease release failed; lease will expire.', 'error'));
+          socket.terminate();
+        }
+      }, heartbeatMs);
+      if (timer.unref) timer.unref();
+    } catch (_) {
+      await release().catch(() => {});
+      send({ errno: 500, errmsg: '无法确认编辑锁，请重新打开编辑页面。', data: {} });
     }
   }
 
