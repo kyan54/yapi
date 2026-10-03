@@ -888,7 +888,10 @@ class InterfaceEditForm extends Component {
             </FormItem>
             <FormItem className="interface-edit-item" {...formItemLayout} label="Tag">
               {getFieldDecorator('tag', { initialValue: this.state.tag })(
-                <Select placeholder="请选择 tag " mode="multiple">
+                <Select placeholder="请选择 tag " mode="multiple"
+                  open={this.state.tagDropdownOpen}
+                  onOpenChange={tagDropdownOpen => this.setState({ tagDropdownOpen })}
+                >
                   {(projectMsg.tag || []).map(item => {
                     return (
                       <Option value={item.name} key={item._id}>
@@ -897,7 +900,10 @@ class InterfaceEditForm extends Component {
                     );
                   })}
                   <Option value="tag设置" disabled style={{ cursor: 'pointer', color: '#2395f1' }}>
-                    <Button type="primary" onClick={this.props.onTagClick}>
+                    <Button type="primary" onClick={() => {
+                      this.setState({ tagDropdownOpen: false });
+                      this.props.onTagClick();
+                    }}>
                       Tag设置
                     </Button>
                   </Option>
