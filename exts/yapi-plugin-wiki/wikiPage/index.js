@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { message } from 'antd';
+import { message, Button } from 'antd';
 import { connect } from 'react-redux';
 import axios from 'axios';
 import PropTypes from 'prop-types';
@@ -29,7 +29,9 @@ class WikiPage extends Component {
       status: 'INIT',
       editUid: '',
       editName: '',
-      curdata: null
+      curdata: null,
+      refreshFailed: false,
+      reloadingWiki: false
     };
   }
 
@@ -156,7 +158,7 @@ class WikiPage extends Component {
   };
 
   //  获取数据
-  handleData = async params => {
+  handleData = async (params, reportError = true) => {
     let result = await axios.get('/api/plugin/wiki_desc/get', { params });
     if (result.data.errcode === 0) {
       const data = result.data.data;
@@ -169,14 +171,16 @@ class WikiPage extends Component {
           editorTime: timeago(data.up_time)
         });
       }
+      return true;
     } else {
-      message.error(`请求数据失败： ${result.data.errmsg}`);
+      if (reportError) message.error(`请求数据失败： ${result.data.errmsg}`);
+      return false;
     }
   };
 
   // 数据上传
   onUpload = async (desc, markdown) => {
-    if (this.uploading) return;
+    if (this.uploading || this.state.refreshFailed) return;
     this.uploading = true;
     const currProjectId = this.props.match.params.id;
     const option = {
@@ -188,9 +192,9 @@ class WikiPage extends Component {
     try {
       const result = await axios.post('/api/plugin/wiki_desc/up', option);
       if (result.data.errcode === 0) {
-        await this.handleData({ project_id: currProjectId });
-        this.setState({ isEditor: false });
+        this.setState({ isEditor: false, desc, markdown, refreshFailed: false });
         this.endWebSocket();
+        await this.reloadSavedWiki(currProjectId);
       } else {
         message.error(`更新失败： ${result.data.errmsg}`);
       }
@@ -198,6 +202,24 @@ class WikiPage extends Component {
       message.error('更新失败，请重试');
     } finally {
       this.uploading = false;
+    }
+  };
+
+  reloadSavedWiki = async (projectId = this.props.match.params.id) => {
+    if (this.reloadingWiki) return;
+    this.reloadingWiki = true;
+    this.setState({ reloadingWiki: true });
+    try {
+      if (!(await this.handleData({ project_id: projectId }, false))) {
+        throw new Error('Wiki refresh failed');
+      }
+      this.setState({ refreshFailed: false });
+    } catch (error) {
+      this.setState({ refreshFailed: true });
+      message.error('已保存，但加载失败，请重新加载');
+    } finally {
+      this.reloadingWiki = false;
+      this.setState({ reloadingWiki: false });
     }
   };
 
@@ -235,9 +257,15 @@ class WikiPage extends Component {
               </div>
             )}
           </div>
+          {this.state.refreshFailed && (
+            <div role="status">
+              已保存，但加载失败。
+              <Button loading={this.state.reloadingWiki} onClick={() => this.reloadSavedWiki()}>重新加载</Button>
+            </div>
+          )}
           {!isEditor ? (
             <WikiView
-              editorEable={editorEable}
+              editorEable={editorEable && !this.state.refreshFailed}
               onEditor={this.onEditor}
               uid={uid}
               username={username}

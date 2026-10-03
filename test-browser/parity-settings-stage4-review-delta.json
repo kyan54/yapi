@@ -1,0 +1,55 @@
+{
+  "scope": "C narrow review follow-up",
+  "priorRemoteCommit": "95193ed3d34d5a4f82e7755fedc7b295562916a8",
+  "matrixPolicy": "Additional security/regression evidence only; preserve the original 246 compound matrix and prior C status totals. No new compound passes claimed.",
+  "findings": [
+    {
+      "id": "log-read-live-authorization",
+      "old": "failed",
+      "new": "passed",
+      "cases": [
+        "private outsider list and list_by_update denied before snapshots/count",
+        "mixed public/private group pagination and counts; public visibility revocation",
+        "guest allowed, member revocation and deleted/missing resources denied"
+      ]
+    },
+    {
+      "id": "wiki-committed-write-refresh-failure",
+      "old": "notrun",
+      "new": "passed",
+      "cases": [
+        "network refresh failure retains saved content and receipt, GET-only retry",
+        "business refresh failure retains saved content and receipt, GET-only retry"
+      ],
+      "writesPerCase": 1,
+      "mailEnabled": false
+    }
+  ],
+  "validation": {
+    "modernization": {
+      "total": 323,
+      "passed": 317,
+      "failed": 0,
+      "skipped": 6
+    },
+    "focusedUnit": {
+      "passed": 14,
+      "failed": 0
+    },
+    "selectedBrowser": {
+      "newPassed": 6,
+      "oldFailed": 3
+    },
+    "visualReview": "1920x1080 saved-refresh-failed screenshot inspected; receipt, reload and saved content readable, editor disabled.",
+    "databaseReadback": "Two synthetic wiki records retain exact saved HTML after read retry and browser refresh."
+  },
+  "evidenceDirectory": "/Users/hujinwu/Documents/Codex/2026-10-03/task-6/stage2",
+  "reports": [
+    "log-acl-accepted-results.json",
+    "wiki-receipt-final-results.json",
+    "log-acl-pagination-results.json",
+    "aggregate-log-acl-wiki.log",
+    "log-acl-wiki-unit.log",
+    "wiki-receipt-db-readback.json"
+  ]
+}

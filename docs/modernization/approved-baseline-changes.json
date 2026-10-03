@@ -157,6 +157,10 @@
     "exts/yapi-plugin-wiki/wikiPage/index.js": {
       "baselineSha256": "6a60d07f3ab39918a83e06886ab840e41e5435df09e7b1d4957c5be576f40367",
       "reason": "Prevent concurrent Wiki update requests and duplicate notifications with an in-flight guard; retain the editing session and draft after failed saves so a deliberate retry remains possible."
+    },
+    "server/controllers/log.js": {
+      "baselineSha256": "d0004b3b9224d814fe59b45fb67f62d86116c1746a9a7d2dfe5878fbfcdfdfd9",
+      "reason": "Authorize live project log reads and import history before snapshots or counts; filter group history and pagination to currently visible projects and authorized group activity, preserving public and guest reads."
     }
   },
   "dependencies": {
