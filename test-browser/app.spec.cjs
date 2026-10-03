@@ -186,6 +186,13 @@ test('editing preserves parameter rows, schema semantics and description through
     await page.getByRole('button',{name:/确\s*定/}).click();
   }
   await page.getByRole('tab',{name:'编辑',exact:true}).click();
+  await expect(page.locator('#desc .toastui-editor-ww-container [contenteditable="true"]')).toContainText('Synthetic edited description');
+  await page.reload();
+  await page.getByRole('tab',{name:'编辑',exact:true}).click();
+  await expect(page.locator('#desc .toastui-editor-ww-container [contenteditable="true"]')).toContainText('Synthetic edited description');
+  await page.getByLabel('id 描述',{exact:true}).fill('Reopened schema edit');
+  await saveInterfaceSuccessfully(page);
+  expect((await connection.db.collection('interface').findOne({_id:18})).markdown).toContain('Synthetic edited description');
   await page.getByLabel('id 描述',{exact:true}).scrollIntoViewIfNeeded();
   await page.screenshot({path:testInfo.outputPath('editor-compatible.png'),fullPage:true});
   expect(errors).toEqual([]);
