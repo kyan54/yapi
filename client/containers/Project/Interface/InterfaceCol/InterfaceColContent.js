@@ -238,7 +238,7 @@ class InterfaceColContent extends Component {
   };
 
   executeTests = async () => {
-    for (let i = 0, l = this.state.rows.length, newRows, curitem; i < l; i++) {
+    for (let i = 0, l = this.state.rows.length, curitem; i < l; i++) {
       let { rows } = this.state;
 
       let envItem = _.find(this.props.envList, item => {
@@ -255,9 +255,9 @@ class InterfaceColContent extends Component {
         },
         { test_status: 'loading' }
       );
-      newRows = [].concat([], rows);
-      newRows[i] = curitem;
-      this.setState({ rows: newRows });
+      const loadingRow = curitem;
+      const caseId = curitem._id;
+      this.setState(state => ({ rows: state.rows.map(row => row._id === caseId ? loadingRow : row) }));
       let status = 'error',
         result;
       try {
@@ -284,10 +284,9 @@ class InterfaceColContent extends Component {
         body: result.res_body
       };
 
-      curitem = Object.assign({}, rows[i], { test_status: status });
-      newRows = [].concat([], rows);
-      newRows[i] = curitem;
-      this.setState({ rows: newRows });
+      // React 19 batches Promise continuations. Updating from the pre-request
+      // rows snapshot would restore completed earlier rows to "loading".
+      this.setState(state => ({ rows: state.rows.map(row => row._id === caseId ? { ...row, test_status: status } : row) }));
     }
     await axios.post('/api/col/up_col', {
       col_id: this.props.currColId,

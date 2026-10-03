@@ -74,7 +74,7 @@ function mockValue(schema, value) {
 function EnumField({ schema, onChange, onError }) {
   const formatted = Array.isArray(schema.enum) ? schema.enum.map(value => typeof value === 'string' ? value : JSON.stringify(value)).join('\n') : '';
   const [draft, setDraft] = React.useState(formatted);
-  React.useEffect(() => { setDraft(formatted); }, [formatted]);
+  React.useEffect(() => { setDraft(formatted); onError(''); }, [formatted]);
   return <React.Fragment><Checkbox checked={Array.isArray(schema.enum)} onChange={event => { onError(''); onChange(event.target.checked ? [] : undefined); }}>枚举</Checkbox>
     {Array.isArray(schema.enum) && <Input.TextArea aria-label="枚举值（每行一个）" value={draft} onChange={event => {
       const value = event.target.value; setDraft(value);
@@ -124,6 +124,7 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
   const [nameDraft, setNameDraft] = React.useState(name || '');
   const [nameError, setNameError] = React.useState('');
   const [editor, setEditor] = React.useState(null);
+  const [enumError, setEnumError] = React.useState('');
   React.useEffect(() => { setNameDraft(name || ''); setNameError(''); }, [name]);
   // Never apply a draft captured from an older externally replaced subtree.
   React.useEffect(() => { setEditor(null); }, [schema]);
@@ -152,9 +153,9 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
     patch({ properties: { ...properties, [`field${index}`]: { type: 'string', description: '' } } });
     setCollapsed(false);
   };
-  const openEditor = kind => setEditor({ kind, text: kind === 'advanced' ? JSON.stringify(schema, null, 2) : kind === 'mock' ? mockText(schema) : schema[kind] || '', error: '' });
+  const openEditor = kind => { setEnumError(''); setEditor({ kind, text: kind === 'advanced' ? JSON.stringify(schema, null, 2) : kind === 'mock' ? mockText(schema) : schema[kind] || '', error: '' }); };
   const saveEditor = () => {
-    if (editor.error) return;
+    if (editor.error || enumError) return;
     try {
       if (editor.kind === 'advanced') onChange(parseSchema(editor.text));
       else patch({ [editor.kind]: editor.kind === 'mock' ? mockValue(schema, editor.text) : editor.text });
@@ -202,11 +203,11 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
         onChange={next => patch({ items: schema.items.map((value, position) => position === index ? next : value) })} />)}
       <Button onClick={() => patch({ items: [...schema.items, { type: 'string' }] })}>添加数组元素</Button>
     </React.Fragment> : <NodeEditor label="数组元素" depth={depth + 1} schema={schema.items === undefined ? { type: 'string' } : schema.items} onChange={items => patch({ items })} />)}
-    {editor && <Modal title={`${label} ${modalLabel}`} open mask={{ closable: false }} width={editor.kind === 'advanced' ? 780 : 520} okText="应用" okButtonProps={{ disabled: !!editor.error }} cancelText="取消" onCancel={() => setEditor(null)} onOk={saveEditor}>
+    {editor && <Modal title={`${label} ${modalLabel}`} open mask={{ closable: false }} width={editor.kind === 'advanced' ? 780 : 520} okText="应用" okButtonProps={{ disabled: !!(editor.error || enumError) }} cancelText="取消" onCancel={() => setEditor(null)} onOk={saveEditor}>
       <p>应用后更新当前节点；保存接口后生效。</p>
-      {editor.kind === 'advanced' && <AdvancedFields onError={error => setEditor(current => ({ ...current, error }))} text={editor.text} onChange={text => setEditor({ ...editor, text, error: '' })} />}
+      {editor.kind === 'advanced' && <AdvancedFields onError={setEnumError} text={editor.text} onChange={text => setEditor({ ...editor, text, error: '' })} />}
       <Input.TextArea aria-label={`${label} ${modalLabel}内容`} rows={editor.kind === 'advanced' ? 14 : 6} value={editor.text} onChange={event => setEditor({ ...editor, text: event.target.value, error: '' })} />
-      {editor.error && <Alert type="error" title={editor.error} />}
+      {(editor.error || enumError) && <Alert type="error" title={editor.error || enumError} />}
     </Modal>}
   </div>;
 }

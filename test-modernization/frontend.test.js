@@ -569,6 +569,10 @@ test('legacy schema title, Mock choices, typed advanced drafts and tuple sibling
   fireEvent.blur(screen.getByRole('spinbutton',{name:'最小值'}));
   fireEvent.change(screen.getByLabelText('枚举值（每行一个）'),{target:{value:'oops'}});
   assert.ok(screen.getByRole('button',{name:'应 用'}).disabled);
+  fireEvent.change(screen.getByRole('spinbutton',{name:'最大值'}),{target:{value:'99'}});
+  fireEvent.blur(screen.getByRole('spinbutton',{name:'最大值'}));
+  assert.equal(screen.getByLabelText('枚举值（每行一个）').value,'oops');
+  assert.ok(screen.getByRole('button',{name:'应 用'}).disabled);
   fireEvent.change(screen.getByLabelText('枚举值（每行一个）'),{target:{value:'2\n3'}});
   await userEvent.click(screen.getByRole('button',{name:'应 用'}));
   assert.equal(latest.properties.amount.minimum,2);

@@ -112,7 +112,7 @@ class ProjectMessage extends Component {
         tag = tag.filter(val => {
           return val.name !== '';
         });
-        let assignValue = Object.assign(projectMsg, values, { tag });
+        let assignValue = Object.assign({}, projectMsg, values, { tag });
 
         values.protocol = this.state.protocol.split(':')[0];
         const group_id = assignValue.group_id;
@@ -142,7 +142,8 @@ class ProjectMessage extends Component {
             }
           })
           .catch(() => {});
-        form.resetFields();
+        // Keep the submitted draft visible; resetting before the request settles
+        // restores mount-time values and a repeated Save can undo the update.
       }
     });
   };

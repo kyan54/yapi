@@ -45,6 +45,16 @@ async function login(page) {
   await page.getByRole('button', { name: /^登\s*录$/ }).click();
   await expect(page).toHaveURL(/\/group/);
 }
+async function saveInterfaceSuccessfully(page) {
+  await expect(page.getByText('保存成功', { exact: true })).toHaveCount(0, {timeout:10000});
+  const reply = page.waitForResponse(response => new URL(response.url()).pathname === '/api/interface/up' && response.request().method() === 'POST');
+  await page.getByRole('button', { name: /^保\s*存$/ }).click();
+  const response = await reply;
+  expect(response.status()).toBe(200);
+  expect((await response.json()).errcode).toBe(0);
+  await expect(page.getByText('保存成功', { exact: true })).toBeVisible();
+  await expect(page.getByText('服务器出错...', { exact: true })).toHaveCount(0);
+}
 test('real login, interface preview, reviewed AI update, history and reversible restore', async ({ page }, testInfo) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await login(page);
@@ -82,7 +92,7 @@ test('legacy interface editing, request runner, Mock, collection, Swagger and co
     if(name==='编辑') {
       await expect(page.getByPlaceholder('接口名称')).toBeVisible();
       await page.getByPlaceholder('接口名称').fill('Browser verified manual edit');
-      await page.getByRole('button',{name:/^保\s*存$/}).click();
+      await saveInterfaceSuccessfully(page);
       await expect.poll(async()=> (await connection.db.collection('interface').findOne({_id:17})).title).toBe('Browser verified manual edit');
     }
     if(name==='运行') await expect(page.getByRole('button',{name:/^发\s*送$/})).toBeVisible();
@@ -160,11 +170,7 @@ test('editing preserves parameter rows, schema semantics and description through
   await editor.getByLabel('JSON Schema',{exact:true}).fill(JSON.stringify(edited));
   await editor.getByRole('tab',{name:'可视化 Schema',exact:true}).click();
   await page.locator('#desc .toastui-editor-ww-container [contenteditable="true"]').fill('Synthetic edited description');
-  const saveReply = page.waitForResponse(response => response.url().endsWith('/api/interface/up') && response.request().method() === 'POST');
-  await page.getByRole('button',{name:/^保\s*存$/}).click();
-  expect((await (await saveReply).json()).errcode).toBe(0);
-  await expect(page.getByText('保存成功', {exact:true})).toBeVisible();
-  await expect(page.getByText('服务器出错...', {exact:true})).toHaveCount(0);
+  await saveInterfaceSuccessfully(page);
   await expect.poll(async()=> (await connection.db.collection('interface').findOne({_id:18})).markdown).toContain('Synthetic edited description');
   const saved=await connection.db.collection('interface').findOne({_id:18});expect(saved.req_body_form[0].example).toBe('S20261003-002');expect(saved.req_query[0].desc).toBe('Edited query description');expect(saved.req_headers.some(h=>h.name==='X-Synthetic'&&h.value==='fixture')).toBe(true);expect(JSON.parse(saved.res_body)).toEqual(edited);
   await page.getByRole('tab',{name:'预览',exact:true}).first().click();
@@ -335,7 +341,7 @@ test('schema legacy controls preserve drafts, recursive required fields and bool
   await page.screenshot({ path: testInfo.outputPath('schema-node-advanced.png'), fullPage: true });
   await page.getByRole('button', { name: /^应\s*用$/ }).click();
   expect(JSON.parse((await connection.db.collection('interface').findOne({ _id: 19 })).res_body)).toEqual(schema);
-  await page.getByRole('button', { name: /^保\s*存$/ }).click();
+  await saveInterfaceSuccessfully(page);
   await expect.poll(async () => JSON.parse((await connection.db.collection('interface').findOne({ _id: 19 })).res_body).properties.name.description).toBe('Line one\nLine two');
   const saved = JSON.parse((await connection.db.collection('interface').findOne({ _id: 19 })).res_body);
   expect(saved.required).toEqual(['name', 'details', 'items']);
@@ -354,7 +360,7 @@ test('schema legacy controls preserve drafts, recursive required fields and bool
     await editor.getByRole('button', { name: '高级设置 根节点', exact: true }).click();
     await page.getByLabel('根节点 高级设置内容', { exact: true }).fill(String(value));
     await page.getByRole('button', { name: /^应\s*用$/ }).click();
-    await page.getByRole('button', { name: /^保\s*存$/ }).click();
+    await saveInterfaceSuccessfully(page);
     await expect.poll(async () => (await connection.db.collection('interface').findOne({ _id: 19 })).res_body).toBe(String(value));
     await page.getByRole('tab', { name: '预览', exact: true }).first().click();
     await expect(page.getByTestId('boolean-schema-preview')).toContainText('JSON Schema: ' + value);
@@ -406,4 +412,40 @@ test('group and project navigation use current IDs without duplicate selection o
   await page.screenshot({ path: testInfo.outputPath('group-navigation.png'), fullPage: true });
   expect(requests.every(request => request.id !== null && /^[1-9]\d*$/.test(request.id))).toBe(true);
   expect(errors).toEqual([]);
+});
+
+test('collection Start Test finishes every row and opens successful reports after repeated runs', async ({page}) => {
+  await connection.db.collection('project').updateOne({_id:11},{$set:{env:[{name:'local-loopback',domain:baseURL+'/mock/11',header:[],global:[]}]}});
+  await connection.db.collection('interface_col').insertOne({_id:22,uid:9,project_id:11,name:'Batched collection',desc:'Synthetic only',index:1});
+  await connection.db.collection('interface_case').insertMany([31,32,33].map((id,index)=>({_id:id,uid:9,col_id:22,project_id:11,interface_id:17,casename:'Batched case '+index,index,case_env:'local-loopback',req_params:[{name:'id',value:'123'}],req_headers:[],req_query:[],req_body_form:[],test_status:'',enable_script:false,test_script:'',mock_verify:false})));
+  await login(page);
+  await page.goto(baseURL+'/project/11/interface/col/22');
+  await expect(page.getByRole('link',{name:'Batched case 2',exact:true})).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  for(let run=0;run<2;run++) {
+    await page.getByRole('button',{name:'开始测试',exact:true}).click();
+    await expect(page.getByRole('button',{name:'测试报告',exact:true})).toHaveCount(3);
+    await expect(page.locator('tbody .ant-spin-spinning')).toHaveCount(0);
+    await expect(page.locator('tbody [aria-label="check-circle"]')).toHaveCount(3);
+    for(let index=0;index<3;index++) {
+      await page.getByRole('button',{name:'测试报告',exact:true}).nth(index).click();
+      const report=page.getByRole('dialog',{name:'测试报告',exact:true});
+      await report.getByRole('tab',{name:'验证结果',exact:true}).click();
+      await expect(report.getByText('验证通过',{exact:true})).toBeVisible();
+      await report.getByRole('button',{name:'关闭',exact:true}).click();
+    }
+  }
+});
+
+test('project settings Save retains the visible submitted value across repeat saves and reload', async ({page})=>{
+  await login(page); await page.goto(baseURL+'/project/11/setting');
+  const name=page.locator('#name'); await name.fill('Synthetic persisted project');
+  for(let attempt=0;attempt<2;attempt++) {
+    const reply=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/project/up'&&response.request().method()==='POST');
+    await page.getByRole('button',{name:/保\s*存/}).click();
+    expect((await (await reply).json()).errcode).toBe(0);
+    await expect(name).toHaveValue('Synthetic persisted project');
+    expect((await connection.db.collection('project').findOne({_id:11})).name).toBe('Synthetic persisted project');
+  }
+  await page.reload(); await expect(name).toHaveValue('Synthetic persisted project');
 });
