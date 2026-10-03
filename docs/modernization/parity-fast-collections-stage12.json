@@ -175,7 +175,7 @@
       "status": "passed"
     },
     {
-      "evidence": "docs-stage12-verified.json",
+      "evidence": "docs-stage12-visible.json",
       "title": "Docs JSON raw JSON transitions keep stale inactive flags harmless and active invalid schema rejected",
       "version": "new",
       "repeat": 0,
@@ -307,7 +307,7 @@
     "collection_run-01.selected": "No selected subset run; all-case loop tested; parent confirmed.",
     "runner_response-01.timing": "No timing control in either Run/CaseReport; parent confirmed 2026-10-03."
   },
-  "visualReview": "Actual1920x1080 paired parameter and global settings screenshots, literal variable tree screenshots and table statuses inspected. Found blank new case environment; fixed fallback selection and rechecked visible echo label. Inputs readable without overlap. New table intentionally includes existing modern order controls; tab spacing and tree indentation differ, not pixel equality. Docs screenshot waits for the reviewed dialog after refresh; verified schema field description visible.",
+  "visualReview": "Actual1920x1080 paired parameter and global settings screenshots, literal variable tree screenshots and table statuses inspected. Found blank new case environment; fixed fallback selection and rechecked visible echo label. Inputs readable without overlap. New table intentionally includes existing modern order controls; tab spacing and tree indentation differ, not pixel equality. Docs screenshot waits for the reviewed dialog after refresh; verified schema field description visible. The final Docs screenshot uses viewport/opacity/width checks; initial animation-frame screenshots are not visual acceptance evidence.",
   "superseded": "config-runtime-stage12 global failures were incorrect row locator, superseded by global-stage12-final. table-stage12 failure assumed request-exception icon for HTTP assertion, corrected to actual validation-failure icon. stage12-accepted new clone refresh/unmount was a real race, fixed and superseded by clone-stage12-verified. Select only listed executions, not whole historical report counts.",
   "limits": [
     "Five enabled-script runner dependency rows remain blocked. No unsafe execution used to close them.",
@@ -331,6 +331,7 @@
     "identity-clone-verified.json": "aae6888034b087fcca225a65ff121b17030d7135e89df9c78efa85dfd1ef5451",
     "identity-table-verified.json": "aae6888034b087fcca225a65ff121b17030d7135e89df9c78efa85dfd1ef5451",
     "docs-stage12-verified.json": "a5a11b8312d72d8510716a4179c32cacdbb6c34cd0f2d8acf09fb6386ac521c2",
-    "units-stage12-commitable.log": "3deb6c274b14f9b45f3519000d44c8197f6ba2fb1af1af98a303aba59b4f14c5"
+    "units-stage12-commitable.log": "3deb6c274b14f9b45f3519000d44c8197f6ba2fb1af1af98a303aba59b4f14c5",
+    "docs-stage12-visible.json": "a900f5a8add8aa137b1ecb068341532b7ae240771677ec18e95b0d4dc8a32468"
   }
 }

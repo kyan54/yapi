@@ -1,0 +1,18 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+function load({node=false,enabled=false,missing=false}={}) {
+ const calls=[],jobs=[],filename=path.resolve(__dirname,'../common/postmanLib.js'),actual=require('node:module').createRequire(filename);
+ const axios=async options=>{calls.push({kind:'direct',options});return{status:200,headers:{},data:{ok:true}};};
+ axios.post=async(url,body)=>{calls.push({kind:'proxy',url,body});return{data:{errcode:0,data:{req:body.options,res:{status:200,header:{},body:{ok:true}}}}};};
+ const isolated=async(context,script,scope)=>{jobs.push({script,scope});if(missing)throw Error('ISOLATED_RUNNER_REQUIRED');return script==='pre'?{...context,requestHeader:{...context.requestHeader,'x-pre':'isolated'}}:{...context,responseData:{...context.responseData,post:'isolated'}};};
+ const module={exports:{}},host={};host.global=host;host.storageCreator=()=>({getItem:async()=>({}),setItem:async()=>{}});
+ const context={module,exports:module.exports,require:n=>n==='axios'?axios:n==='../server/yapi'?(node?{WEBCONFIG:{scriptEnable:enabled}}:{}):n==='../server/utils/sandbox'?isolated:actual(n),console,window:{localStorage:{getItem:()=>null,setItem:()=>{}}},URL,Buffer,setTimeout,clearTimeout,...(node?{global:host}:{})};
+ vm.runInNewContext(fs.readFileSync(filename,'utf8'),context,{filename});return{cross:module.exports.crossRequest,calls,jobs,context};
+}
+const options=()=>({url:'http://synthetic.invalid/echo',method:'GET',headers:{}}),scope={synthetic:true};
+test('browser webpack false yapi alias must not erase server-bound configured pre and post scripts',async()=>{const f=load();await f.cross(options(),'pre','post',{requestMode:'server',projectId:1,interfaceId:2});assert.equal(f.calls.length,1);assert.equal(f.calls[0].body.pre_script,'pre');assert.equal(f.calls[0].body.after_script,'post');assert.equal(f.jobs.length,0);});
+test('browser mode rejects configured script before any request or browser evaluation',async()=>{const f=load();await assert.rejects(f.cross(options(),'window.__parityScriptExecuted=true;','',{requestMode:'browser'}),/ISOLATED_RUNNER_REQUIRED/);assert.equal(f.context.window.__parityScriptExecuted,undefined);assert.equal(f.calls.length,0);assert.equal(f.jobs.length,0);});
+test('disabled server explicitly rejects scripts without executing or requesting',async()=>{const f=load({node:true});await assert.rejects(f.cross(options(),'pre','post',{},scope),/SCRIPT_EXECUTION_DISABLED/);assert.equal(f.calls.length,0);assert.equal(f.jobs.length,0);});
+test('enabled server with unavailable isolated runner fails before request',async()=>{const f=load({node:true,enabled:true,missing:true});await assert.rejects(f.cross(options(),'pre','',{},scope),/ISOLATED_RUNNER_REQUIRED/);assert.equal(f.calls.length,0);assert.equal(f.jobs[0].scope,scope);});
+test('enabled server delegates both script phases with same trusted capability and publishes returned values',async()=>{const f=load({node:true,enabled:true});const result=await f.cross(options(),'pre','post',{},scope);assert.deepEqual(f.jobs.map(j=>j.script),['pre','post']);assert.ok(f.jobs.every(j=>j.scope===scope));assert.equal(f.calls[0].options.headers['x-pre'],'isolated');assert.equal(result.res.body.post,'isolated');});
+for(const node of [false,true])test(`ordinary no-script ${node?'server':'browser'} request is unchanged`,async()=>{const f=load({node});assert.equal((await f.cross(options(),'','',{requestMode:'browser'})).res.status,200);assert.equal(f.calls.length,1);assert.equal(f.jobs.length,0);});
