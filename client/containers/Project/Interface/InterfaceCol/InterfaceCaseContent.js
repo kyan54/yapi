@@ -89,7 +89,7 @@ export default class InterfaceCaseContent extends Component {
     await this.props.fetchCaseData(currCaseId);
     this.props.setColData({ currCaseId: +currCaseId, currColId, isShowCol: false });
     // 获取当前case 下的环境变量
-    await this.props.getEnv(this.props.currCase.project_id);
+    await this.props.getEnv(this.props.currCase.source_project_id || this.props.currCase.project_id);
     // await this.getCurrEnv()
 
     this.setState({ editCasename: this.props.currCase.casename });
@@ -103,7 +103,7 @@ export default class InterfaceCaseContent extends Component {
     if (oldCaseId !== newCaseId) {
       await this.props.fetchCaseData(newCaseId);
       this.props.setColData({ currCaseId: +newCaseId, currColId, isShowCol: false });
-      await this.props.getEnv(this.props.currCase.project_id);
+      await this.props.getEnv(this.props.currCase.source_project_id || this.props.currCase.project_id);
       // await this.getCurrEnv()
       this.setState({ editCasename: this.props.currCase.casename });
     }
@@ -113,7 +113,12 @@ export default class InterfaceCaseContent extends Component {
     this.postman = postman;
   };
 
+  componentWillUnmount() {
+    this.activeCaseSave = null;
+  }
+
   updateCase = async () => {
+    if (this.activeCaseSave) return;
     const {
       case_env,
       req_params,
@@ -146,15 +151,27 @@ export default class InterfaceCaseContent extends Component {
       test_res_header
     };
 
-    const res = await axios.post('/api/col/up_case', params);
-    if (this.props.currCase.casename !== casename) {
-      this.props.fetchInterfaceColList(this.props.match.params.id);
-    }
-    if (res.data.errcode) {
-      message.error(res.data.errmsg);
-    } else {
+    const save = { id };
+    this.activeCaseSave = save;
+    const isCurrent = () => this.activeCaseSave === save &&
+      this.props.currCase._id === id &&
+      (!this.props.match.params.actionId || +this.props.match.params.actionId === id);
+    try {
+      const res = await axios.post('/api/col/up_case', params);
+      if (!isCurrent()) return;
+      if (res.data.errcode !== 0) {
+        message.error(res.data.errmsg || '更新失败，请重试');
+        return;
+      }
+      if (this.props.currCase.casename !== casename) {
+        this.props.fetchInterfaceColList(this.props.match.params.id);
+      }
       message.success('更新成功');
       this.props.fetchCaseData(id);
+    } catch (_) {
+      if (isCurrent()) message.error('更新失败，请重试');
+    } finally {
+      if (this.activeCaseSave === save) this.activeCaseSave = null;
     }
   };
 
@@ -209,7 +226,7 @@ export default class InterfaceCaseContent extends Component {
           <span className="inter-link" style={{ margin: '0px 8px 0px 6px', fontSize: 12 }}>
             <Link
               className="text"
-              to={`/project/${currCase.project_id}/interface/api/${currCase.interface_id}`}
+              to={`/project/${currCase.source_project_id || currCase.project_id}/interface/api/${currCase.interface_id}`}
             >
               对应接口
             </Link>

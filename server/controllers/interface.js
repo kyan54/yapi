@@ -1,6 +1,7 @@
 const interfaceModel = require('../models/interface.js');
 const interfaceCatModel = require('../models/interfaceCat.js');
 const interfaceCaseModel = require('../models/interfaceCase.js');
+const interfaceColModel = require('../models/interfaceCol.js');
 const followModel = require('../models/follow.js');
 const groupModel = require('../models/group.js');
 const _ = require('underscore');
@@ -1357,17 +1358,37 @@ class interfaceController extends baseController {
         return (ctx.body = yapi.commons.resReturn(null, 400, 'project_id 鍜?interface_id 涓嶈兘涓虹┖'));
       }
 
-      const auth = await this.checkAuth(projectId, 'project', 'view');
-      if (!auth) {
-        return (ctx.body = yapi.commons.resReturn(null, 40033, '娌℃湁鏉冮檺'));
+      let authorizedProjectId = projectId;
+      const source = await this.Model.get(interfaceId);
+      if (!source) return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+      if (body.case_id !== undefined || body.col_id !== undefined) {
+        const record = await this.caseModel.get(body.case_id);
+        const collection = record && await yapi.getInst(interfaceColModel).get(record.col_id);
+        if (!record || !collection || Number(record.col_id) !== Number(body.col_id) ||
+            Number(record.interface_id) !== interfaceId ||
+            Number(record.project_id) !== Number(collection.project_id) ||
+            projectId !== Number(collection.project_id) ||
+            await this.checkAuth(collection.project_id, 'project', 'edit') !== true) {
+          return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+        }
+        const sourceProject = await this.projectModel.get(source.project_id);
+        if (!sourceProject || (sourceProject.project_type !== 'public' &&
+            await this.checkAuth(source.project_id, 'project', 'view') !== true)) {
+          return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+        }
+        authorizedProjectId = Number(collection.project_id);
+        if (body.auth_only === true) return (ctx.body = yapi.commons.resReturn({ authorized: true }));
+      } else if (Number(source.project_id) !== projectId ||
+          await this.checkAuth(projectId, 'project', 'view') !== true || body.auth_only) {
+        return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
       }
 
       const result = await crossRequest(
         options,
         body.pre_script,
         body.after_script,
-        createContext(this.getUid(), projectId, interfaceId),
-        require('../sandbox/trusted-scope').create(this.getUid(), projectId)
+        createContext(this.getUid(), authorizedProjectId, interfaceId),
+        require('../sandbox/trusted-scope').create(this.getUid(), authorizedProjectId)
       );
 
       ctx.body = yapi.commons.resReturn(result);

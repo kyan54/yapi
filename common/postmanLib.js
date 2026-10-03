@@ -276,6 +276,17 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
   let options = Object.assign({}, defaultOptions);
   const taskId = options.taskId || Math.random() + '';
   const useServerProxy = !isNode && commonContext.requestMode !== 'browser';
+  const caseScope = commonContext.caseId !== undefined || commonContext.colId !== undefined
+    ? { case_id: commonContext.caseId, col_id: commonContext.colId } : {};
+  if (!isNode && !useServerProxy && Object.keys(caseScope).length) {
+    const authorization = await axios.post('/api/interface/proxy', {
+      options, project_id: commonContext.projectId, interface_id: commonContext.interfaceId,
+      ...caseScope, auth_only: true
+    });
+    if (!authorization.data || authorization.data.errcode !== 0) {
+      throw new Error((authorization.data && authorization.data.errmsg) || 'Forbidden');
+    }
+  }
   let urlObj = URL.parse(options.url, true),
     query = {};
   query = Object.assign(query, urlObj.query);
@@ -308,7 +319,8 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     storage: await getStorage(taskId)
   };
 
-  Object.assign(context, commonContext);
+  const { caseId: collectionCaseId, colId: collectionId, ...scriptContext } = commonContext;
+  Object.assign(context, scriptContext);
 
   context.utils = Object.freeze({
     _: _,
@@ -357,7 +369,8 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
         pre_script: scriptEnable ? preScript : '',
         after_script: scriptEnable ? afterScript : '',
         project_id: commonContext.projectId,
-        interface_id: commonContext.interfaceId
+        interface_id: commonContext.interfaceId,
+        ...caseScope
       });
 
       if (proxyResult.data && proxyResult.data.errcode === 0) {
