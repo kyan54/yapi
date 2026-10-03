@@ -1,4 +1,5 @@
 'use strict';
+const {withoutCollaboration}=require('../server/services/documentation/collaboration-state');
 const test=require('node:test');const assert=require('node:assert/strict');
 const {createStore}=require('../server/services/documentation/store');
 const copy=value=>JSON.parse(JSON.stringify(value));
@@ -8,7 +9,7 @@ function setup() {
   const revisions={insertOne:async row=>nodes.set(row._id,copy(row)),findOne:async query=>{const row=nodes.get(query._id);return row&&Object.entries(query).every(([k,v])=>row[k]===v)?copy(row):null;}};
   const interfaces={findOne:async filter=>filter._id===record._id && filter.project_id===record.project_id ? copy(record):null,
     updateOne:async(filter,update)=>{
-      if(JSON.stringify(record)!==JSON.stringify(filter.$expr.$eq[1].$literal)) return {matchedCount:0};
+      if(JSON.stringify(withoutCollaboration(record))!==JSON.stringify(filter.$expr.$eq[1].$literal)) return {matchedCount:0};
       record={...record,...copy(update.$set)};for(const key of Object.keys(update.$unset||{}))delete record[key];return{matchedCount:1};
     }};
   return {nodes,revisions,store:createStore({interfaces,revisions,proposals:{insertOne:async row=>proposals.set(row._id,copy(row)),findOne:async query=>{const row=proposals.get(query._id);return row && row.projectId===query.projectId && row.interfaceId===query.interfaceId ? copy(row):null;}},now:()=> '2026-10-02T00:00:00.000Z'}),mutate:update=>{record={...record,...update};},get:()=>copy(record)};

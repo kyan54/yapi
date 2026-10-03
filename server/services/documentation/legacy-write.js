@@ -5,10 +5,11 @@ const {plain} = require('./store');
 const {snapshot}=require('./description-edits');
 const {createRevisionStore,version:readVersion}=require('./revision-store');
 const {meaningfulChange}=require('./semantic-change');
+const {TRANSIENT_FIELDS,contentSnapshotPredicate}=require('./collaboration-state');
 
 // Ownership, edit locks and revision metadata are not interface content. Never
 // trust an imported/request-supplied user ID as authenticated audit identity.
-const RESERVED = new Set(['_id', 'id', 'project_id', 'uid', 'edit_uid', '__v',
+const RESERVED = new Set(['_id', 'id', 'project_id', 'uid', ...TRANSIENT_FIELDS, '__v',
   'docs_history', 'docs_revision', 'docs_revision_head', 'add_time', '__proto__', 'constructor', 'prototype']);
 function fail(code) { const error = new Error(code); error.code = code; throw error; }
 function undefinedAsNull(value) {
@@ -74,7 +75,7 @@ async function writeLegacyInterface(model, id, data, {now = () => new Date(), ma
     // appends exactly once and cannot erase an intervening revision.
     const result = await model.collection.updateOne({
       _id: interfaceId, project_id: raw.project_id,
-      $expr: {$eq: ['$$ROOT', {$literal: raw}]}
+      $expr: contentSnapshotPredicate(raw)
     }, {$set: {...patch, docs_revision: version + 1, docs_revision_head:head}, $unset:{docs_history:''}});
     if (result.matchedCount === 1) {
       return {n: 1, nModified: result.modifiedCount || 0, ok: result.acknowledged ? 1 : 0};

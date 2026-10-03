@@ -1,4 +1,5 @@
 'use strict';
+const {withoutCollaboration}=require('../server/services/documentation/collaboration-state');
 const test=require('node:test');const assert=require('node:assert/strict');
 const Koa=require('koa');
 const {createDocumentationMiddleware}=require('../server/services/documentation/http');
@@ -44,7 +45,7 @@ test('GET DTO hides credentials and absent provider reports disabled accurately'
 test('HTTP generated field descriptions apply only after explicit acceptance to original unredacted schema',async()=>{
  const {createStore}=require('../server/services/documentation/store');const copy=v=>JSON.parse(JSON.stringify(v));
  let raw={_id:17,project_id:11,path:'/test',method:'GET',desc:'old',markdown:'old',req_query:[{name:'page',desc:'wrong',required:'1'}],res_body_is_json_schema:true,res_body:'{"type":"object","properties":{"id":{"type":"string","default":"PRIVATE_LITERAL","enum":["a","b"]}}}'};
- const proposals=new Map(),revisions=new Map();const store=createStore({revisions:{insertOne:async value=>revisions.set(value._id,copy(value)),findOne:async query=>copy(revisions.get(query._id))},interfaces:{findOne:async()=>copy(raw),updateOne:async(query,update)=>{assert.deepEqual(query.$expr.$eq[1].$literal,raw);raw={...raw,...copy(update.$set)};for(const key of Object.keys(update.$unset||{}))delete raw[key];return{matchedCount:1};}},proposals:{insertOne:async value=>proposals.set(value._id,copy(value)),findOne:async query=>copy(proposals.get(query._id))}});
+ const proposals=new Map(),revisions=new Map();const store=createStore({revisions:{insertOne:async value=>revisions.set(value._id,copy(value)),findOne:async query=>copy(revisions.get(query._id))},interfaces:{findOne:async()=>copy(raw),updateOne:async(query,update)=>{assert.deepEqual(query.$expr.$eq[1].$literal,withoutCollaboration(raw));raw={...raw,...copy(update.$set)};for(const key of Object.keys(update.$unset||{}))delete raw[key];return{matchedCount:1};}},proposals:{insertOne:async value=>proposals.set(value._id,copy(value)),findOne:async query=>copy(proposals.get(query._id))}});
  const descriptionEdits=[{field:'req_query',index:0,desc:'Page number'},{field:'res_body',pointer:'/properties/id/description',description:'<script>Untrusted text</script>'}];
  const h=await host({store,provider:{propose:async({document})=>{assert.equal(JSON.stringify(document).includes('PRIVATE_LITERAL'),false);assert.equal(document.res_body.properties.id.default,undefined);return{markdown:'Improved',unresolved:[],descriptionEdits};}}});
  try {
@@ -70,3 +71,9 @@ test('history HTTP forwards bounded numeric cursor/limit and rejects malformed p
 });
 
 test('restore HTTP strictly requires reviewed current version and forwards it unchanged',async()=>{const calls=[];const h=await host({store:{restore:async(...args)=>{calls.push(args);throw Object.assign(Error('VERSION_CONFLICT'),{code:'VERSION_CONFLICT'});}}});try{for(const expectedVersion of[undefined,null,-1,1.2,'1',true,Number.MAX_SAFE_INTEGER+1]){assert.equal((await post(h,'restore',{...params,version:0,expectedVersion})).status,400);}assert.equal(calls.length,0);assert.equal((await post(h,'restore',{...params,version:0,expectedVersion:3})).status,409);assert.deepEqual(calls,[[11,17,0,9,3]]);}finally{await h.close();}});
+
+test('accept and restore HTTP responses expose documentation DTO without native lease fields',async()=>{
+ const document={...fixture,version:7,edit_uid:9,edit_lock_token:'SYNTHETIC_LEASE_CAPABILITY',edit_lock_expires_at:61000,unknown_plugin:{private:true}};
+ const h=await host({store:{accept:async()=>({document,revision:{kind:'accept'}}),restore:async()=>({document,revision:{kind:'restore'}})}});
+ try{for(const action of ['accept','restore']){const r=await post(h,action,{...params,proposalId:'synthetic',version:0,expectedVersion:6});assert.equal(r.status,200);const body=await r.json();assert.equal(body.errcode,0);assert.equal(body.data.document.version,7);assert.equal(body.data.document.format,'yapi.documentation.v1');for(const key of ['edit_uid','edit_lock_token','edit_lock_expires_at','unknown_plugin'])assert.equal(Object.hasOwn(body.data.document,key),false);assert.equal(JSON.stringify(body).includes('SYNTHETIC_LEASE_CAPABILITY'),false);}}finally{await h.close();}
+});

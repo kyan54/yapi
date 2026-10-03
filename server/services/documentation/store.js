@@ -5,9 +5,10 @@ const {FIELDS,snapshot}=require('./description-edits');
 const {numericId} = require('./read-service');
 const {createRevisionStore}=require('./revision-store');
 const {meaningfulChange}=require('./semantic-change');
+const {withoutCollaboration,contentSnapshotPredicate}=require('./collaboration-state');
 function fail(code) {const error=new Error(code);error.code=code;throw error;}
 function plain(raw) {
-  const result=JSON.parse(JSON.stringify(raw));
+  const result=JSON.parse(JSON.stringify(withoutCollaboration(raw)));
   delete result.docs_history;
   delete result.docs_revision;
   delete result.docs_revision_head;
@@ -32,11 +33,12 @@ function createStore({interfaces,proposals,revisions,now=()=>new Date().toISOStr
     if(!meaningfulChange(raw,fields))return {document:plain(raw),revision:null,unchanged:true};
     const head=await revisionStore.prepare(raw,applied.revision);
     Object.assign(fields,{docs_revision:applied.document.version,docs_revision_head:head,up_time:Math.floor(Date.parse(applied.revision.createdAt)/1000)});
-    // Exact BSON snapshot comparison detects every intervening legacy write,
+    // Exact BSON content comparison ignores only edit-session lease fields.
+    // This tolerates a concurrent heartbeat without retries while detecting legacy writes,
     // including writers that do not update docs_revision. Current pointer and
     // description update are ONE atomic single-document operation: no replica
     // set transaction is assumed. Explicit IDs also guard the intended target.
-    const result=await interfaces.updateOne({_id:raw._id,project_id:raw.project_id,$expr:{$eq:['$$ROOT',{$literal:raw}]}},{$set:fields,$unset:{docs_history:''}});
+    const result=await interfaces.updateOne({_id:raw._id,project_id:raw.project_id,$expr:contentSnapshotPredicate(raw)},{$set:fields,$unset:{docs_history:''}});
     if(result.matchedCount!==1) fail('VERSION_CONFLICT');
     return applied;
   }

@@ -2,6 +2,7 @@
 
 const { createHash } = require('node:crypto');
 const annotations = require('./description-edits');
+const {withoutCollaboration} = require('./collaboration-state');
 
 // Reference contract only: no authentication, HTML sanitization, or database writes.
 // The persistence adapter must load trusted proposals/revisions, authorize actors,
@@ -75,7 +76,7 @@ function description(value, mode='proposal') {
   return { desc: value.desc, markdown: value.markdown, ...(Object.prototype.hasOwnProperty.call(value, optional)?{[optional]:value[optional]}:{}) };
 }
 function documentInput(value) {
-  const document = copy(value);
+  const document = withoutCollaboration(copy(value));
   object(document, 'document');
   integer(document._id, 1, 'interface ID');
   integer(document.project_id, 1, 'project ID');

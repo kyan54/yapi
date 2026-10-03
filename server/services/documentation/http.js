@@ -64,6 +64,9 @@ function createDocumentationMiddleware({authenticate,authorize,store,provider,pr
         if(!Number.isSafeInteger(params.expectedVersion)||params.expectedVersion<0) throw Object.assign(Error('INVALID_INPUT'),{code:'INVALID_INPUT'});
         data=await store.restore(projectId,interfaceId,params.version,user._id,params.expectedVersion);
       }
+      if ((action==='accept'||action==='restore') && data.document) {
+        data={...data,document:{...toDocumentationDTO(data.document),version:data.document.version}};
+      }
       ctx.body={errcode:0,data};
     } catch(error) {
       const codes={DESCRIPTION_CONFLICT:409,INVALID_REQUEST_ID:400,IDEMPOTENCY_CONFLICT:409,GENERATION_IN_PROGRESS:409,RATE_LIMITED:429,PAYLOAD_CHANGED:409,INVALID_ID:400,VERSION_CONFLICT:409,NOT_FOUND:404,TARGET_MISMATCH:403,PROVIDER_NOT_CONFIGURED:503,TRANSMISSION_NOT_APPROVED:403,HISTORY_CAPACITY:409,INVALID_INPUT:400,PROVIDER_FAILED:502,INVALID_PROVIDER_RESPONSE:502,PROVIDER_RESPONSE_TOO_LARGE:502,DOCUMENT_TOO_LARGE:413};
