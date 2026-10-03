@@ -1250,7 +1250,7 @@ class InterfaceColContent extends Component {
                 输出格式：
               </Col>
               <Col span={21}>
-                <Select value={this.state.mode} onChange={this.modeChange}>
+                <Select style={{ width: 120 }} popupMatchSelectWidth={120} value={this.state.mode} onChange={this.modeChange}>
                   <Option key="html" value="html">
                     html
                   </Option>

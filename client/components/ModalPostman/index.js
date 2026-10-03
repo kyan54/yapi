@@ -163,7 +163,14 @@ class ModalPostman extends Component {
 
   //  处理表达式
   handleValue(val) {
-    return handleParamsValue(val, {});
+    try {
+      return handleParamsValue(val, {});
+    } catch (error) {
+      // This dialog previews expressions without execution records. Keep the
+      // expression insertable; actual requests still reject missing outputs.
+      if (error && error.code === 'MISSING_CASE_OUTPUT') return this.handleError();
+      throw error;
+    }
   }
 
   // 处理错误
