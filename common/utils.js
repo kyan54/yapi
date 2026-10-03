@@ -17,22 +17,15 @@ function simpleJsonPathParse(key, json) {
   if (!key || typeof key !== 'string' || key.indexOf('$.') !== 0 || key.length <= 2) {
     return null;
   }
-  let keys = key.substr(2).split('.');
-  keys = keys.filter(item => {
-    return item;
-  });
-  for (let i = 0, l = keys.length; i < l; i++) {
-    try {
-      let m = keys[i].match(/(.*?)\[([0-9]+)\]/);
-      if (m) {
-        json = json[m[1]][m[2]];
-      } else {
-        json = json[keys[i]];
-      }
-    } catch (e) {
-      json = '';
-      break;
+  const keys = key.substr(2).replace(/\[([0-9]+)\]/g, '.$1').split('.').filter(Boolean);
+  for (const part of keys) {
+    if (['__proto__', 'prototype', 'constructor'].includes(part) || json == null ||
+        !Object.prototype.hasOwnProperty.call(Object(json), part)) {
+      const error = new Error('MISSING_CASE_OUTPUT: 前置用例输出或字段不存在，请先运行依赖用例并检查变量路径');
+      error.code = 'MISSING_CASE_OUTPUT';
+      throw error;
     }
+    json = json[part];
   }
 
   return json;
@@ -96,6 +89,7 @@ function handleFilter(str, match, context) {
 
     return a;
   } catch (err) {
+    if (err && err.code === 'MISSING_CASE_OUTPUT') throw err;
     return str;
   }
 }

@@ -1,0 +1,99 @@
+{
+  "format": "yapi.parity.increment.v1",
+  "base": "9b5d8b6be88a02faa27cff3f2228d652e773ed86",
+  "source": "parent-confirmed actual CI, not local script execution",
+  "ci": {
+    "head": "9c59141",
+    "run": "https://github.com/kyan54/yapi/actions/runs/37117981278",
+    "dedicatedTests": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "rows": [
+    {
+      "id": "project_requests-03",
+      "status": "passed",
+      "new": "passed",
+      "old": "blocked",
+      "oldReason": "No safe old vm2 runner; old script execution not attempted",
+      "evidence": "configured isolated pre and post; missing runner; disabled server; post-only missing zero targets and configured post failure one target"
+    },
+    {
+      "id": "project_requests-04",
+      "status": "passed",
+      "new": "passed",
+      "old": "blocked",
+      "oldReason": "No safe old vm2 runner; old script execution not attempted",
+      "evidence": "default deny; project/user scoped allowlist success; denied path zero target requests"
+    },
+    {
+      "id": "project_mock-03",
+      "status": "passed",
+      "new": "passed",
+      "old": "blocked",
+      "oldReason": "No safe old vm2 runner; old script execution not attempted",
+      "evidence": "enabled/disabled global Mock and missing runner actual response"
+    },
+    {
+      "id": "project_mock-04",
+      "status": "passed",
+      "new": "passed",
+      "old": "blocked",
+      "oldReason": "No safe old vm2 runner; old script execution not attempted",
+      "evidence": "business and network save failures preserve DB/draft, retry succeeds, actual script failure and recovery"
+    },
+    {
+      "id": "runner-03",
+      "status": "passed",
+      "new": "passed",
+      "old": "blocked",
+      "oldReason": "No safe old vm2 runner; old script execution not attempted",
+      "evidence": "browser refuses scripts; server pre failure is visible; ordinary retry succeeds"
+    }
+  ],
+  "pendingRows": [
+    {
+      "id": "runner_response-03",
+      "status": "notrun",
+      "new": "notrun",
+      "evidence": "new CI Test editor/toggle/save/reload/DB/payload/assertions"
+    },
+    {
+      "id": "collection_rules-03",
+      "status": "notrun",
+      "new": "notrun",
+      "evidence": "new CI global editor/toggle/save/reload/DB/neighbor scope"
+    },
+    {
+      "id": "collection_server-04",
+      "status": "notrun",
+      "new": "notrun",
+      "evidence": "new CI generated URL nonempty actual failure report + visible response"
+    },
+    {
+      "id": "mock_advanced-02",
+      "status": "notrun",
+      "new": "notrun",
+      "evidence": "new CI advanced Mock syntax/missing runner/recovery/disable"
+    },
+    {
+      "id": "runner_variables-04",
+      "status": "failed",
+      "new": "failed",
+      "evidence": "before-fix ordinary Mac echo receives missing= and report says success; pure functions fixed; post-fix UI pending"
+    }
+  ],
+  "localValidation": {
+    "focusedTests": 7,
+    "focusedPassed": 7,
+    "basicTests": 32,
+    "modernizationPassed": 354,
+    "modernizationSkipped": 7,
+    "scriptsExecuted": false
+  },
+  "newDedicatedCount": 11,
+  "limitations": [
+    "Four new scenarios are authored/discovered only; existing seven cannot prove the five pending IDs.",
+    "Global toggle method extraction test initially failed because method did not exist; initial server test had a corrected harness import; only final seven-pass focused run is acceptance."
+  ]
+}

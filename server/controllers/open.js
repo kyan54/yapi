@@ -268,7 +268,9 @@ class openController extends baseController {
       try {
         result = await this.handleTest(item);
       } catch (err) {
-        result = err;
+        result = err && err.code === 'MISSING_CASE_OUTPUT'
+          ? { id: item.id, name: item.casename, code: 400, msg: err.message, validRes: [{ message: err.message }] }
+          : err;
       }
 
       reports[item.id] = result;
@@ -419,7 +421,7 @@ class openController extends baseController {
       let test = await yapi.commons.runCaseScript({
         response: response,
         records: this.records,
-        script: interfaceData.test_script,
+        script: interfaceData.enable_script ? interfaceData.test_script : '',
         params: requestParams
       }, interfaceData.col_id, interfaceData.interface_id, this.scriptNetworkScope);
       if (test.errcode !== 0) {

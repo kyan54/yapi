@@ -314,7 +314,9 @@ class InterfaceColContent extends Component {
       } catch (e) {
         console.error(e);
         status = 'error';
-        result = e;
+        result = e && e.code === 'MISSING_CASE_OUTPUT'
+          ? { code: 400, msg: e.message, validRes: [{ message: e.message }], caseId: curitem._id }
+          : e;
       }
 
       if (this.activeRun !== run) return;
@@ -454,7 +456,7 @@ class InterfaceColContent extends Component {
       let test = await axios.post('/api/col/run_script', {
         response: response,
         records: this.records,
-        script: interfaceData.test_script,
+        script: interfaceData.enable_script ? interfaceData.test_script : '',
         params: requestParams,
         case_id: interfaceData._id,
         col_id: interfaceData.runColId || this.props.currColId,
@@ -547,6 +549,13 @@ class InterfaceColContent extends Component {
         }
       }
     });
+  };
+
+  onChangeScriptEnable = enable => {
+    this.setState({ commonSetting: {
+      ...this.state.commonSetting,
+      checkScript: { ...this.state.commonSetting.checkScript, enable }
+    } });
   };
 
   handleInsertCode = code => {
@@ -1044,18 +1053,7 @@ class InterfaceColContent extends Component {
                 </Tooltip></label>
               </Col>
               <Col className="col-item"  span="14">
-                <div><Switch onChange={e=>{
-                  let {commonSetting} = this.state;
-                  this.setState({
-                    commonSetting :{
-                      ...commonSetting,
-                      checkScript: {
-                        ...this.state.checkScript,
-                        enable: e
-                      }
-                    }
-                  })
-                }} checked={this.state.commonSetting.checkScript.enable}  checkedChildren="开" unCheckedChildren="关"  /></div>
+                <div><Switch onChange={this.onChangeScriptEnable} checked={this.state.commonSetting.checkScript.enable}  checkedChildren="开" unCheckedChildren="关"  /></div>
                 <AceEditor
                   onChange={this.onChangeTest}
                   className="case-script"
