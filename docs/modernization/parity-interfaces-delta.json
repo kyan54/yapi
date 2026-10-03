@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-7",
+  "scope": "A/interfaces/batches-1-8",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -123,6 +123,11 @@
       "failed": 0,
       "skipped": 6,
       "skip_reason": "Existing optional Mongo integration tests; isolated paired browser/API/DB checks ran separately."
+    },
+    "additional_candidate_transport_regression": {
+      "passed": 6,
+      "failed": 0,
+      "legacy": "notrun; candidate transport regression only"
     }
   },
   "scenarios": [
@@ -310,7 +315,12 @@
       "old-batch7-db.json",
       "new-batch7-db.json"
     ],
-    "batch7_fixture_ids": "batch7-fixture-ids.json"
+    "batch7_fixture_ids": "batch7-fixture-ids.json",
+    "drop_errors": [
+      "drop-errors-results.json",
+      "drop-errors-db.json",
+      "drop-errors-source-sha256.json"
+    ]
   },
   "remaining": "All unlisted original compounds remain notrun by this increment, including remaining tree navigation/cancel/back, creation validation/rapid submits, interface metadata/collaboration, Body/Schema/rich-editor gaps. Preserve main matrix and combine C Tag settings evidence.",
   "fixed_regressions": [
@@ -345,6 +355,12 @@
       "before": "Both versions accepted guest sorting. Index endpoints trusted target IDs without checking their persisted project owners and responded before writes completed.",
       "after": "Only upIndex/upCatIndex load and authorize every target before writing, reject mixed projects, await all writes. Owned InterfaceMenu awaits requests and displays nonzero errcode. B-owned proxy unchanged.",
       "validation": "12 default unit tests; real paired guest drag, owner/dev success, mixed-project and revoked-session zero-write API checks."
+    },
+    {
+      "id": "interface-tree-transport-error",
+      "before": "Rejected network/HTTP promises escaped onDrop without user feedback in all three drag branches.",
+      "after": "Catch transport failure with API errmsg or retry fallback; no success refresh after failure.",
+      "validation": "Six native pointer tests: each branch network abort and HTTP503, visible message, unchanged API/menu, restored real API success and reload; exact six fixture DB readbacks passed."
     }
   ],
   "review_notes": [

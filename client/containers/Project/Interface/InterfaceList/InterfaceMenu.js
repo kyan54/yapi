@@ -291,46 +291,51 @@ class InterfaceMenu extends Component {
   };
 
   onDrop = async e => {
-    const dropCatIndex = e.node.pos.split('-')[1] - 1;
-    const dragCatIndex = e.dragNode.pos.split('-')[1] - 1;
-    if (dropCatIndex < 0 || dragCatIndex < 0) {
-      return;
-    }
-    const { list } = this.props;
-    const dropCatId = this.props.list[dropCatIndex]._id;
-    const id = e.dragNode.key;
-    const dragCatId = this.props.list[dragCatIndex]._id;
+    try {
+      const dropCatIndex = e.node.pos.split('-')[1] - 1;
+      const dragCatIndex = e.dragNode.pos.split('-')[1] - 1;
+      if (dropCatIndex < 0 || dragCatIndex < 0) {
+        return;
+      }
+      const { list } = this.props;
+      const dropCatId = this.props.list[dropCatIndex]._id;
+      const id = e.dragNode.key;
+      const dragCatId = this.props.list[dragCatIndex]._id;
 
-    const dropPos = e.node.pos.split('-');
-    const dropIndex = Number(dropPos[dropPos.length - 1]);
-    const dragPos = e.dragNode.pos.split('-');
-    const dragIndex = Number(dragPos[dragPos.length - 1]);
+      const dropPos = e.node.pos.split('-');
+      const dropIndex = Number(dropPos[dropPos.length - 1]);
+      const dragPos = e.dragNode.pos.split('-');
+      const dragIndex = Number(dragPos[dragPos.length - 1]);
 
-    if (id.indexOf('cat') === -1) {
-      if (dropCatId === dragCatId) {
-        // 同一个分类下的接口交换顺序
-        let colList = list[dropCatIndex].list;
-        let changes = arrayChangeIndex(colList, dragIndex, dropIndex);
-        const result = await axios.post('/api/interface/up_index', changes);
-        if (result.data.errcode !== 0) return message.error(result.data.errmsg);
+      if (id.indexOf('cat') === -1) {
+        if (dropCatId === dragCatId) {
+          // 同一个分类下的接口交换顺序
+          let colList = list[dropCatIndex].list;
+          let changes = arrayChangeIndex(colList, dragIndex, dropIndex);
+          const result = await axios.post('/api/interface/up_index', changes);
+          if (result.data.errcode !== 0) return message.error(result.data.errmsg);
+        } else {
+          const result = await axios.post('/api/interface/up', { id, catid: dropCatId });
+          if (result.data.errcode !== 0) return message.error(result.data.errmsg);
+        }
+        const { projectId, router } = this.props;
+        this.props.fetchInterfaceListMenu(projectId);
+        this.props.fetchInterfaceList({ project_id: projectId });
+        if (router && isNaN(router.params.actionId)) {
+          // 更新分类list下的数据
+          let catid = router.params.actionId.substr(4);
+          this.props.fetchInterfaceCatList({ catid });
+        }
       } else {
-        const result = await axios.post('/api/interface/up', { id, catid: dropCatId });
+        // 分类之间拖动
+        let changes = arrayChangeIndex(list, dragIndex - 1, dropIndex - 1);
+        const result = await axios.post('/api/interface/up_cat_index', changes);
         if (result.data.errcode !== 0) return message.error(result.data.errmsg);
+        await this.props.fetchInterfaceListMenu(this.props.projectId);
       }
-      const { projectId, router } = this.props;
-      this.props.fetchInterfaceListMenu(projectId);
-      this.props.fetchInterfaceList({ project_id: projectId });
-      if (router && isNaN(router.params.actionId)) {
-        // 更新分类list下的数据
-        let catid = router.params.actionId.substr(4);
-        this.props.fetchInterfaceCatList({ catid });
-      }
-    } else {
-      // 分类之间拖动
-      let changes = arrayChangeIndex(list, dragIndex - 1, dropIndex - 1);
-      const result = await axios.post('/api/interface/up_cat_index', changes);
-      if (result.data.errcode !== 0) return message.error(result.data.errmsg);
-      await this.props.fetchInterfaceListMenu(this.props.projectId);
+    } catch (error) {
+      const response = error.response && error.response.data;
+      message.error((response && response.errmsg) || '移动或排序失败，请重试');
     }
   };
   // 数据过滤
