@@ -422,36 +422,34 @@ class interfaceController extends baseController {
     let result = await this.Model.getByPath(params.project_id, params.path, params.method, '_id res_body');
 
     if (result.length > 0) {
-      result.forEach(async item => {
-        params.id = item._id;
-        // console.log(this.schemaMap['up'])
-        let validParams = Object.assign({}, params)
-        let validResult = yapi.commons.validateParams(this.schemaMap['up'], validParams);
-        if (validResult.valid) {
-          let data = Object.assign({}, ctx);
-          data.params = validParams;
-
-          if(params.res_body_is_json_schema && params.dataSync === 'good'){
-            try{
-              let new_res_body = yapi.commons.json_parse(params.res_body)
-              let old_res_body = yapi.commons.json_parse(item.res_body)
-              data.params.res_body = JSON.stringify(mergeJsonSchema(old_res_body, new_res_body),null,2);
-            }catch(err){}
-          }
-          await this.up(data);
-        } else {
+      // Do not return an import success while writes are still in flight. Each
+      // target gets independent parameters and any validation/write error is
+      // propagated to the importer and scheduled-sync hash checkpoint.
+      for (const item of result) {
+        const validParams = Object.assign({}, params, { id: item._id });
+        const validResult = yapi.commons.validateParams(this.schemaMap['up'], validParams);
+        if (!validResult.valid) {
           return (ctx.body = yapi.commons.resReturn(null, 400, validResult.message));
         }
-      });
+        const data = Object.assign(Object.create(Object.getPrototypeOf(ctx)), ctx, { params: validParams });
+        if (params.res_body_is_json_schema && params.dataSync === 'good') {
+          try {
+            const newBody = yapi.commons.json_parse(params.res_body);
+            const oldBody = yapi.commons.json_parse(item.res_body);
+            data.params.res_body = JSON.stringify(mergeJsonSchema(oldBody, newBody), null, 2);
+          } catch (err) { /* Retain the original import fallback for invalid schemas. */ }
+        }
+        await this.up(data);
+        if (data.body && data.body.errcode) return (ctx.body = data.body);
+      }
     } else {
-      let validResult = yapi.commons.validateParams(this.schemaMap['add'], params);
-      if (validResult.valid) {
-        let data = {};
-        data.params = params;
-        await this.add(data);
-      } else {
+      const validResult = yapi.commons.validateParams(this.schemaMap['add'], params);
+      if (!validResult.valid) {
         return (ctx.body = yapi.commons.resReturn(null, 400, validResult.message));
       }
+      const data = Object.assign(Object.create(Object.getPrototypeOf(ctx)), ctx, { params });
+      await this.add(data);
+      if (data.body && data.body.errcode) return (ctx.body = data.body);
     }
     ctx.body = yapi.commons.resReturn(result);
     // return ctx.body = yapi.commons.resReturn(null, 400, 'path第一位必需为 /, 只允许由 字母数字-/_:.! 组成');
