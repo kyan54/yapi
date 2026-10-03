@@ -69,9 +69,22 @@ test('project_mock-03 actual enabled disabled and missing-runner Mock responses 
  await mockSettings(page,id,'mockJson.isolated = "enabled"; delay = 0;');await save(page);await mockEnvironment(page,id,apps.missing);await login(page,apps.missing);await runView(page,apps.missing,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(result.data.res.body.isolated).toBeUndefined();await shot(page,info,'mock-missing-runner');
 });
 for(const failure of ['business','network'])test(`project_mock-04 ${failure} save failure preserves draft and execution error can recover`,async({page},info)=>{
- const id=await fixture(page,failure==='business'?1004:1005),script='throw new Error("SYNTHETIC_MOCK_FAILURE");';await mockSettings(page,id,script);let intercepted=false;
+ const id=await fixture(page,failure==='business'?1004:1005),script='throw new Error("SYNTHETIC_MOCK_FAILURE");';await mockSettings(page,id,script);let intercepted=false,saveAttempts=0;
+ page.on('request',request=>{if(new URL(request.url()).pathname==='/api/project/up'&&request.method()==='POST')saveAttempts++;});
  await page.route('**/api/project/up',async route=>{if(!intercepted&&route.request().method()==='POST'){intercepted=true;if(failure==='network')await route.abort('failed');else await route.fulfill({json:{errcode:500,errmsg:'Synthetic rejected save'}});}else await route.continue();});
- await page.getByRole('button',{name:/^保\s*存$/}).click();await expect(page.locator('.ant-message-error')).toBeVisible();expect((await connection.db.collection('project').findOne({_id:id})).project_mock_script).toBe('');await expect(page.locator('.ace_editor .ace_content')).toContainText('SYNTHETIC_MOCK_FAILURE');await page.unroute('**/api/project/up');await save(page);await mockEnvironment(page,id,apps.default);await runView(page,apps.default,id);let result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_MOCK_FAILURE');await shot(page,info,'mock-execution-'+failure);
+ await expect(page.locator('.ant-message-success')).toHaveCount(0);
+ await page.getByRole('button',{name:/^保\s*存$/}).click();
+ // Transport and local fallback may each emit a toast. Require the exact
+ // failure-specific error, not a unique generic error element or any toast.
+ const expectedError=failure==='business'?'Synthetic rejected save':'Network Error';
+ await expect(page.locator('.ant-message-error').filter({hasText:new RegExp('^\s*'+expectedError+'\s*$')}).first()).toBeVisible();
+ await expect(page.locator('.ant-message-success')).toHaveCount(0);
+ expect(intercepted).toBe(true);expect(saveAttempts).toBe(1);
+ const unchanged=await connection.db.collection('project').findOne({_id:id});expect(unchanged.project_mock_script).toBe('');expect(unchanged.is_mock_open).toBe(false);
+ await expect(page.locator('.ace_editor .ace_content')).toContainText('SYNTHETIC_MOCK_FAILURE');await expect(page.getByRole('switch')).toHaveAttribute('aria-checked','true');await expect(page.getByRole('button',{name:/^保\s*存$/})).toBeEnabled();
+ await shot(page,info,'mock-save-'+failure+'-error');await page.unroute('**/api/project/up');await save(page);expect(saveAttempts).toBe(2);
+ const retried=await connection.db.collection('project').findOne({_id:id});expect(retried.project_mock_script).toBe(script);expect(retried.is_mock_open).toBe(true);
+ await mockEnvironment(page,id,apps.default);await runView(page,apps.default,id);let result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_MOCK_FAILURE');await shot(page,info,'mock-execution-'+failure);
  await mockSettings(page,id,'mockJson.recovered = true; delay = 0;');await save(page);await runView(page,apps.default,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.recovered).toBe(true);expect(result.data.res.body.errcode).toBeUndefined();await expect(page.locator('.pretty-editor-body')).not.toContainText('SYNTHETIC_MOCK_FAILURE');
 });
 test('runner-03 browser mode refuses scripts and server sandbox failure is visible with retry',async({page},info)=>{
