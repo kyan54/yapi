@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-10",
+  "scope": "A/interfaces/batches-1-12",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -137,6 +137,23 @@
       "default_skipped": 6,
       "default_failed": 0,
       "note": "New-only current candidate regression. Prior paired batch9 aggregate is historical, not a 106-test current run."
+    },
+    "batch11_current_candidate": {
+      "new_browser_passed": 59,
+      "failed": 0,
+      "default_passed": 310,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "New-only regression; six pending-create cases additional. Historical paired reports remain separate."
+    },
+    "batch12_current_candidate": {
+      "lease_browser_passed": 10,
+      "failed": 0,
+      "lease_unit_passed": 18,
+      "default_passed": 313,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "Controller-only refinement. Prior full59 is batch11, not rerun as current61."
     }
   },
   "scenarios": [
@@ -272,16 +289,15 @@
       "id": "interface_add-04",
       "status": "failed",
       "old": "failed",
-      "new": "failed",
-      "checks": "Owner tree and developer table entry, guest boundary: cancel/close/Escape/reopen no writes; delayed in-flight double-click creates two legacy records but one candidate record/request. Candidate network+503 failures preserve form and allow retry.",
-      "open_review": "Rapid interface duplicate submit fixed. Pending dismissal/stale completion and category synchronous guard still require follow-up; do not count compound complete."
+      "new": "passed",
+      "checks": "Owner tree and developer table entry, guest boundary: cancel/close/Escape/reopen no writes; delayed in-flight double-click creates two legacy records but one candidate record/request. Candidate network+503 failures preserve form and allow retry. Batch11 menu/list/category in-flight guards with explicit pending hint and disabled Cancel/X/Escape/mask; real SPA back/cross-project late completion does not navigate or close new draft. Network/503 same-form retry passes. Six new cases, exact scoped DB readback; legacy duplicate defect retained failed."
     },
     {
-      "id": "interface_metadata-02",
+      "id": "interface_edit_meta-02",
       "status": "failed",
       "old": "failed",
       "new": "passed",
-      "checks": "Connection-owned atomic edit lease: rejected/same-user/guest closes cannot clear owner; simultaneous claim grants one; owner close permits next editor; disconnect/reconnect, live revocation, expired takeover/late close, legacy uid recovery and real crash/restart bounded expiry. Old rejected close clears owner and guest claims lock. Eight new browser scenarios pass; old paired observation confirms defect, seven candidate-only cases notrun."
+      "checks": "Connection-owned atomic edit lease: rejected/same-user/guest closes cannot clear owner; simultaneous claim grants one; owner close permits next editor; disconnect/reconnect, live revocation, expired takeover/late close, legacy uid recovery and real crash/restart bounded expiry. Old rejected close clears owner and guest claims lock. Eight new browser scenarios pass; old paired observation confirms defect, seven candidate-only cases notrun. Batch12 reloads authenticated principal existence/current role before initial authorization and every renewal: real valid-admin renewal, demotion to nonmember and account deletion both release on next pong; ten current lease browser cases pass,18 unit tests."
     }
   ],
   "legacy_defects": [
@@ -365,9 +381,25 @@
       "source_sha256": "interfaces/lock-source-sha256.json",
       "legacy": "interfaces/lock-all-before-transport-fix.json",
       "visual_review": "1920x1080 blocked-editor, initial-failure, disconnected draft screenshots inspected; layout readable, draft preserved. Initial historical proxy-close injection was replaced with actual native browser socket close."
+    },
+    "batch11": {
+      "report": "interfaces/batch11-new-results.json",
+      "screenshots": "interfaces/batch11-new-results/",
+      "probe": "interfaces/pending-probe-results.json",
+      "database": "interfaces/pending-final-db.json",
+      "source_sha256": "interfaces/pending-source-sha256.json",
+      "before": "interfaces/pending-category-before.json",
+      "visual_review": "1920x1080 pending category screenshot inspected: prompt readable, Cancel/Submit disabled, close icon absent, fields fit."
+    },
+    "batch12": {
+      "report": "interfaces/principal-final-results.json",
+      "before": "interfaces/principal-demote-before.json",
+      "database": "interfaces/principal-final-db.json",
+      "source_sha256": "interfaces/principal-source-sha256.json",
+      "default": "interfaces/principal-default-tests.log"
     }
   },
-  "remaining": "Unlisted original assertions remain notrun, including metadata fields, Body/JSON5/preview/F9, notes, remaining tree navigation and additional Schema controls. Interface/category pending-create lifecycle review remains open. Preserve original246 matrix.",
+  "remaining": "Unlisted original assertions remain notrun: metadata validation/save lifecycle, Body/JSON5/preview/F9, notes, remaining tree navigation and additional Schema controls. Raw hidden-Schema flag overwrite reproduced; Docs active-type counterpart coordinated with B. Preserve original246 matrix.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",

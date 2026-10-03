@@ -4,7 +4,7 @@ This change fixes a reproduced collaboration bug: closing a rejected editor clea
 
 ## Ownership and authorization
 
-`solveConflict` loads the persisted interface project and checks the authenticated connection's view and edit rights. View-only guests may inspect a local draft, but receive an explicit read-only result and never claim a write lease. Existing save authorization still rejects their writes. Private nonmembers receive no interface data from this channel.
+`solveConflict` loads the persisted interface project and checks the authenticated connection's view and edit rights. Before the initial authorization and every renewal it reloads the authenticated user ID from the user model, rejects a deleted account, and refreshes the role used by project authorization. A cached administrator role therefore cannot keep renewing after account demotion; an unchanged valid administrator still renews. View-only guests may inspect a local draft, but receive an explicit read-only result and never claim a write lease. Existing save authorization still rejects their writes. Private nonmembers receive no interface data from this channel.
 
 Each editable WebSocket gets a fresh server-only random token. A single MongoDB `findOneAndUpdate` claims the interface only when a lease is absent, incomplete, or expired. The filter also binds the persisted project. A valid token is authoritative even if an unrelated legacy operation changes `edit_uid` to zero. The ordinary interface query projection hides the token and expiry fields.
 
