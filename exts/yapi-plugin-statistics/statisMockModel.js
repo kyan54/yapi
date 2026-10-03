@@ -54,7 +54,7 @@ class statisMockModel extends baseModel {
             {
                 $sort: { _id: 1 }
             }
-        ]).cursor({}).exec();
+        ]).cursor({});
 		await cursor.eachAsync(doc => data.push(doc));
 		return data;
 

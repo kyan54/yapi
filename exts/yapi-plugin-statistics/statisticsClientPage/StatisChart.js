@@ -5,7 +5,7 @@ import React, { Component } from 'react';
 // import PropTypes from 'prop-types'
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { Spin } from 'antd';
+import { Alert, Button, Spin } from 'antd';
 class StatisChart extends Component {
   static propTypes = {};
 
@@ -13,6 +13,7 @@ class StatisChart extends Component {
     super(props);
     this.state = {
       showLoading: true,
+      loadError: false,
       chartDate: {
         mockCount: 0,
         mockDateList: []
@@ -20,19 +21,30 @@ class StatisChart extends Component {
     };
   }
 
-  componentWillMount() {
+  componentDidMount() {
+    this.mounted = true;
     this.getMockData();
+  }
+
+  componentWillUnmount() {
+    this.mounted = false;
   }
 
   // 获取mock 请求次数信息
   async getMockData() {
-    let result = await axios.get('/api/plugin/statismock/get');
-    if (result.data.errcode === 0) {
-      let mockStatisData = result.data.data;
-      this.setState({
-        showLoading: false,
-        chartDate: { ...mockStatisData }
-      });
+    const request = this.request = (this.request || 0) + 1;
+    this.setState({ showLoading: true, loadError: false });
+    try {
+      const result = await axios.get('/api/plugin/statismock/get');
+      if (!this.mounted || request !== this.request) return;
+      const data = result.data && result.data.data;
+      if (result.data.errcode !== 0 || !data || !Number.isFinite(data.mockCount) || !Array.isArray(data.mockDateList)) {
+        throw new Error('Invalid statistics response');
+      }
+      this.setState({ showLoading: false, chartDate: data });
+    } catch (error) {
+      if (!this.mounted || request !== this.request) return;
+      this.setState({ showLoading: false, loadError: true });
     }
   }
 
@@ -42,6 +54,11 @@ class StatisChart extends Component {
 
     return (
       <div>
+        {this.state.loadError && (
+          <Alert type="error" showIcon message="Mock 统计加载失败"
+            description="请重试；如果仍然失败，请联系管理员检查统计服务。"
+            action={<Button onClick={() => this.getMockData()}>重试</Button>} />
+        )}
         <Spin spinning={this.state.showLoading}>
           <div className="statis-chart-content">
             <h3 className="statis-title">mock 接口访问总数为：{mockCount.toLocaleString()}</h3>

@@ -121,6 +121,14 @@
     "exts/yapi-plugin-swagger-auto-sync/interfaceSyncUtils.js": {
       "baselineSha256": "11d015c0a94b6e11a7a6b0ce141b6f85a486f71f0387746a4c438f70b1828354",
       "reason": "Preserve actual scheduled Swagger imports with validated cron, normalized timer keys, safe async failure propagation and current hash/timestamp persistence."
+    },
+    "exts/yapi-plugin-statistics/statisMockModel.js": {
+      "baselineSha256": "26f44ac028a3934f108bf0cfd68c112b3874b0c2be74ade94ca07fcc4bcb5689",
+      "reason": "Use the supported Mongoose 9 aggregation cursor directly while preserving date boundaries, sort order, grouping and count results."
+    },
+    "exts/yapi-plugin-statistics/statisticsClientPage/StatisChart.js": {
+      "baselineSha256": "39bf7265e74df43e4c52b5d7f08f9cd1aa90deca53c0aacd30f1797dab7c1ddd",
+      "reason": "Stop perpetual loading on failed statistics responses, provide retry, and ignore unmounted or superseded requests without changing chart data semantics."
     }
   },
   "dependencies": {

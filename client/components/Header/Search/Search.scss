@@ -2,8 +2,13 @@ $color-grey:#979DA7;
 
 .search-wrapper{
   cursor: auto;
+  // AntD 6 custom-input AutoComplete inherits these from its parent. The
+  // navigation's 56px line-height would otherwise stretch its flex content.
+  font-size: 13px;
+  line-height: 1.5;
   .search-input{
     width: 2rem;
+    height: 32px;
   }
   .srch-icon{
   }

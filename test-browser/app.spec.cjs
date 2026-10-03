@@ -180,3 +180,68 @@ test('editing preserves parameter rows, schema semantics and description through
   await page.screenshot({path:testInfo.outputPath('editor-compatible.png'),fullPage:true});
   expect(errors).toEqual([]);
 });
+
+test('statistics real API, legacy typography, empty data and failed-request retry at 1920x1080', async ({ page }, testInfo) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await login(page);
+  const date = require('../exts/yapi-plugin-statistics/util').formatYMD(new Date());
+  // This database is unique to this test process and is dropped by afterAll.
+  await connection.db.collection('statis_mock').deleteMany({});
+  await connection.db.collection('statis_mock').insertMany([
+    { _id: 501, interface_id: 17, project_id: 11, group_id: 8, date, time: Math.floor(Date.now() / 1000), ip: '127.0.0.1' },
+    { _id: 502, interface_id: 18, project_id: 11, group_id: 8, date, time: Math.floor(Date.now() / 1000), ip: '127.0.0.1' }
+  ]);
+  const response = await page.request.get(baseURL + '/api/plugin/statismock/get');
+  const payload = await response.json();
+  expect(payload.errcode, JSON.stringify(payload)).toBe(0);
+  expect(payload.data).toEqual({ mockCount: 2, mockDateList: [{ _id: date, count: 2 }] });
+  await page.goto(baseURL + '/statistic');
+  await expect(page.getByRole('heading', { name: '分组数据详情', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'mock 接口访问总数为：2', exact: true })).toBeVisible();
+  await expect(page.locator('.g-statistic .ant-spin-spinning')).toHaveCount(0);
+  await expect(page.getByRole('cell', { name: 'Synthetic browser group', exact: true })).toBeVisible();
+  const geometry = await page.evaluate(() => {
+    const heading = document.querySelector('.m-row-table .statis-title');
+    const input = document.querySelector('input[placeholder="搜索分组/项目/接口"]');
+    const search = input.closest('.ant-input-affix-wrapper') || input;
+    return {
+      width: innerWidth, height: innerHeight,
+      bodyFont: parseFloat(getComputedStyle(document.body).fontSize),
+      headingFont: parseFloat(getComputedStyle(heading).fontSize),
+      headingHeight: heading.getBoundingClientRect().height,
+      searchHeight: search.getBoundingClientRect().height,
+      pageWidth: document.documentElement.scrollWidth
+    };
+  });
+  expect(geometry.width).toBeGreaterThanOrEqual(1920);
+  expect(geometry.height).toBeGreaterThanOrEqual(1080);
+  expect(geometry.bodyFont).toBe(13);
+  expect(geometry.headingFont).toBeGreaterThanOrEqual(13);
+  expect(geometry.headingFont).toBeLessThanOrEqual(24);
+  expect(geometry.headingHeight).toBeLessThan(70);
+  expect(geometry.searchHeight).toBeGreaterThanOrEqual(24);
+  expect(geometry.searchHeight).toBeLessThanOrEqual(40);
+  expect(geometry.pageWidth).toBeLessThanOrEqual(geometry.width);
+  await testInfo.attach('statistics-geometry', { body: JSON.stringify(geometry, null, 2), contentType: 'application/json' });
+  await page.screenshot({ path: testInfo.outputPath('statistics-1920x1080.png'), fullPage: true });
+
+  await connection.db.collection('statis_mock').deleteMany({});
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'mock 接口访问总数为：0', exact: true })).toBeVisible();
+  await expect(page.locator('.g-statistic .ant-spin-spinning')).toHaveCount(0);
+
+  await page.route('**/api/plugin/statismock/get', route => route.fulfill({
+    status: 500, contentType: 'application/json', body: JSON.stringify({ errcode: 500, errmsg: 'Synthetic failure' })
+  }));
+  await page.reload();
+  await expect(page.getByText('Mock 统计加载失败', { exact: true })).toBeVisible();
+  await expect(page.locator('.g-statistic .ant-spin-spinning')).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath('statistics-retry-state.png'), fullPage: true });
+  await page.unroute('**/api/plugin/statismock/get');
+  await page.getByRole('button', { name: /^重\s*试$/ }).click();
+  await expect(page.getByText('Mock 统计加载失败', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'mock 接口访问总数为：0', exact: true })).toBeVisible();
+  await expect(page.locator('.g-statistic .ant-spin-spinning')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

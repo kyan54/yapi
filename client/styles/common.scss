@@ -4,6 +4,22 @@
 html {
   font-size:100px;
 }
+
+// The rem root is a layout unit, not the default text size. AntD 3 supplied
+// these body/heading defaults; AntD 6's reset and ConfigProvider do not style
+// native elements outside components. Keep these in sync with theme.js.
+body {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(13, 27, 62, 0.65);
+  background-color: #eceef1;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: rgba(39, 56, 72, 0.85);
+  font-weight: 500;
+}
+
 html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
              "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",

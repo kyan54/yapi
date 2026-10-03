@@ -1,7 +1,8 @@
+import 'antd/dist/reset.css';
 import './styles/common.scss';
 import './styles/theme.less';
+import yapiTheme from './styles/theme';
 import { ConfigProvider } from 'antd';
-import 'antd/dist/reset.css';
 import './plugin';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
@@ -16,7 +17,7 @@ const store = createStore();
 
 createRoot(document.getElementById('yapi')).render(
   <Provider store={store}>
-    <ConfigProvider locale={zhCN} theme={{ token: { colorPrimary: '#2395f1', fontSize: 13, borderRadius: 4 }, components: { Layout: { headerBg: '#32363a', headerHeight: 56, headerPadding: 0, siderBg: '#fff' } } }}>
+    <ConfigProvider locale={zhCN} theme={yapiTheme}>
       <App />
     </ConfigProvider>
   </Provider>
