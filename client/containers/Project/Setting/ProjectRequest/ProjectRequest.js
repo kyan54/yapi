@@ -35,16 +35,30 @@ export default class ProjectRequest extends Component {
   }
 
   handleSubmit = async () => {
-    let result = await this.props.updateProjectScript({
-      id: this.props.projectId,
-      pre_script: this.state.pre_script,
-      after_script: this.state.after_script
-    });
+    let result;
+    try {
+      result = await this.props.updateProjectScript({
+        id: this.props.projectId,
+        pre_script: this.state.pre_script,
+        after_script: this.state.after_script
+      });
+    } catch (error) {
+      message.error('保存失败，请检查网络后重试');
+      return;
+    }
+    if (!result || result.error || !result.payload || !result.payload.data) {
+      message.error('保存失败，请检查网络后重试');
+      return;
+    }
     if (result.payload.data.errcode === 0) {
       message.success('保存成功');
-      await this.props.getProject(this.props.projectId);
+      try {
+        await this.props.getProject(this.props.projectId);
+      } catch (error) {
+        message.error('保存成功，但刷新项目失败，请刷新页面');
+      }
     } else {
-      message.success('保存失败, ' + result.payload.data.errmsg);
+      message.error('保存失败, ' + result.payload.data.errmsg);
     }
   };
 

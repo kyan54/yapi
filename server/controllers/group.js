@@ -245,6 +245,9 @@ class groupController extends baseController {
    */
   async addMember(ctx) {
     let params = ctx.params;
+    if ((await this.checkAuth(params.id, 'group', 'danger')) !== true) {
+      return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+    }
     let groupInst = yapi.getInst(groupModel);
 
     params.role = ['owner', 'dev', 'guest'].find(v => v === params.role) || 'dev';
