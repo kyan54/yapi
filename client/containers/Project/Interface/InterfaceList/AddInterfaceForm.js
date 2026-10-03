@@ -1,6 +1,6 @@
 import React, { PureComponent as Component } from 'react'
 import PropTypes from 'prop-types'
-import { Form, Input, Select, Button } from 'antd';
+import { Form, Input, Select, Button, message } from 'antd';
 
 import constants from '../../../../constants/variable.js'
 import { handleApiPath, nameLengthLimit } from '../../../../common.js'
@@ -22,14 +22,27 @@ class AddInterfaceForm extends Component {
     catid: PropTypes.number,
     catdata: PropTypes.array
   }
+  state = { submitting: false };
+  submitting = false;
+
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFields((err, values) => {
-      if (!err) {
-        this.props.onSubmit(values, () => {
-          this.props.form.resetFields();
-        });
-
+    if (this.submitting) return;
+    this.submitting = true;
+    this.props.form.validateFields(async (err, values) => {
+      if (err) {
+        this.submitting = false;
+        return;
+      }
+      this.setState({ submitting: true });
+      try {
+        await this.props.onSubmit(values, () => this.props.form.resetFields());
+      } catch (error) {
+        const response = error.response && error.response.data;
+        message.error((response && response.errmsg) || '接口创建失败，请重试');
+      } finally {
+        this.submitting = false;
+        this.setState({ submitting: false });
       }
     });
   }
@@ -114,7 +127,8 @@ class AddInterfaceForm extends Component {
           <Button
             type="primary"
             htmlType="submit"
-            disabled={hasErrors(getFieldsError())}
+            loading={this.state.submitting}
+            disabled={this.state.submitting || hasErrors(getFieldsError())}
           >
             提交
           </Button>

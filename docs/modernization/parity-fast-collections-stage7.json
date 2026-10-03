@@ -1,0 +1,198 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "base": "c0d6fd371cbcbdaf47c6d3bd38f30f9cbac37ce5",
+  "scope": "B AI12 independent new-only acceptance; original246 assertions retained",
+  "complete": false,
+  "rows": [
+    {
+      "id": "ai_gate-01",
+      "assertion": "Open on current interface and show exact document version/provider/model/outbound payload",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Exact server version/provider/model/outbound JSON displayed and compared.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_gate-02",
+      "assertion": "unconfigured provider and unchecked consent disable generation",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Unchecked consent disables generation; configured=false UI fixture disabled. Actual absent-provider HTTP test passes.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_gate-03",
+      "assertion": "consent checkbox applies to displayed payload and is reset on close/reopen or document change",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Close/reopen resets consent; changed document rejects old payload409; reopen shows new payload unchecked.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_gate-04",
+      "assertion": "loading/Close/Escape/repeated open cannot strand overlay or reuse previous-interface state",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Delayed load ignores Escape while busy then settles; repeated reopen and interface Back clear all dialogs and state.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_proposal-01",
+      "assertion": "Generate only after consent and show complete HTML/Markdown/field-annotation diff as safe text",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Fixed local LLM HTML source/Markdown/query-description diffs shown as text; no rendered h2/script in preview.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_proposal-02",
+      "assertion": "discard saves nothing and retry uses intended idempotency",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "First completed generation response lost; retry same requestId; discard leaves version unchanged; fresh generation uses new ID.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_proposal-03",
+      "assertion": "accept once creates revision then refreshes interface and clears proposal/consent",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Repeated accept one write, exactly one new revision, proposal removed, consent cleared, reload displays stored Markdown and field snapshot.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_proposal-04",
+      "assertion": "concurrent legacy edit produces visible stale error without overwriting newer document",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Concurrent legacy edit rejects accept409 and preserves current document.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_history-01",
+      "assertion": "Load history and earlier pages without duplicate versions, retaining actor/time/kind",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "54 real versions paginate with unique version IDs, kind/actor/time retained.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_history-02",
+      "assertion": "inspect current/original/old field snapshots and label incomplete history",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Current/intermediate/baseline snapshots opened and compared with API. Incomplete-history HTTP UI fixture shows explicit legacy label; script-like text remains text.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_history-03",
+      "assertion": "Cancel restore writes nothing, confirm creates a new revision preserving history",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Cancel restore unchanged revision; repeated confirmation one new restore revision, prior lineage preserved.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    },
+    {
+      "id": "ai_history-04",
+      "assertion": "repeated restore, navigation and stale version failure never rewrite another interface",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "comparability": "new-only",
+      "detail": "Stale confirmation409 zero overwrite; refreshed explicit re-confirm succeeds; lost-response retry409 creates no duplicate; navigation closes confirmation.",
+      "evidence": [
+        "docs-stage7-final.json",
+        "docs-stage7-extra.json",
+        "units-stage7-b-only.log"
+      ]
+    }
+  ],
+  "contract": "POST /api/documentation/restore now requires numeric safe nonnegative expectedVersion captured when confirmation opens. Missing/malformed=400; stale=409 before history preparation. Existing BSON CAS protects races after read. No automatic retry/rebase. Readonly MCP unchanged.",
+  "fixes": [
+    "Stale restore overwrote newer legacy documentation.",
+    "Restore confirmation could sit underneath reopened assistant modal; explicit local1000/1100 stacking fixes real pointer blockage."
+  ],
+  "validation": {
+    "basicPassed": 32,
+    "modernizationPassed": 315,
+    "modernizationSkipped": 6,
+    "uiMainPassed": 9,
+    "uiAdditionalPassed": 2,
+    "distinctUiScenarios": 10,
+    "database": "Each UI test validates only its synthetic interface ID and project with fixture marker, version/Markdown against Mongo readback.",
+    "visual": "1920x1080 actual review: current history, incomplete label and safe text visible; long history scrolls in modal."
+  },
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "limitations": [
+    "Old version has no AI assistant; new-only acceptance is not old/new parity or an N/A pass.",
+    "configured=false and incomplete legacy-history display use explicitly recorded HTTP UI fixtures; actual HTTP absent-provider and store lineage unit tests complement them.",
+    "Initial combined-overlay unit run used old C environment fixture against C new component and had one unrelated failure; exact B-only product run315pass supersedes it.",
+    "Read-only MCP is covered by existing unit tests; no end-user MCP session is claimed."
+  ]
+}

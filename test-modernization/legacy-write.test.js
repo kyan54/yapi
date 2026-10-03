@@ -102,7 +102,7 @@ test('legacy edits invalidate pending proposals and description restore preserve
   const proposal = await store.propose(11, 17, {desc: 'AI', markdown: 'AI'}, 9);
   await writeLegacyInterface(model, 17, {desc: 'manual', markdown: 'manual', res_body: 'new schema'}, options);
   await assert.rejects(store.accept(11, 17, proposal.id, 9), {code: 'VERSION_CONFLICT'});
-  await store.restore(11, 17, 0, 9);
+  await store.restore(11,17,0,9,(await store.get(11,17)).version);
   assert.equal(get().desc, 'old'); assert.equal(get().res_body, 'new schema'); assert.equal(get().docs_revision, 2);
 });
 test('missing IDs preserve write result; malformed IDs, history overflow and retry exhaustion fail closed', async () => {
@@ -148,11 +148,11 @@ test('repeated identical imports and audit-only updates do not consume versions'
 test('manual field description snapshots restore baseline while preserving current semantics',async()=>{
  const {model,get,revisions}=setup({...initial(),req_query:[{name:'page',desc:'before',required:'1'}],res_body_is_json_schema:true,res_body:'{"type":"string","description":"before"}'});
  await writeLegacyInterface(model,17,{req_query:[{name:'page',desc:'after',required:'0'}],res_body:'{"type":"integer","description":"after"}'},options);
- const store=createStore({interfaces:model.collection,revisions});await store.restore(11,17,0,9);
+ const store=createStore({interfaces:model.collection,revisions});await store.restore(11,17,0,9,(await store.get(11,17)).version);
  assert.equal(get().req_query[0].desc,'before');assert.equal(get().req_query[0].required,'0');
  assert.deepEqual(JSON.parse(get().res_body),{type:'integer',description:'before'});
  await writeLegacyInterface(model,17,{req_query:[]},options);
- await assert.rejects(store.restore(11,17,0,9),{code:'DESCRIPTION_CONFLICT'});
+ await assert.rejects(store.restore(11,17,0,9,(await store.get(11,17)).version),{code:'DESCRIPTION_CONFLICT'});
 });
 test('large plugin payload is preserved without an artificial 8 MiB history ceiling',async()=>{
  const payload='x'.repeat(8*1024*1024),{model,get}=setup({...initial(),plugin_data:payload});
@@ -176,8 +176,8 @@ test('persisted standalone chain migrates 500 revisions and excludes orphan prep
   assert.equal(await revisions.countDocuments({version:502}),1);
   const store=createStore({interfaces:model.collection,proposals,revisions});
   const visible=await store.history(11,17);assert.equal(visible.currentVersion,501);assert.equal(visible.revisions[0].version,501);
-  await assert.rejects(store.restore(11,17,502,9),{code:'NOT_FOUND'});
-  await store.restore(11,17,0,9);const restored=await model.collection.findOne({_id:17});assert.equal(restored.desc,'0');assert.equal(restored.docs_revision,502);
+  await assert.rejects(store.restore(11,17,502,9,(await store.get(11,17)).version),{code:'NOT_FOUND'});
+  await store.restore(11,17,0,9,(await store.get(11,17)).version);const restored=await model.collection.findOne({_id:17});assert.equal(restored.desc,'0');assert.equal(restored.docs_revision,502);
   assert.equal(await revisions.countDocuments({version:502}),2);assert.equal((await store.history(11,17)).revisions[0].kind,'restore');
   assert.deepEqual(await writeLegacyInterface(model,17,{desc:'0',markdown:'0'},options),{n:1,nModified:0,ok:1});
   await revisions.updateOne({_id:restored.docs_revision_head},{$set:{projectId:99}});

@@ -33,7 +33,7 @@ test('slow provider response cannot rebase over intervening edits',async()=>{
 test('restore original creates another version while preserving latest semantic fields',async()=>{
   const {store,mutate,get}=setup();const proposal=await store.propose(11,17,{desc:'new',markdown:'new'},9);
   await store.accept(11,17,proposal.id,9);mutate({path:'/current'});
-  await store.restore(11,17,0,9);
+  await store.restore(11,17,0,9,(await store.get(11,17)).version);
   assert.equal(get().desc,'old');assert.equal(get().path,'/current');assert.equal(get().docs_revision,2);
   assert.deepEqual((await store.history(11,17)).revisions.map(item=>item.kind),['restore','accept','baseline']);
   assert.equal((await store.history(11,17)).revisions.at(-1).version,0);
@@ -51,13 +51,13 @@ test('store atomically persists annotation fields and restores baseline without 
  assert.equal(get().req_query[0].desc,'Page number');assert.equal(JSON.parse(get().res_body).properties.id.description,'Identifier');
  assert.equal((await store.history(11,17)).revisions[0].fieldHistoryAvailable,true);
  const schema=JSON.parse(get().res_body);schema.properties.id.type='integer';mutate({res_body:JSON.stringify(schema)});
- await store.restore(11,17,0,9);
+ await store.restore(11,17,0,9,(await store.get(11,17)).version);
  assert.equal(get().req_query[0].desc,'old');assert.equal(JSON.parse(get().res_body).properties.id.description,undefined);assert.equal(JSON.parse(get().res_body).properties.id.type,'integer');assert.equal(JSON.parse(get().res_body).properties.id.default,'secret');
 });
 test('legacy history clearly discloses absent annotation history and leaves current annotations alone',async()=>{
  const {store,mutate,get}=setup();mutate({req_query:[{name:'page',desc:'current'}],docs_revision:1,docs_history:[{version:1,parentVersion:0,interfaceId:17,projectId:11,kind:'legacy-write',before:{desc:'original',markdown:'original'},after:{desc:'legacy',markdown:'legacy'}}]});
  const history=await store.history(11,17);assert.equal(history.revisions[0].fieldHistoryAvailable,false);assert.equal(history.revisions[1].fieldHistoryAvailable,false);
- await store.restore(11,17,0,9);assert.equal(get().req_query[0].desc,'current');assert.equal(get().desc,'original');
+ await store.restore(11,17,0,9,(await store.get(11,17)).version);assert.equal(get().req_query[0].desc,'current');assert.equal(get().desc,'original');
 });
 test('prepared losing CAS records stay unreachable, including with a guessed version cursor',async()=>{
  const {store,nodes,get}=setup();const proposal=await store.propose(11,17,{desc:'new',markdown:'new'},9);
@@ -72,13 +72,13 @@ test('history rejects corrupted ownership, project, version and ancestry before 
   const {store,nodes,get}=setup();const p=await store.propose(11,17,{desc:'new',markdown:'new'},9);await store.accept(11,17,p.id,9);
   Object.assign(nodes.get(get().docs_revision_head),damage);
   await assert.rejects(store.history(11,17,{limit:1}),{code:'INVALID_REVISION'});
-  await assert.rejects(store.restore(11,17,0,9),{code:'INVALID_REVISION'});
+  await assert.rejects(store.restore(11,17,0,9,(await store.get(11,17)).version),{code:'INVALID_REVISION'});
  }
 });
 test('unchanged accept and restore do not consume revision versions or create records',async()=>{
  const {store,nodes,get}=setup();const p=await store.propose(11,17,{desc:'old',markdown:'old'},9);
  const accepted=await store.accept(11,17,p.id,9);assert.equal(accepted.unchanged,true);assert.equal(nodes.size,0);
- const restored=await store.restore(11,17,0,9);assert.equal(restored.unchanged,true);assert.equal(get().docs_revision,undefined);
+ const restored=await store.restore(11,17,0,9,(await store.get(11,17)).version);assert.equal(restored.unchanged,true);assert.equal(get().docs_revision,undefined);
 });
 test('500 embedded revisions migrate lazily without losing versions or freezing the next write',async()=>{
  const {store,mutate,get,nodes}=setup();const old=Array.from({length:500},(_,i)=>({interfaceId:17,projectId:11,parentVersion:i,version:i+1,kind:'legacy-write',actorId:null,createdAt:null,before:{desc:String(i),markdown:String(i)},after:{desc:String(i+1),markdown:String(i+1)}}));
@@ -88,5 +88,7 @@ test('500 embedded revisions migrate lazily without losing versions or freezing 
  let cursor,versions=[];
  do {const page=await store.history(11,17,{limit:73,...(cursor===undefined?{}:{cursor})});assert.ok(page.revisions.length<=73);versions.push(...page.revisions.map(x=>x.version));cursor=page.nextCursor;}while(cursor!==null);
  assert.deepEqual(versions,Array.from({length:502},(_,i)=>501-i));
- await store.restore(11,17,0,9);assert.equal(get().desc,'0');assert.equal(get().docs_revision,502);
+ await store.restore(11,17,0,9,(await store.get(11,17)).version);assert.equal(get().desc,'0');assert.equal(get().docs_revision,502);
 });
+
+test('restore rejects stale reviewed version before preparing any history and requires refresh before retry',async()=>{const{store,get,nodes}=setup();const p=await store.propose(11,17,{desc:'new',markdown:'new'},9);await store.accept(11,17,p.id,9);const snapshot=get(),count=nodes.size;await assert.rejects(store.restore(11,17,0,9,0),{code:'VERSION_CONFLICT'});assert.deepEqual(get(),snapshot);assert.equal(nodes.size,count);await assert.rejects(store.restore(11,17,0,9),{code:'INVALID_INPUT'});await store.restore(11,17,0,9,1);assert.equal(get().docs_revision,2);await assert.rejects(store.restore(11,17,0,9,1),{code:'VERSION_CONFLICT'});assert.equal(get().docs_revision,2);});
