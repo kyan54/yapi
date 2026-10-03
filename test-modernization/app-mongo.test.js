@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');const os=require('node:os');const path=require('node:path');const net=require('node:net');const {spawn}=require('node:child_process');
+const http=require('node:http');
 const mongoose=require('mongoose');const jwt=require('jsonwebtoken');
 const {createStore}=require('../server/services/documentation/store');
 const fixture=require('./fixtures/interface.json');
@@ -42,6 +43,54 @@ test('real application HTTP on modern Mongo: session auth, docs, legacy writes, 
     assert.equal((await db.collection('interface').findOne({_id:17})).docs_revision,2);
     response=await fetch(url+'/api/documentation/restore',{method:'POST',headers,body:JSON.stringify({projectId:11,interfaceId:17,version:0})});payload=await response.json();assert.equal(payload.errcode,0,JSON.stringify(payload));
     const final=await db.collection('interface').findOne({_id:17});assert.equal(final.docs_revision,3);assert.equal(final.title,'Manual synthetic update');assert.equal(final.markdown,fixture.markdown);assert.equal(final.docs_history,undefined);assert.equal(typeof final.docs_revision_head,'string');assert.deepEqual((await store.history(11,17)).revisions.map(row=>row.version),[3,2,1,0]);
+    // Exercise actual bundled plugin writes, not only controller/module loading.
+    async function pluginPost(endpoint,data) {
+      const response=await fetch(url+'/api/plugin/'+endpoint,{method:'POST',headers,body:JSON.stringify(data)});
+      const result=await response.json();assert.equal(result.errcode,0,endpoint+': '+JSON.stringify(result));return result.data;
+    }
+    await pluginPost('advmock/save',{project_id:11,interface_id:17,enable:false,mock_script:'mockJson.fixture = 1;'});
+    await pluginPost('advmock/save',{project_id:11,interface_id:17,enable:false,mock_script:'mockJson.fixture = 2;'});
+    assert.equal((await db.collection('adv_mock').findOne({interface_id:17})).mock_script,'mockJson.fixture = 2;');
+    const expectation=await pluginPost('advmock/case/save',{project_id:11,interface_id:17,name:'Synthetic expectation',ip_enable:false,params:{},res_body:'{"ok":true}'});
+    assert.ok(Number.isSafeInteger(expectation._id));
+    await pluginPost('advmock/case/save',{id:expectation._id,project_id:11,interface_id:17,name:'Updated expectation',ip_enable:false,params:{},res_body:'{"ok":false}'});
+    await pluginPost('advmock/case/hide',{id:expectation._id,enable:false});
+    assert.equal((await db.collection('adv_mock_case').findOne({_id:expectation._id})).case_enable,false);
+    await pluginPost('advmock/case/del',{id:expectation._id});
+    assert.equal(await db.collection('adv_mock_case').countDocuments({_id:expectation._id}),0);
+    const sync=await pluginPost('autoSync/save',{project_id:11,uid:999,is_sync_open:false,sync_cron:'0 0 * * *',sync_json_url:'https://synthetic.invalid/swagger.json',sync_mode:'normal'});
+    await pluginPost('autoSync/save',{id:sync._id,project_id:11,uid:999,is_sync_open:false,sync_cron:'0 1 * * *',sync_json_url:'https://synthetic.invalid/swagger.json',sync_mode:'normal'});
+    const config=await db.collection('interface_auto_sync').findOne({_id:sync._id});assert.equal(config.uid,9);assert.equal(config.sync_cron,'0 1 * * *');
+    // Real configured private-network Swagger URL → immediate scheduled job →
+    // normal authenticated import endpoints → persisted interface update.
+    let summary='Synthetic scheduled API';
+    const source=http.createServer((request,response)=>{
+      const spec={
+        swagger:'2.0',info:{title:'Synthetic sync source',version:'1.0'},basePath:'',
+        tags:[{name:'Synthetic category'}],
+        paths:{'/scheduled-fixture':{get:{
+          tags:['Synthetic category'],summary,
+          responses:{'200':{description:'OK',schema:{type:'object',properties:{id:{type:'integer'}}}}}
+        }}}
+      };
+      response.setHeader('content-type','application/json');response.end(JSON.stringify(spec));
+    });
+    await new Promise(resolve=>source.listen(0,'127.0.0.1',resolve));
+    try {
+      const sync_json_url='http://127.0.0.1:'+source.address().port+'/swagger.json';
+      await pluginPost('autoSync/save',{id:sync._id,project_id:11,is_sync_open:true,sync_cron:'0 0 1 1 *',sync_json_url,sync_mode:'normal'});
+      let imported=await db.collection('interface').findOne({project_id:11,path:'/scheduled-fixture'});
+      assert.ok(imported,'actual scheduled import must persist an interface');assert.equal(imported.title,summary);assert.ok(Number.isSafeInteger(imported._id));
+      summary='Updated scheduled API';
+      await pluginPost('autoSync/save',{id:sync._id,project_id:11,is_sync_open:true,sync_cron:'0 0 1 1 *',sync_json_url,sync_mode:'merge'});
+      imported=await db.collection('interface').findOne({project_id:11,path:'/scheduled-fixture'});assert.equal(imported.title,summary);
+      assert.equal(await db.collection('interface').countDocuments({project_id:11,path:'/scheduled-fixture'}),1);
+      assert.ok((await db.collection('interface_auto_sync').findOne({_id:sync._id})).old_swagger_content);
+      await pluginPost('autoSync/save',{id:sync._id,project_id:11,is_sync_open:false,sync_cron:'0 0 1 1 *',sync_json_url,sync_mode:'merge'});
+    } finally {await new Promise(resolve=>source.close(resolve));}
+    await pluginPost('wiki_desc/up',{project_id:11,desc:'<p>first</p>',markdown:'first'});
+    await pluginPost('wiki_desc/up',{project_id:11,desc:'<p>second</p>',markdown:'second'});
+    assert.equal((await db.collection('wiki').findOne({project_id:11})).markdown,'second');
   }finally{
     if(child&&child.exitCode===null){child.kill('SIGTERM');await new Promise(resolve=>child.once('exit',resolve));}
     await connection.dropDatabase();await connection.close();await fs.rm(dir,{recursive:true,force:true});
