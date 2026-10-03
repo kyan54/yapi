@@ -165,6 +165,10 @@
     "exts/yapi-plugin-advanced-mock/AdvMock.js": {
       "baselineSha256": "3707646731dd6e8f92a195b71fcb8a2e0cacca2951268fea2e58d7b68e4bc4c7",
       "reason": "Initialize the advanced Mock editor from fetched persisted data, preserving disabled script drafts when React batches state updates."
+    },
+    "exts/yapi-plugin-wiki/wikiPage/index.js": {
+      "baselineSha256": "6a60d07f3ab39918a83e06886ab840e41e5435df09e7b1d4957c5be576f40367",
+      "reason": "Prevent concurrent Wiki update requests and duplicate notifications with an in-flight guard; retain the editing session and draft after failed saves so a deliberate retry remains possible."
     }
   },
   "dependencies": {

@@ -79,7 +79,7 @@ class logModel extends baseModel {
     }
     return this.model
       .find(params)
-      .sort({ add_time: -1 })
+      .sort({ add_time: -1, _id: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .exec();
@@ -100,7 +100,7 @@ class logModel extends baseModel {
           }
         ]
       })
-      .sort({ add_time: -1 })
+      .sort({ add_time: -1, _id: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .exec();
@@ -145,7 +145,7 @@ class logModel extends baseModel {
     }
     return this.model
       .find(params)
-      .sort({ add_time: -1 })
+      .sort({ add_time: -1, _id: -1 })
       .limit(1)
       .select('uid content type username typeid add_time')
       .exec();

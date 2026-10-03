@@ -728,7 +728,22 @@ test('project navigation remains visible after status and tag filters for owner 
   const project=790810+k,cat=790820+k;await db.collection('project').insertOne({_id:project,uid:role==='owner'?9:97,group_id:group,name:'Synthetic navigation '+role,project_type:'private',members:role==='owner'?[]:[{uid:9,role}],env:[],tag:[{name:'review',desc:''},{name:'synthetic',desc:''}],basepath:''});await db.collection('interface_cat').insertOne({_id:cat,uid:97,project_id:project,name:'Navigation category'});await db.collection('interface').insertMany([['Done review','done','review'],['Undone review','undone','review'],['Done synthetic','done','synthetic']].map(([title,status,tag],i)=>({...fixture,_id:790830+k*10+i,project_id:project,catid:cat,uid:97,title,status,tag:[tag],path:'/nav-'+i})));
   await login(page);await page.goto(baseURL+'/project/'+project+'/interface/api');const nav=page.locator('.m-subnav'),table=page.locator('.table-interfacelist');await expect(table.locator('tbody tr')).toHaveCount(3);
   const visibleNavigation=async()=>{for(const[label,path]of[['接口','interface/api'],['动态','activity'],['数据管理','data'],['成员管理','members'],['设置','setting'],['Wiki','wiki']]){const link=nav.locator('a[href="/project/'+project+'/'+path+'"]');await expect(link).toBeInViewport();await expect(link.locator('xpath=ancestor::li[1]')).toHaveCSS('opacity','1');await expect(link).toContainText(new RegExp(label.split('').join('\\s*')));}};
-  await visibleNavigation();for(const[column,value,reset,count]of[['状态','未完成',false,1],['tag','review',false,1],['状态','',true,2],['tag','',true,3]]){const reply=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/interface/list');await table.locator('th').filter({hasText:column}).locator('.anticon-filter').click();const popup=page.locator('.ant-table-filter-dropdown:visible');await expect(popup).toBeVisible();if(reset)await popup.getByText('重置',{exact:true}).click();else await popup.getByText(value,{exact:true}).click();const ok=popup.getByText(/^确\s*定$/);if(await ok.isVisible())await ok.click();await expect(popup).toBeHidden();expect((await(await reply).json()).errcode).toBe(0);await expect(table.locator('tbody tr')).toHaveCount(count);await visibleNavigation();}
+  // During the portal's opening animation Playwright's locator click can scroll
+  // the document before dispatching a click. Use an observed, settled on-screen
+  // target like a user; do not reset scroll or weaken the navigation assertion.
+  const clickSettledFilter=async(popup,target)=>{
+    await expect(target).toBeVisible();
+    await popup.evaluate(async el=>{
+      const root=el.closest('.ant-dropdown')||el;
+      await Promise.all(root.getAnimations({subtree:true}).map(animation=>animation.finished.catch(()=>{})));
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    });
+    const box=await target.boundingBox();expect(box).not.toBeNull();
+    const viewport=page.viewportSize();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.x+box.width).toBeLessThanOrEqual(viewport.width);expect(box.y+box.height).toBeLessThanOrEqual(viewport.height);
+    await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
+  };
+  await visibleNavigation();for(const[column,value,reset,count]of[['状态','未完成',false,1],['tag','review',false,1],['状态','',true,2],['tag','',true,3]]){const reply=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/interface/list');await table.locator('th').filter({hasText:column}).locator('.anticon-filter').click();const popup=page.locator('.ant-table-filter-dropdown:visible');await expect(popup).toBeVisible();await clickSettledFilter(popup,popup.getByText(reset?'重置':value,{exact:true}));const ok=popup.getByText(/^确\s*定$/);if(await ok.isVisible())await clickSettledFilter(popup,ok);await expect(popup).toBeHidden();expect((await(await reply).json()).errcode).toBe(0);await expect(table.locator('tbody tr')).toHaveCount(count);await visibleNavigation();}
  }}finally{await db.collection('user').updateOne({_id:9},{$set:{role:'admin'}});}
 });
 
