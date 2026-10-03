@@ -60,7 +60,25 @@ const getStorage = async (id)=>{
   }
 }
 
+const MAX_FILE_BYTES = 512 * 1024;
+function decodeBinaryBody(options) {
+  if (!options.binary && !options.file) return null;
+  const binary = options.binary;
+  if (options.file !== 'single-file' || !binary || typeof binary !== 'object' ||
+      Object.keys(binary).some(key => !['base64', 'size'].includes(key)) ||
+      !Number.isSafeInteger(binary.size) || binary.size < 0 || binary.size > MAX_FILE_BYTES ||
+      typeof binary.base64 !== 'string' || binary.base64.length > Math.ceil(MAX_FILE_BYTES / 3) * 4 ||
+      binary.base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(binary.base64) ||
+      Object.keys(options.headers || {}).some(key => key.toLowerCase() === 'content-type' && /^multipart\//i.test(options.headers[key])) ||
+      options.data !== undefined) throw new Error('文件数据无效或超过 512 KiB，请重新选择文件');
+  const bytes = isNode ? Buffer.from(binary.base64, 'base64') : Uint8Array.from(atob(binary.base64), char => char.charCodeAt(0));
+  const canonical = isNode ? bytes.toString('base64') : btoa(atob(binary.base64));
+  if (bytes.length !== binary.size || canonical !== binary.base64) throw new Error('文件数据长度或编码无效');
+  return bytes;
+}
+
 function normalizeRequestOptions(options, isBrowserRequest) {
+  const binaryBody = decodeBinaryBody(options);
   let contentTypeItem;
   options = Object.assign({}, options, {
     headers: Object.assign({}, options && options.headers)
@@ -83,6 +101,12 @@ function normalizeRequestOptions(options, isBrowserRequest) {
       delete options.headers[key];
     }
   });
+
+  if (binaryBody !== null) {
+    options.data = binaryBody;
+    if (!contentTypeItem) options.headers['Content-Type'] = 'application/octet-stream';
+    return options;
+  }
 
   if (
     contentTypeItem === 'application/x-www-form-urlencoded' &&
@@ -273,6 +297,7 @@ function sandboxByBrowser(context = {}, script) {
  * @param {*} commonContext  璐熻矗浼犻€掍竴浜涗笟鍔′俊鎭紝crossRequest 涓嶅叧娉ㄥ叿浣撲紶浠€涔堬紝鍙礋璐ｅ綋涓棿浜?
  */
 async function crossRequest(defaultOptions, preScript, afterScript, commonContext = {}, networkScope) {
+  decodeBinaryBody(defaultOptions);
   let options = Object.assign({}, defaultOptions);
   const taskId = options.taskId || Math.random() + '';
   const useServerProxy = !isNode && commonContext.requestMode !== 'browser';
@@ -531,3 +556,5 @@ exports.handleContentType = handleContentType;
 exports.crossRequest = crossRequest;
 exports.handleCurrDomain = handleCurrDomain;
 exports.checkNameIsExistInArray = checkNameIsExistInArray;
+exports.decodeBinaryBody = decodeBinaryBody;
+exports.MAX_FILE_BYTES = MAX_FILE_BYTES;
