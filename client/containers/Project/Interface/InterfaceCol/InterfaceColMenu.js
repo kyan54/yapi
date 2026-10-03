@@ -88,6 +88,7 @@ export default class InterfaceColMenu extends Component {
     editColId: 0,
     filterValue: '',
     importInterVisible: false,
+    importSession: 0,
     importInterIds: [],
     importColId: 0,
     expands: null,
@@ -237,26 +238,27 @@ export default class InterfaceColMenu extends Component {
       content: '温馨提示：建议不要删除'
     });
   };
-  caseCopy = async caseId=> {
-    let that = this;
-    let caseData = await that.props.fetchCaseData(caseId);
-    let data = caseData.payload.data.data;
-    data = JSON.parse(JSON.stringify(data));
-    data.casename=`${data.casename}_copy`
-    delete data._id
-    const res = await axios.post('/api/col/add_case',data);
-      if (!res.data.errcode) {
-        message.success('克隆用例成功');
-        let colId = res.data.data.col_id;
-        let projectId=res.data.data.project_id;
-        await this.getList();
-        this.props.history.push('/project/' + projectId + '/interface/col/' + colId);
-        this.setState({
-          visible: false
-        });
-      } else {
-        message.error(res.data.errmsg);
-      }
+  caseCopy = async caseId => {
+    if (this.copyingCase) return;
+    this.copyingCase = true;
+    const projectId = this.props.match.params.id;
+    try {
+      const source = await axios.get('/api/col/case?caseid=' + caseId);
+      if (source.data.errcode !== 0) return message.error(source.data.errmsg || '读取用例失败');
+      if (projectId !== this.props.match.params.id) return;
+      const data = { ...source.data.data, casename: source.data.data.casename + '_copy' };
+      delete data._id;
+      const res = await axios.post('/api/col/add_case', data);
+      if (res.data.errcode !== 0) return message.error(res.data.errmsg || '克隆用例失败');
+      if (projectId !== this.props.match.params.id) return;
+      message.success('克隆用例成功');
+      await this.getList();
+      this.props.history.push('/project/' + projectId + '/interface/col/' + res.data.data.col_id);
+    } catch (_) {
+      message.error('克隆用例失败，请重试');
+    } finally {
+      this.copyingCase = false;
+    }
   };
   showDelCaseConfirm = caseId => {
     let that = this;
@@ -308,7 +310,7 @@ export default class InterfaceColMenu extends Component {
     const groupId = this.props.curProject.group_id;
     await this.props.fetchProjectList(groupId);
     // await this.props.fetchInterfaceListMenu(projectId)
-    this.setState({ importInterVisible: true, importColId: colId, importInterIds: [], selectedProject: this.props.match.params.id });
+    this.setState(previous => ({ importInterVisible: true, importSession: previous.importSession + 1, importColId: colId, importInterIds: [], selectedProject: this.props.match.params.id }));
   };
 
   handleImportOk = async () => {
@@ -359,34 +361,45 @@ export default class InterfaceColMenu extends Component {
   };
 
   onDrop = async e => {
-    // const projectId = this.props.match.params.id;
+    if (this.reorderingTree) return;
     const { interfaceColList } = this.props;
-    const dropColIndex = e.node.pos.split('-')[1];
-    const dropColId = interfaceColList[dropColIndex]._id;
-    const id = e.dragNode.key;
-    const dragColIndex = e.dragNode.pos.split('-')[1];
-    const dragColId = interfaceColList[dragColIndex]._id;
-
-    const dropPos = e.node.pos.split('-');
-    const dropIndex = Number(dropPos[dropPos.length - 1]);
-    const dragPos = e.dragNode.pos.split('-');
-    const dragIndex = Number(dragPos[dragPos.length - 1]);
-
-    if (id.indexOf('col') === -1) {
-      if (dropColId === dragColId) {
-        // 同一个测试集合下的接口交换顺序
-        let caseList = interfaceColList[dropColIndex].caseList;
-        let changes = arrayChangeIndex(caseList, dragIndex, dropIndex);
-        axios.post('/api/col/up_case_index', changes).then();
+    const dragKey = String(e.dragNode.key), dropKey = String(e.node.key);
+    const locate = key => {
+      const [kind, value] = key.split('_');
+      const id = Number(value);
+      const colIndex = interfaceColList.findIndex(col => kind === 'col'
+        ? col._id === id : col.caseList.some(item => item._id === id));
+      if (colIndex < 0) return null;
+      const col = interfaceColList[colIndex];
+      return { kind, id, col, colIndex, caseIndex: col.caseList.findIndex(item => item._id === id) };
+    };
+    const source = locate(dragKey), target = locate(dropKey);
+    if (!source || !target || dragKey === dropKey) return;
+    this.reorderingTree = true;
+    const projectId = this.props.match.params.id;
+    const write = async (url, body) => {
+      const result = await axios.post(url, body);
+      if (result.data.errcode !== 0) throw new Error(result.data.errmsg || '排序失败');
+    };
+    try {
+      if (source.kind === 'case') {
+        if (source.col._id === target.col._id) {
+          if (target.kind !== 'case') return;
+          await write('/api/col/up_case_index', arrayChangeIndex(source.col.caseList, source.caseIndex, target.caseIndex));
+        } else {
+          await write('/api/col/up_case', { id: source.id, col_id: target.col._id });
+        }
+      } else {
+        if (source.colIndex === target.colIndex) return;
+        await write('/api/col/up_col_index', arrayChangeIndex(interfaceColList, source.colIndex, target.colIndex));
       }
-      await axios.post('/api/col/up_case', { id: id.split('_')[1], col_id: dropColId });
-      // this.props.fetchInterfaceColList(projectId);
-      this.getList();
+      if (projectId !== this.props.match.params.id) return;
+      await this.getList();
       this.props.setColData({ isRander: true });
-    } else {
-      let changes = arrayChangeIndex(interfaceColList, dragIndex, dropIndex);
-      axios.post('/api/col/up_col_index', changes).then();
-      this.getList();
+    } catch (failure) {
+      message.error(failure.message || '排序失败，请重试');
+    } finally {
+      this.reorderingTree = false;
     }
   };
 
@@ -635,7 +648,7 @@ export default class InterfaceColMenu extends Component {
           className="import-case-modal"
           width={800}
         >
-          {importInterVisible && <ImportInterface currProjectId={currProjectId} selectInterface={this.selectInterface} />}
+          {importInterVisible && <ImportInterface key={this.state.importSession} currProjectId={currProjectId} selectInterface={this.selectInterface} />}
         </Modal>
       </div>
     );

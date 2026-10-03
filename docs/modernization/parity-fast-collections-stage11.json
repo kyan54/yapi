@@ -1,0 +1,29 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "base": "e675c75d5042100691ecad5a22d47686092b5b29",
+  "scope": "A edit lease × B Docs cross-module regression; Docs layer only",
+  "complete": false,
+  "rows": [],
+  "amends": ["ai_proposal-03", "ai_proposal-04", "ai_history-03", "ai_history-04"],
+  "contract": {
+    "ignoredTopLevelFields": ["edit_uid", "edit_lock_token", "edit_lock_expires_at"],
+    "comparison": "Exact native BSON content snapshot via objectToArray/filter/arrayToObject, excluding only the three named top-level lease fields. up_time, ownership, revision pointer, nested fields and unknown plugin BSON values remain compared.",
+    "mutation": "Atomic $set of intended documentation fields; no whole-document replacement and no heartbeat retry loop. Concurrent lease takeover remains stored unchanged.",
+    "normalization": "Store plain and proposal documentInput exclude the three collaboration fields from document hashes and returned documents; HTTP accept/restore additionally serialize through existing documentation DTO plus version.",
+    "legacyWrites": "Same exact content predicate tolerates lease-only changes; request/import patches reserve all three lease fields. Real content races retain existing conflict/retry semantics.",
+    "historyAndOutbound": "Existing description-only snapshots and outbound DTO allowlists retained; lease identifiers never become documentation content."
+  },
+  "verification": {
+    "defaultBasicPassed": 32,
+    "defaultModernizationPassed": 326,
+    "defaultModernizationSkipped": 7,
+    "explicitMongoAndHttpPassed": 9,
+    "explicitMongoAndHttpSkipped": 0,
+    "evidence": "docs-lease-mongo-stage11-final.log; units-stage11.log",
+    "realMongoCases": ["provider base captured before heartbeat can save proposal", "accept read-to-commit uid/token/expiry takeover succeeds in one attempt and preserves new lease", "restore read-to-commit takeover succeeds and preserves new lease", "raw response body change without version bump conflicts", "unknown plugin BSON change conflicts", "legacy writer tolerates takeover with maxAttempts=1 and rejects injected lease fields"],
+    "http": "Real Koa accept/restore response DTO excludes lease and unknown native plugin fields.",
+    "combinedBrowser": "Parent owns the added two-page real WebSocket heartbeat regression; not claimed run in B image, which does not contain A lease model changes."
+  },
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "limits": ["Only guarded B synthetic Mongo and uniquely named temporary test collections used; these test collections alone removed afterward.", "No shared compat, A controller/model or main branch changes."]
+}

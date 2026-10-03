@@ -58,24 +58,35 @@ export default class ProjectInterfaceSync extends Component {
       saving: false,
       savedPending: false,
       syncStatus: '',
+      ready: false,
+      loading: false,
       loadError: ''
     };
   }
 
+  readGeneration = 0;
+  readyProject = null;
+  dirty = false;
+  markDirty = () => { this.dirty = true; };
+
   canEdit = () => ['admin', 'owner', 'dev'].includes(this.props.projectMsg.role);
 
   handleSubmit = () => {
-    if (this.saving || this.state.savedPending || !this.canEdit()) return;
+    if (this.saving || this.state.savedPending || !this.state.ready || this.state.loading || this.readyProject !== this.props.projectId || !this.canEdit()) return;
+    const operation = {};
+    this.saveOperation = operation;
     this.saving = true;
     this.setState({ saving: true });
     const projectId = this.props.projectId;
-    const isCurrent = () => this.mounted && this.props.projectId === projectId;
+    const generation = ++this.readGeneration;
+    const captured = { ...this.state.sync_data };
+    const isCurrent = () => this.mounted && this.props.projectId === projectId && this.readGeneration === generation;
     this.props.form.validateFields(async (err, values) => {
       try {
-        if (err) return;
+        if (err || !isCurrent()) return;
         const params = { ...values, project_id: projectId,
-          is_sync_open: this.state.sync_data.is_sync_open === true };
-        if (this.state.sync_data._id) params.id = this.state.sync_data._id;
+          is_sync_open: captured.is_sync_open === true };
+        if (captured._id) params.id = captured._id;
         const res = await axios.post('/api/plugin/autoSync/save', params);
         if (!isCurrent()) return;
         if (res.data.errcode !== 0) {
@@ -84,13 +95,18 @@ export default class ProjectInterfaceSync extends Component {
           return;
         }
         this.setState({ savedPending: true });
-        if (await this.getSyncData()) message.success('保存成功');
+        this.dirty = false;
+        const loaded = await this.getSyncData();
+        if (!this.mounted || this.props.projectId !== projectId || this.saveOperation !== operation) return;
+        if (loaded) message.success('保存成功');
         else message.error('已保存，但加载失败，请重新加载');
       } catch (error) {
         if (isCurrent()) message.error('同步设置保存失败，请重试');
       } finally {
-        this.saving = false;
-        if (isCurrent()) this.setState({ saving: false });
+        if (this.saveOperation === operation) {
+          this.saving = false;
+          if (this.mounted && this.props.projectId === projectId) this.setState({ saving: false });
+        }
       }
     });
   };
@@ -115,42 +131,61 @@ export default class ProjectInterfaceSync extends Component {
 
   componentDidUpdate(previousProps) {
     if (previousProps.projectId !== this.props.projectId) {
+      this.readGeneration++;
+      this.readyProject = null;
+      this.dirty = false;
+      this.saving = false;
+      this.saveOperation = null;
       this.props.form.resetFields();
-      this.setState({ sync_data: { is_sync_open: false }, savedPending: false, loadError: '' });
+      this.setState({ sync_data: { is_sync_open: false }, ready: false, loading: false, saving: false, savedPending: false, syncStatus: '', loadError: '' });
       this.getSyncData();
     }
   }
 
   componentWillUnmount() {
     this.mounted = false;
+    this.readGeneration++;
+    this.readyProject = null;
   }
 
   getSyncData = async () => {
+    if (this.dirty && !this.state.savedPending) {
+      this.setState({ loadError: '有未保存的修改，请先保存；草稿已保留。' });
+      return false;
+    }
     const projectId = this.props.projectId;
+    const generation = ++this.readGeneration;
+    const current = () => this.mounted && this.props.projectId === projectId && this.readGeneration === generation;
+    this.setState({ loading: true });
     try {
       const result = await axios.get('/api/plugin/autoSync/get?project_id=' + projectId);
-      if (!this.mounted || this.props.projectId !== projectId) return false;
+      if (!current()) return false;
       if (result.data.errcode !== 0) throw new Error(result.data.errmsg || '同步配置加载失败');
       const data = result.data.data || { is_sync_open: false };
       const history = await axios.get('/api/log/list', { params: {
         type: 'project', typeid: projectId, selectValue: '自动同步接口状态', limit: 1
       } });
-      if (!this.mounted || this.props.projectId !== projectId) return false;
+      if (!current()) return false;
       if (!history.data || history.data.errcode !== 0) throw new Error('同步状态加载失败');
       const latest = history.data.data && history.data.data.list && history.data.data.list[0];
-      this.setState({ sync_data: data, syncStatus: latest ? latest.content : '', loadError: '', savedPending: false });
+      if (this.dirty) return false;
+      this.readyProject = projectId;
+      this.setState({ ready: true, sync_data: data, syncStatus: latest ? latest.content : '', loadError: '', savedPending: false });
       this.props.form.setFieldsValue({ sync_mode: data.sync_mode,
         sync_json_url: data.sync_json_url || '', sync_cron: data.sync_cron || '*/10 * * * *' });
       return true;
     } catch (error) {
-      if (this.mounted && this.props.projectId === projectId) this.setState({ loadError: error.message || '同步配置加载失败' });
+      if (current()) this.setState({ loadError: error.message || '同步配置加载失败' });
       return false;
+    } finally {
+      if (current()) this.setState({ loading: false });
     }
   };
 
   // 是否开启
   onChange = v => {
-    let sync_data = this.state.sync_data;
+    this.markDirty();
+    let sync_data = { ...this.state.sync_data };
     sync_data.is_sync_open = v;
     this.setState({
       sync_data: sync_data
@@ -167,14 +202,15 @@ export default class ProjectInterfaceSync extends Component {
 
   render() {
     const { getFieldDecorator } = this.props.form;
-    const disabled = !this.canEdit() || this.state.saving || this.state.savedPending;
+    const disabled = !this.state.ready || this.readyProject !== this.props.projectId || this.state.loading || !this.canEdit() || this.state.saving || this.state.savedPending;
     return (
       <div className="m-panel">
         {this.state.syncStatus.includes('自动同步接口状态:失败') && <Alert type="error" message={this.state.syncStatus} />}
         {this.state.loadError && <Alert type="error" message={this.state.loadError} />}
         {this.state.savedPending && <div role="status">已保存，但加载尚未完成。</div>}
-        {(this.state.loadError || this.state.savedPending) && <Button onClick={this.getSyncData}>重新加载</Button>}
+        {(this.state.loadError || this.state.savedPending) && <Button disabled={this.state.loading || this.state.saving} onClick={this.getSyncData}>重新加载</Button>}
         {!this.canEdit() && <Alert type="info" message="没有自动同步编辑权限" />}
+        {this.state.loading && <div role="status">正在加载同步设置…</div>}
         <Form>
           <FormItem
             label="是否开启自动同步"
@@ -225,7 +261,7 @@ export default class ProjectInterfaceSync extends Component {
                 ]
               })(
 
-                <Select disabled={disabled}>
+                <Select disabled={disabled} onChange={this.markDirty}>
                   <Option value="normal">普通模式</Option>
                   <Option value="good">智能合并</Option>
                   <Option value="merge">完全覆盖</Option>
@@ -246,7 +282,7 @@ export default class ProjectInterfaceSync extends Component {
                 ],
                 validateTrigger: 'onBlur',
                 initialValue: this.state.sync_data.sync_json_url
-              })(<Input disabled={disabled} />)}
+              })(<Input disabled={disabled} onChange={this.markDirty} />)}
             </FormItem>
 
             <FormItem {...formItemLayout} label={<span>类cron风格表达式(默认10分钟更新一次)&nbsp;<a href="https://blog.csdn.net/shouldnotappearcalm/article/details/89469047">参考</a></span>}>
@@ -261,7 +297,7 @@ export default class ProjectInterfaceSync extends Component {
                   }
                 ],
                 initialValue: this.state.sync_data.sync_cron ? this.state.sync_data.sync_cron : '*/10 * * * *'
-              })(<Input disabled={disabled} />)}
+              })(<Input disabled={disabled} onChange={this.markDirty} />)}
             </FormItem>
           </div>
           <FormItem {...tailFormItemLayout}>

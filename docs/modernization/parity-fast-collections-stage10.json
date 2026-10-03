@@ -1,0 +1,107 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "base": "d60eb3a3db343a14109ba311f66e3d375c51b75d",
+  "scope": "B tree/import/rules/report/ordinary Mock and variable-literal safety",
+  "complete": false,
+  "rows": [
+    {
+      "id": "collection_tree-03",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Stable node IDs preserve hidden neighbors under filtered drag; paired cross-collection case movement and collection order persist after refresh. Prior within-table ordering evidence retained."
+    },
+    {
+      "id": "collection_tree-04",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Rename cancel/close/reopen, delete cancel then confirm, and delayed double-click clone affect only selected case. New clone guard creates one copy; old created two."
+    },
+    {
+      "id": "collection_import-01",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Choose source project, category selection and status filter; actual selected unfinished source imported. Category filtering is the existing category tree selection, not a new dropdown."
+    },
+    {
+      "id": "collection_import-02",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Cancel/reopen resets selection even during close animation; source/status changes clear selected IDs and hidden entries are not submitted."
+    },
+    {
+      "id": "collection_import-03",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Same interface may intentionally create multiple distinct cases. Each explicit choice creates exactly one; mixed authorized/private-source batch from target developer rejects with visible error and zero additional rows. No new uniqueness rule."
+    },
+    {
+      "id": "collection_import-04",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Cancel saves zero, reopen empty, delayed double-confirm sends exactly one import POST."
+    },
+    {
+      "id": "collection_rules-01",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "All three built-in rule toggles and JSON field/value save with errcode0, reload exact values; cancel/reopen discards draft. Old retains cancelled draft."
+    },
+    {
+      "id": "runner_response-04",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Real HTTP404, JSON-field mismatch and schema type mismatch render distinct reports, then pending rerun removes old report and passing result survives refresh. Old retains prior report during run."
+    },
+    {
+      "id": "collection_run-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Paired explicit echo environment selection, global variable then previous response upper conversion, all-case loop, two runs, refreshed Request/Response/validation and scoped Mongo report match. Selected-row execution subitem has no control in either version; parent accepted N/A while preserving assertion."
+    },
+    {
+      "id": "project_mock-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "C config toggle/save evidence plus paired real ordinary Run and Mock request with nonempty throwing draft stored disabled. Script effects absent and response preserved after refresh; no custom script executed."
+    }
+  ],
+  "safetyRegression": {
+    "file": "VariablesSelect.js",
+    "fix": "Rendered ancestor paths for literal property names; fallback removes only numeric array suffix or final dotted segment, strictly shorter every iteration.",
+    "unit": "6 parameterized VM200ms regression cases: items[], name], items[0], a.b, literal[part], array.",
+    "browser": "sequential-stage10-final.json paired literal bracket/dot/array selection, insertion, caret-inside reopen/cancel and responsive controls passed.",
+    "limit": "Tests prove tree/UI responsiveness and expression insertion; they do not add a new JSONPath escaping language for literal punctuation keys."
+  },
+  "executions": {
+    "lifecycle-stage10-fixed.json": "new rules/import/repeatedclone3passed; early crossdrag harness failure superseded below",
+    "tree-stage10-final.json": "old1/new1passed cross movement with inside-node hover",
+    "tree-filter-stage10.json": "old wrong hidden-neighbor order failed/newpassed",
+    "import-atomic-stage10.json": "old unauthorized source accepted failed/newpassed",
+    "reports-stage10.json": "old report stale failed + disabledMockpass/new2passed",
+    "sequential-stage10-final.json": "old2/new2passed"
+  },
+  "validation": {
+    "basicPassed": 32,
+    "modernizationPassed": 324,
+    "modernizationSkipped": 6,
+    "build": "build-stage10-safe-tree.log successful",
+    "visual": "Actual1920x1080 paired report dialogs inspected: same readable failure message and sections; new tabs/padding differ. Tree and Docs layouts remain separately reviewed, not pixel equality."
+  },
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "limits": [
+    "No enabled custom script execution or old vm2.",
+    "Original246 assertions retained; no main matrix overwrite.",
+    "Initial Tree drop used modern upper insertion gap and was corrected to actual inside-node hover; filtered-index bug independently reproduced and fixed.",
+    "CaseReport timing absent in both full sources; timing-control-inventory.json supplied to parent for N/A approval."
+  ]
+}

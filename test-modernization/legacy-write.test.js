@@ -1,4 +1,5 @@
 'use strict';
+const {withoutCollaboration}=require('../server/services/documentation/collaboration-state');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -36,7 +37,7 @@ function setup(seed = initial()) {
     (query.project_id === undefined || query.project_id === record.project_id) ? clone(record) : null;
   model.collection.updateOne = async (filter, update) => {
     writes++;
-    if (!require('node:util').isDeepStrictEqual(record, filter.$expr.$eq[1].$literal)) return {matchedCount: 0};
+    if (!require('node:util').isDeepStrictEqual(withoutCollaboration(record), filter.$expr.$eq[1].$literal)) return {matchedCount: 0};
     record = {...record, ...clone(update.$set)};for(const key of Object.keys(update.$unset||{}))delete record[key];
     return {acknowledged: true, matchedCount: 1, modifiedCount: 1};
   };

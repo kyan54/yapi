@@ -192,6 +192,14 @@ test('all schema field inventories match source-grounded archived definitions', 
       if (field.enumValues && field.enumValues.length) actual[name].enum = field.enumValues;
       if (field.options.default !== undefined && typeof field.options.default !== 'function') actual[name].default = field.options.default;
     });
+    if (file === 'interface.js') {
+      // Authorized additive, server-only connection leases; all archived fields remain exact.
+      for (const [name, type] of Object.entries({ edit_lock_token: 'string', edit_lock_expires_at: 'number' })) {
+        assert.deepEqual(actual[name], { type, required: false }, name);
+        assert.equal(schema.path(name).options.select, false, name + ' must be hidden from ordinary queries');
+        delete actual[name];
+      }
+    }
     assert.deepEqual(actual, expected, file);
   }
 });

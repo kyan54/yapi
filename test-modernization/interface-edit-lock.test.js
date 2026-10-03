@@ -1,0 +1,45 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const Module=require('node:module');
+const {EventEmitter}=require('node:events');
+function load(relative){const file=path.resolve(__dirname,relative);const m=new Module(file,module);m.filename=file;m.require=name=>name.startsWith('node:')?require(name):name==='./base.js'?class {}:name==='../yapi.js'?{commons:{log(){}}}:{};m._compile(fs.readFileSync(file,'utf8'),file);return m.exports;}
+const Controller=load('../server/controllers/interface.js');
+const Model=load('../server/models/interface.js');
+class Socket extends EventEmitter {
+ constructor(){super();this.readyState=1;this.sent=[];this.pings=0;}
+ send(text){this.sent.push(JSON.parse(text));}
+ close(){if(this.readyState===3)return;this.readyState=3;this.emit('close');}
+ terminate(){this.terminated=true;this.close();}
+ ping(){this.pings++;}
+}
+const flush=()=>new Promise(setImmediate);
+function harness(t,{role='owner',uid=12,store={lease:null},claim}={}){
+ let now=1000;const timers=[];t.mock.method(Date,'now',()=>now);t.mock.method(global,'setInterval',(fn,ms)=>{const timer={fn,ms,unref(){}};timers.push(timer);return timer;});t.mock.method(global,'clearInterval',timer=>{timer.cleared=true;});
+ const writes=[],checks=[];const model={
+  get:async()=>({_id:1,project_id:11,edit_uid:store.lease?store.lease.uid:0}),
+  claimEditLock:claim||(async(id,project,owner,token,at,expires)=>{writes.push(['claim',id,project,owner]);if(store.lease&&store.lease.expires>at)return null;store.lease={uid:owner,token,expires};return {_id:id,project_id:project,edit_uid:owner};}),
+  releaseEditLock:async(id,token)=>{writes.push(['release',id,token]);if(store.lease&&store.lease.token===token){store.lease=null;return {n:1};}return {n:0};},
+  renewEditLock:async(id,project,token,at,expires)=>{writes.push(['renew',id,token]);if(store.lease&&store.lease.token===token&&store.lease.expires>at){store.lease.expires=expires;return {n:1};}return {n:0};}
+ };
+ const auth={role};const controller={Model:model,getUid:()=>uid,checkAuth:async(project,type,mode)=>{checks.push([project,type,mode]);return mode==='view'?auth.role!=='outsider':['owner','dev'].includes(auth.role);}};
+ return {store,model,writes,checks,auth,timers,advance:n=>now+=n,run:async(socket=new Socket())=>{await Controller.prototype.solveConflict.call(controller,{websocket:socket,query:{id:'1'}});return socket;}};
+}
+test('lease is owned by actual connection and owner close releases exactly once',async t=>{const h=harness(t);const s=await h.run();assert.equal(s.sent[0].errno,0);assert.equal(h.store.lease.uid,12);assert.equal(h.store.lease.expires,46000);s.close();s.emit('close');await flush();assert.equal(h.store.lease,null);assert.equal(h.writes.filter(x=>x[0]==='release').length,1);});
+test('rejected connection close cannot release held lease, including same uid',async t=>{const h=harness(t);const owner=await h.run();const token=h.store.lease.token;const denied=await h.run();assert.equal(denied.sent[0].errno,423);denied.close();await flush();assert.equal(h.store.lease.token,token);assert.equal(h.writes.filter(x=>x[0]==='release').length,0);owner.close();});
+test('simultaneous claims grant only one connection and rejected close cannot unlock it',async t=>{const h=harness(t);const sockets=await Promise.all([h.run(),h.run()]);assert.deepEqual(sockets.map(s=>s.sent[0].errno).sort(),[0,423]);sockets.find(s=>s.sent[0].errno===423).close();await flush();assert.ok(h.store.lease);sockets.find(s=>s.sent[0].errno===0).close();});
+test('guest has readable draft but never claims write lock; outsider gets no data',async t=>{const h=harness(t,{role:'guest'});const guest=await h.run();assert.equal(guest.sent[0].errno,403);assert.equal(guest.sent[0].readOnly,true);assert.equal(h.writes.length,0);guest.close();h.auth.role='outsider';const outsider=await h.run();assert.equal(outsider.sent[0].errno,403);assert.deepEqual(outsider.sent[0].data,{});assert.equal(h.writes.length,0);outsider.close();});
+test('close while claim is pending releases only the lease eventually acquired',async t=>{let finish;const h=harness(t,{claim:()=>new Promise(resolve=>finish=resolve)});const s=new Socket();const pending=h.run(s);await flush();s.close();finish({_id:1,project_id:11});await pending;assert.equal(h.writes.filter(x=>x[0]==='release').length,1);assert.equal(s.sent.length,0);});
+test('heartbeat pong renews bounded lease using live edit authorization',async t=>{const h=harness(t);const s=await h.run();const token=h.store.lease.token;h.advance(15000);h.timers[0].fn();assert.equal(s.pings,1);s.emit('pong');await flush();assert.equal(h.store.lease.expires,61000);assert.equal(h.store.lease.token,token);assert.deepEqual(h.checks.at(-1),[11,'project','edit']);s.close();});
+test('missing pong terminates connection and releases instead of renewing forever',async t=>{const h=harness(t);const s=await h.run();h.timers[0].fn();h.advance(15000);h.timers[0].fn();await flush();assert.equal(s.terminated,true);assert.equal(h.store.lease,null);assert.equal(h.writes.filter(x=>x[0]==='renew').length,0);});
+test('revoked membership stops renewal and releases own lease',async t=>{const h=harness(t);const s=await h.run();h.auth.role='guest';s.emit('pong');await flush();assert.equal(s.sent.at(-1).errno,409);assert.equal(s.readyState,3);assert.equal(h.store.lease,null);});
+test('expired lease can be claimed and delayed old close cannot clear new token',async t=>{const h=harness(t);const old=await h.run();const firstToken=h.store.lease.token;h.advance(46000);const next=await h.run();assert.equal(next.sent[0].errno,0);assert.notEqual(h.store.lease.token,firstToken);const nextToken=h.store.lease.token;old.close();await flush();assert.equal(h.store.lease.token,nextToken);next.close();});
+test('failed renewal stops editing and release error stays bounded by stored expiry',async t=>{const h=harness(t);const s=await h.run();h.model.renewEditLock=async()=>{throw Error('synthetic failure');};h.model.releaseEditLock=async()=>{throw Error('synthetic release failure');};s.emit('pong');await flush();assert.equal(s.readyState,3);assert.equal(s.sent.at(-1).errno,409);assert.equal(h.store.lease.expires,46000);});
+test('claim failure produces explicit error without releasing another lease',async t=>{const h=harness(t,{claim:async()=>{throw Error('synthetic database error');}});const s=await h.run();assert.equal(s.sent[0].errno,500);assert.equal(h.writes.length,0);s.close();});
+test('model claim query atomically binds interface project and recoverable lease state',async()=>{let captured;const model={model:{findOneAndUpdate:(...args)=>{captured=args;return {exec:async()=>({_id:1})};}}};await Model.prototype.claimEditLock.call(model,1,11,12,'synthetic-token',1000,46000);assert.deepEqual(captured[0],{_id:1,project_id:11,$or:[{edit_lock_token:null},{edit_lock_expires_at:null},{edit_lock_expires_at:{$lte:1000}}]});assert.equal(captured[1].$set.edit_lock_token,'synthetic-token');assert.deepEqual(captured[2],{new:true,runValidators:true});});
+test('model renewal and release compare connection token; renewal cannot revive expired lease',async()=>{const calls=[];const model={updateDocuments:async(...args)=>{calls.push(args);return {n:1};}};await Model.prototype.renewEditLock.call(model,1,11,'synthetic-token',1000,46000);await Model.prototype.releaseEditLock.call(model,1,'synthetic-token');assert.deepEqual(calls[0][0],{_id:1,project_id:11,edit_lock_token:'synthetic-token',edit_lock_expires_at:{$gt:1000}});assert.deepEqual(calls[1][0],{_id:1,edit_lock_token:'synthetic-token'});assert.deepEqual(calls[1][1],{$set:{edit_uid:0},$unset:{edit_lock_token:'',edit_lock_expires_at:''}});});
+test('lease ownership fields are excluded from ordinary interface queries',()=>{const schema=Model.prototype.getSchema.call({});assert.equal(schema.edit_lock_token.select,false);assert.equal(schema.edit_lock_expires_at.select,false);assert.equal(schema.edit_uid.default,0);});
+
+test('ownership change that fails renewal stops the old editing connection',async t=>{const h=harness(t);const s=await h.run();h.model.renewEditLock=async()=>({n:0});s.emit('pong');await flush();assert.equal(s.sent.at(-1).errno,409);assert.equal(s.readyState,3);assert.equal(h.store.lease,null);});

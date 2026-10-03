@@ -886,3 +886,41 @@ test('late denied profile response cannot replace the profile selected from the 
   await expect(page.getByRole('heading',{name:'个人设置',exact:true})).toBeVisible();
   await expect(page.getByText('Synthetic late denial',{exact:true})).toHaveCount(0);
 });
+
+test('edit lease heartbeat preserves reviewed docs while real body edits still conflict and HTTP hides lease metadata',async({page})=>{
+  const id=798001;
+  await connection.db.collection('interface').insertOne({...fixture,_id:id,uid:9,req_headers:[],pre_script:'',res_body:'{"type":"object","properties":{"id":{"type":"integer"}}}'});
+  let review;
+  const noLeaseFields=value=>expect(/edit_lock_(token|expires_at)/.test(JSON.stringify(value))).toBe(false);
+  try {
+    await login(page);await page.goto(baseURL+'/project/11/interface/api/'+id);
+    await page.getByRole('tab',{name:'编辑',exact:true}).click();await expect(page.locator('#title')).toBeVisible();
+    const before=await connection.db.collection('interface').findOne({_id:id});expect(before.edit_lock_expires_at).toBeGreaterThan(Date.now());
+    review=await page.context().newPage();await review.goto(baseURL+'/project/11/interface/api/'+id);
+    await review.getByTestId('documentation-ai-button').click();await review.getByRole('checkbox',{name:/我已检查接口内容/}).check();
+    const proposalResponse=review.waitForResponse(r=>new URL(r.url()).pathname==='/api/documentation/proposal');
+    await review.getByRole('button',{name:'生成文档建议'}).click();noLeaseFields(await(await proposalResponse).json());
+    await expect(review.getByRole('region',{name:'AI 文档建议预览'})).toBeVisible();
+    await expect.poll(async()=>{const row=await connection.db.collection('interface').findOne({_id:id});return row.edit_lock_expires_at>before.edit_lock_expires_at;},{timeout:22000}).toBe(true);
+    const acceptance=review.waitForResponse(r=>new URL(r.url()).pathname==='/api/documentation/accept');
+    await review.getByRole('button',{name:'审核完成，采纳此建议'}).click();const accepted=await acceptance,acceptedBody=await accepted.json();
+    expect(accepted.status()).toBe(200);expect(acceptedBody.errcode).toBe(0);noLeaseFields(acceptedBody);
+    const saved=await connection.db.collection('interface').findOne({_id:id});expect(saved.docs_revision).toBe(1);expect(saved.edit_lock_token===before.edit_lock_token).toBe(true);
+    const headers={'X-YApi-Docs-Intent':'review'},scope={projectId:11,interfaceId:id};
+    const restored=await page.request.post(baseURL+'/api/documentation/restore',{headers,data:{...scope,version:0,expectedVersion:1}});
+    const restoredBody=await restored.json();expect(restored.status()).toBe(200);expect(restoredBody.errcode).toBe(0);noLeaseFields(restoredBody);
+    const current=await(await page.request.get(baseURL+'/api/documentation/get?projectId=11&interfaceId='+id)).json();noLeaseFields(current);
+    const proposed=await page.request.post(baseURL+'/api/documentation/proposal',{headers,data:{...scope,approvedForTransmission:true,payloadHash:current.data.payloadHash,requestId:require('node:crypto').randomUUID()}});
+    const proposal=await proposed.json();expect(proposed.status()).toBe(200);noLeaseFields(proposal);
+    const body='{"type":"object","properties":{"concurrent":{"type":"boolean"}}}';
+    const changed=await(await page.request.post(baseURL+'/api/interface/up',{data:{id,res_body:body,switch_notice:false}})).json();expect(changed.errcode).toBe(0);
+    const conflict=await page.request.post(baseURL+'/api/documentation/accept',{headers,data:{...scope,proposalId:proposal.data.id}});
+    expect(conflict.status()).toBe(409);const conflictBody=await conflict.json();expect(conflictBody.errmsg).toBe('VERSION_CONFLICT');noLeaseFields(conflictBody);
+    expect((await connection.db.collection('interface').findOne({_id:id})).res_body).toBe(body);
+  } finally {
+    if(review)await review.close();await page.goto(baseURL+'/group');
+    await connection.db.collection('interface').deleteOne({_id:id});
+    await connection.db.collection('documentation_revisions').deleteMany({interfaceId:id,projectId:11});
+    await connection.db.collection('documentation_proposals').deleteMany({interfaceId:id,projectId:11});
+  }
+});

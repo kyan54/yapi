@@ -20,7 +20,7 @@
     },
     "server/models/interface.js": {
       "baselineSha256": "b2e7676c92f8d8567b3b2962466715ea0c6c3f757d303452a7691029cfb21b26",
-      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts. Search now applies database-side personal-group and project visibility before a bounded ten-result navigation projection; verified against more than ten hidden hits, inherited rights and revocation."
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts. Search now applies database-side personal-group and project visibility before a bounded ten-result navigation projection; verified against more than ten hidden hits, inherited rights and revocation. Parent explicitly authorized A collaboration-lock scope: connection-specific expiring leases, atomic claim/renew and token compare-and-set release; guest write-lock denial, rejected/same-user/late closes cannot release another lease. No other controller/model methods or B-owned proxy changes."
     },
     "server/models/interfaceCase.js": {
       "baselineSha256": "5ca43416c9414d93aa2383a7d2aaf9dfb19ced5241bc96071843ee2119844c7b",
@@ -60,7 +60,7 @@
     },
     "server/controllers/interface.js": {
       "baselineSha256": "784538c1166287b13f4c0be506f21cb69a26a25b9b7be22a01f6fc539e46cc98",
-      "reason": "Check project-token scope against actual interface ownership; await every import add/update and propagate errors before reporting success. Authorize upIndex/upCatIndex against every persisted target project before any batch write, reject mixed-project targets, and await sorting writes; proxy remains separately owned."
+      "reason": "Check project-token scope against actual interface ownership; await every import add/update and propagate errors before reporting success. Authorize upIndex/upCatIndex against every persisted target project before any batch write, reject mixed-project targets, and await sorting writes; proxy remains separately owned. Parent explicitly authorized A collaboration-lock scope: connection-specific expiring leases, atomic claim/renew and token compare-and-set release; guest write-lock denial, rejected/same-user/late closes cannot release another lease. No other controller/model methods or B-owned proxy changes."
     },
     "server/controllers/documentation.js": {
       "baselineSha256": null,
