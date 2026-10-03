@@ -55,6 +55,17 @@ const formItemLayout = {
 
 const Option = Select.Option;
 
+// Resolve guarded saves/refreshes before dispatch so stale errors never reach middleware.
+export async function scopedAction(action, meta) {
+  try {
+    const resolved = await action;
+    const payload = await resolved.payload;
+    return meta.isCurrent() ? { ...resolved, payload } : { type: 'PROJECT_SETTINGS_IGNORED' };
+  } catch (error) {
+    return meta.isCurrent() ? { type: 'PROJECT_SETTINGS_FAILED', error: true, payload: error } : { type: 'PROJECT_SETTINGS_IGNORED' };
+  }
+}
+
 @connect(
   state => {
     return {
@@ -65,10 +76,10 @@ const Option = Select.Option;
     };
   },
   {
-    updateProject,
+    updateProject: (params, meta) => scopedAction(updateProject(params), meta),
     delProject,
-    getProject,
-    fetchGroupMsg,
+    getProject: (id, meta) => meta ? scopedAction(getProject(id, meta), meta) : getProject(id),
+    fetchGroupMsg: (id, meta) => meta ? scopedAction(fetchGroupMsg(id, meta), meta) : fetchGroupMsg(id),
     upsetProject,
     fetchGroupList,
     setBreadcrumb
@@ -140,7 +151,7 @@ class ProjectMessage extends Component {
           const assignValue = Object.assign({}, projectMsg, values, { tag });
           const group_id = assignValue.group_id;
           const selectGroup = _.find(groupList, item => item._id == group_id);
-          const res = await updateProject(assignValue);
+          const res = await updateProject(assignValue, { isCurrent });
           if (!isCurrent()) return;
           const result = res && res.payload && res.payload.data;
           if (!res || res.error || !result || result.errcode !== 0) {
@@ -148,7 +159,8 @@ class ProjectMessage extends Component {
             return;
           }
           message.success('修改成功! ');
-          this.props.fetchGroupMsg(group_id);
+          Promise.resolve(this.props.fetchGroupMsg(group_id, { isCurrent })).catch(error =>
+            fail('保存成功，但刷新分组失败，请刷新页面', error && error.errorMessageHandled));
           this.props.setBreadcrumb([
             { name: selectGroup ? selectGroup.group_name : '', href: '/group/' + group_id },
             { name: htmlFilter(assignValue.name) }

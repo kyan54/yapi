@@ -1024,3 +1024,15 @@ test('basic project Save serializes pending clicks and shows business or transpo
  }
  const after=await read();for(const key of ['name','group_id','members','env','tag','project_type','basepath','switch_notice','strice','is_json5'])expect(after[key]).toEqual(before[key]);
 });
+
+test('basic settings late save and refresh results cannot show feedback after navigation',async({page})=>{
+ page.setDefaultTimeout(15000);await login(page);
+ for(const phase of ['post','get'])for(const mode of ['success','business','network']){
+  await page.goto(baseURL+'/project/11/interface/api');await page.getByRole('link',{name:/^设\s*置$/}).click();const save=page.locator('.btnwrap-changeproject button.btn-save');await expect(save).toBeVisible();await page.locator('#desc').fill('Synthetic stale '+phase+' '+mode);
+  let release,finished;const gate=new Promise(r=>release=r),done=new Promise(r=>finished=r);const pattern=phase==='post'?'**/api/project/up':'**/api/project/get*';
+  let intercepted=false;await page.route(pattern,async route=>{if(intercepted)return route.continue();intercepted=true;await gate;try{if(mode==='network')await route.abort('failed');else if(mode==='business')await route.fulfill({json:{errcode:400,errmsg:'Synthetic obsolete '+phase}});else await route.continue();}finally{finished();}});
+  try{
+   await save.click();await expect.poll(()=>intercepted,{message:phase+' '+mode+' intercepted',timeout:5000}).toBe(true);await page.goBack();await expect(page).toHaveURL(/\/interface\/api$/);await expect(page.locator('.btnwrap-changeproject')).toHaveCount(0);await expect(page.locator('.ant-message-notice')).toHaveCount(0,{timeout:10000});release();await done;await page.waitForTimeout(500);await expect(page.locator('.ant-message-notice')).toHaveCount(0);await expect(page).toHaveURL(/\/interface\/api$/);
+  }finally{release();await page.unroute(pattern);}
+ }
+});
