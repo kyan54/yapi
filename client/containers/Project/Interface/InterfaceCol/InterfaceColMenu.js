@@ -105,7 +105,18 @@ export default class InterfaceColMenu extends Component {
     this.getList();
   }
 
+  componentWillUnmount() {
+    this.menuDisposed = true;
+    this.menuGeneration = (this.menuGeneration || 0) + 1;
+    this.copyingCase = null;
+  }
+
   componentWillReceiveProps(nextProps) {
+    if (this.props.match.params.id !== nextProps.match.params.id ||
+        (this.props.location && nextProps.location && this.props.location.pathname !== nextProps.location.pathname)) {
+      this.menuGeneration = (this.menuGeneration || 0) + 1;
+      this.copyingCase = null;
+    }
     if (this.props.interfaceColList !== nextProps.interfaceColList) {
       this.setState({
         list: nextProps.interfaceColList
@@ -239,25 +250,39 @@ export default class InterfaceColMenu extends Component {
     });
   };
   caseCopy = async caseId => {
-    if (this.copyingCase) return;
-    this.copyingCase = true;
-    const projectId = this.props.match.params.id;
+    if (this.copyingCase || this.menuDisposed) return;
+    const operation = { generation: this.menuGeneration || 0, projectId: this.props.match.params.id,
+      path: this.props.location && this.props.location.pathname };
+    this.copyingCase = operation;
+    const current = () => !this.menuDisposed && this.copyingCase === operation &&
+      (this.menuGeneration || 0) === operation.generation &&
+      this.props.match.params.id === operation.projectId &&
+      (!this.props.location || this.props.location.pathname === operation.path) &&
+      (!this.props.history.location || this.props.history.location.pathname === operation.path) &&
+      (typeof window === 'undefined' || window.location.pathname === operation.path);
+    let committed = false;
     try {
       const source = await axios.get('/api/col/case?caseid=' + caseId);
+      if (!current()) return;
       if (source.data.errcode !== 0) return message.error(source.data.errmsg || '读取用例失败');
-      if (projectId !== this.props.match.params.id) return;
       const data = { ...source.data.data, casename: source.data.data.casename + '_copy' };
       delete data._id;
       const res = await axios.post('/api/col/add_case', data);
+      if (!current()) return;
       if (res.data.errcode !== 0) return message.error(res.data.errmsg || '克隆用例失败');
-      if (projectId !== this.props.match.params.id) return;
+      committed = true;
       message.success('克隆用例成功');
-      await this.getList();
-      this.props.history.push('/project/' + projectId + '/interface/col/' + res.data.data.col_id);
+      // Read locally first: a late Redux fetch must not replace another route's tree.
+      const refreshed = await axios.get('/api/col/list?project_id=' + operation.projectId);
+      if (!current()) return;
+      if (refreshed.data.errcode !== 0) throw new Error('refresh');
+      this.props.setColData({ interfaceColList: refreshed.data.data });
+      this.setState({ list: refreshed.data.data });
+      this.props.history.push('/project/' + operation.projectId + '/interface/col/' + res.data.data.col_id);
     } catch (_) {
-      message.error('克隆用例失败，请重试');
+      if (current()) message.error(committed ? '用例已克隆，但列表加载失败，请刷新页面' : '克隆用例失败，请重试');
     } finally {
-      this.copyingCase = false;
+      if (this.copyingCase === operation) this.copyingCase = null;
     }
   };
   showDelCaseConfirm = caseId => {

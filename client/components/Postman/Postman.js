@@ -270,6 +270,11 @@ export default class Run extends Component {
       () => {
         if (this.activeInitialization !== initialization) return;
         if (this.props.type === 'inter') this.initEnvState(data.case_env, data.env);
+        else {
+          const choices = Array.isArray(data.env) ? data.env : [];
+          this.setState({ case_env: choices.some(item => item.name === data.case_env)
+            ? data.case_env : ((choices[0] && choices[0].name) || '') });
+        }
         this.initializedIdentity = this.requestIdentity(data);
         this.setState({ initializing: false });
       }
