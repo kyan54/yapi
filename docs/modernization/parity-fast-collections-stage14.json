@@ -1,0 +1,49 @@
+{
+  "format": "yapi.parity.ci-handoff.v1",
+  "base": "256f9d03bcd7b5bac94b4c3546ace89cb395ccb2",
+  "complete": false,
+  "scope": "post-only missing-runner boundary; extends stage13 without changing Mac blocked statuses",
+  "rows": [
+    {
+      "id": "project_requests-03",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Independent CI post-only missing-runner zero-echo and real post-failure one-echo scenarios authored, not yet executed."
+    },
+    {
+      "id": "runner-03",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Explicit post-only failure semantics supplement the pending CI script-mode scenario."
+    }
+  ],
+  "productFiles": [
+    "common/postmanLib.js",
+    "server/utils/sandbox.js"
+  ],
+  "check": "getConfiguredSocket validates the same existing absolute-path configuration before any enabled scripted Node request; no liveness probe, script execution or worker reservation",
+  "limits": [
+    "Missing configuration is rejected before target request.",
+    "Configured service failure or genuine post-script failure can occur after target request; no rollback guarantee.",
+    "Mac ran dependency-stub/default tests and build only; real scripts remain CI-only.",
+    "Intermediate post-only-after.log had module-export harness load errors; unchanged subsequent focused/full executions passed and are the acceptance logs."
+  ],
+  "validation": {
+    "before": "post-only-before.log: 1 failed / 8 passed; missing-runner target count was1 instead of0",
+    "focused": "post-only-verified.log: 10 passed,0 failed",
+    "basic": "32 passed",
+    "modernization": "347 passed,7 skipped,0 failed",
+    "build": "stage14 successful",
+    "ciDiscovery": "7 tests discovered; actual run still pending owner CI command"
+  },
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "sha256": {
+    "post-only-before.log": "71c7ab050651677ad287efaa5be1d6010ca98d581852ba5718bf126588d8725a",
+    "post-only-verified.log": "aca13987dfcb2b1b83fa12f54fee30c5c7d4c30036a3e208bab673551e89a0b8",
+    "units-stage14.log": "af48833a41e760b20b195f126b4b7d75c90a74f6e6884af243afca95ed6909f0",
+    "build-stage14.log": "78aa278e0e64b0bea1483a37284d0441422208e2e266aa2c503ea468c61bef88",
+    "ci-stage14-discovery.log": "ee16a3936574fd9a9c8c0d05dd555d0505675ed2b537f3b009cc9dd176e10983"
+  }
+}

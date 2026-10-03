@@ -79,3 +79,11 @@ test('runner-03 browser mode refuses scripts and server sandbox failure is visib
  await toggle.click();const result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_PRE_FAILURE');expect(requests.length).toBe(before);await shot(page,info,'browser-server-script-failures');
  await api(page,apps.default,'/api/project/up',{id,pre_script:'',after_script:''});await runView(page,apps.default,id);const success=await send(page);expect(success.errcode).toBe(0);expect(success.data.res.body.ok).toBe(true);await expect(page.locator('.pretty-editor-body')).not.toContainText('SYNTHETIC_PRE_FAILURE');
 });
+
+
+test('project_requests-03 post-only missing runner sends zero targets while real post failure follows one request',async({page},info)=>{
+ const id=await fixture(page,1007);await scripts(page,id,'','throw new Error("SYNTHETIC_POST_FAILURE");');
+ await login(page,apps.missing);await runView(page,apps.missing,id);const before=requests.length;let result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(requests.length).toBe(before);await shot(page,info,'post-only-missing-runner-zero-target');
+ await login(page,apps.default);await runView(page,apps.default,id);result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_POST_FAILURE');expect(requests.length).toBe(before+1);expect(requests[before].path).toBe('/echo');await shot(page,info,'post-failure-after-target');
+ await info.attach('post-only-boundary',{body:JSON.stringify({missingRunnerTargetCount:0,configuredPostFailureTargetCount:1,configurationCheckOnly:true,noRollbackGuarantee:true}),contentType:'application/json'});
+});

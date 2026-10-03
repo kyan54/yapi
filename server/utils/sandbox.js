@@ -4,10 +4,15 @@ const http = require('node:http');
 const { randomBytes } = require('node:crypto');
 const { LIMIT, TIMEOUT, fail, parse, validateJob } = require('../sandbox/protocol');
 const reserved = new Set(['assert', 'Random', 'Mock', 'utils', 'console', 'Promise', 'setTimeout', 'context', 'log', 'storage', 'networkScope']);
-module.exports = async function sandboxFn(context = {}, script, networkScope) {
-  if (!script) return context;
+// Configuration check only: it does not probe service liveness or reserve a worker.
+function getConfiguredSocket() {
   const socketPath = process.env.YAPI_ISOLATED_RUNNER_SOCKET;
   if (!socketPath || !socketPath.startsWith('/')) throw fail('ISOLATED_RUNNER_REQUIRED');
+  return socketPath;
+}
+module.exports = async function sandboxFn(context = {}, script, networkScope) {
+  if (!script) return context;
+  const socketPath = getConfiguredSocket();
   const data = {};
   Object.keys(context).forEach(key => { if (!reserved.has(key)) data[key] = context[key]; });
   const job = validateJob(parse(JSON.stringify({version: 1, id: randomBytes(16).toString('hex'), script, context: data, ...(networkScope ? {networkScope: require('../sandbox/trusted-scope').read(networkScope)} : {}), storage: context.storage && context.storage._sandboxData || {}})));
@@ -49,3 +54,5 @@ module.exports = async function sandboxFn(context = {}, script, networkScope) {
   for (const write of result.writes) if (context.storage && typeof context.storage.setItem === 'function') await context.storage.setItem(write.key, write.value);
   return output;
 };
+
+module.exports.getConfiguredSocket = getConfiguredSocket;

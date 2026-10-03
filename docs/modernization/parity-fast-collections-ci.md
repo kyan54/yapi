@@ -1,6 +1,6 @@
 # Collections script parity in the existing isolated CI runner
 
-The Mac results remain **38 passed / 5 blocked** for B's remaining43 ownership list. The six tests in `test-browser/parity-collections-ci.spec.cjs` are new-runtime CI tests, not proof of old/new script equivalence. Do not mark any of these five rows passed until the corresponding real CI execution succeeds.
+The Mac results remain **38 passed / 5 blocked** for B's remaining43 ownership list. The seven tests in `test-browser/parity-collections-ci.spec.cjs` are new-runtime CI tests, not proof of old/new script equivalence. Do not mark any of these five rows passed until the corresponding real CI execution succeeds.
 
 ## Integration command
 
@@ -41,3 +41,9 @@ The browser build aliases `../server/yapi` to false. Before the repair, a browse
 Server mode now forwards existing configured text so the server retains its policy decision. Browser mode rejects nonempty scripts with `ISOLATED_RUNNER_REQUIRED`; the browser eval fallback is removed. Node still requires `scriptEnable===true` and the existing isolated runner. An explicitly disabled server rejects with `SCRIPT_EXECUTION_DISABLED`; it performs no request or script execution. Default configuration values are unchanged.
 
 Old baseline script execution still requires a separately approved isolated legacy runner. The existing new-runtime CI cannot establish that legacy comparison, and one pre-existing sandbox smoke test must not be counted as coverage of all five rows.
+
+## Post-only configuration boundary (stage14)
+
+A request with only an after-script previously reached the target before discovering that no runner socket was configured. `common/postmanLib.js` now calls the existing adapter's `getConfiguredSocket()` before any Node request with enabled scripts. The adapter retains the same absolute-socket configuration requirement and reuses it when executing the job. This check sends no script, starts no process and probes no network.
+
+The seventh CI scenario saves only an after-script, runs through an app with no socket and verifies a zero delta in actual synthetic echo requests plus the visible isolation error. The same script through the configured app deliberately throws after its ordinary target request: the echo delta must be exactly one and the visible post-script error must be preserved. This is normal post-request semantics. Configuration validation does not reserve a worker or establish liveness; a service failure after validation or a genuine after-script error may happen after the target has received the request. No rollback or absolute side-effect guarantee is claimed.
