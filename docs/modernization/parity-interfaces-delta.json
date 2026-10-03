@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-6",
+  "scope": "A/interfaces/batches-1-7",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -103,19 +103,27 @@
     }
   },
   "tests": {
-    "passed": 34,
+    "passed": 54,
     "failed": 0,
     "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
     "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs.",
-    "unit_passed": 17,
-    "unit_command": "node --test test-modernization/interface-bulk-parameters.test.js test-modernization/interface-path-parameters.test.js test-modernization/interface-parity-preflight.test.js",
-    "default_ci": "The three new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched.",
+    "unit_passed": 29,
+    "unit_command": "node --test test-modernization/interface-bulk-parameters.test.js test-modernization/interface-path-parameters.test.js test-modernization/interface-parity-preflight.test.js test-modernization/interface-sort-authorization.test.js",
+    "default_ci": "The four new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched.",
     "breakdown": {
       "parameters": 18,
       "list_filters_geometry_and_nonmember_boundaries": 10,
-      "tag_modal_and_selection": 6
+      "tag_modal_and_selection": 12,
+      "category_tree_and_sort_boundaries": 14
     },
-    "interpretation": "34 passing observed-behavior tests do not mean all original compounds pass: explicit legacy defect expectations retain failed scenario/atomic statuses."
+    "interpretation": "54 passing observed-behavior tests do not mean all original compounds pass: explicit legacy defect expectations retain failed scenario/atomic statuses.",
+    "default_suite": {
+      "total": 301,
+      "passed": 295,
+      "failed": 0,
+      "skipped": 6,
+      "skip_reason": "Existing optional Mongo integration tests; isolated paired browser/API/DB checks ran separately."
+    }
   },
   "scenarios": [
     {
@@ -203,6 +211,48 @@
       "old": "passed",
       "new": "passed",
       "checks": "Owner/dev Tag modal save returns errcode0 and visible success, options refresh, interface unsaved title/query survive; guest failure denied and persisted tags unchanged."
+    },
+    {
+      "id": "project_tags-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Tag modal add/edit/delete names/descriptions and preserve selected interface tags; selected-tag save regression is separately recorded as failed legacy atomic."
+    },
+    {
+      "id": "project_tags-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Both accept duplicate names and filter empty names; deleting project alpha preserves selected interface alpha. Candidate successful interface save restores missing selected alpha; legacy returns40011 after DB mutation."
+    },
+    {
+      "id": "interface_tree-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Owner/dev category add/edit/delete, interface add/copy/delete use exact target IDs with cancel checks, visible outcomes/API errcode0/reload; guest add/edit/copy/delete denied with data retained."
+    },
+    {
+      "id": "interface_tree-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Owner/dev native category reorder and cross-category interface move persist. Guest move denied both; legacy guest reorder succeeds incorrectly, candidate denies with visible error and unchanged order."
+    },
+    {
+      "id": "interface_add-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Category-menu interface creation navigates to exact returned ID and clone stays in target category; guest creation denied."
+    },
+    {
+      "id": "interface_add-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Category name and description creation/editing persist and are visibly rendered; guest changes denied."
     }
   ],
   "legacy_defects": [
@@ -216,11 +266,15 @@
     {
       "id": "project_tags-02",
       "detail": "Cancelled/closed/Escape drafts persist locally in legacy and are included by later explicit save. Candidate discards them."
+    },
+    {
+      "id": "interface_tree-04",
+      "detail": "Legacy guest category sorting succeeds; mixed-project batches and revoked sessions also mutate sorting. Explicit failed behavior expectations, not counted as correct behavior."
     }
   ],
   "evidence": {
     "directory": "/Users/hujinwu/Documents/Codex/2026-10-03/task-4/interfaces",
-    "browser": "batch6-aggregate-results.json",
+    "browser": "batch7-aggregate-results.json",
     "baseline_tagged_save": "baseline-results.json",
     "legacy_empty": "legacy-empty-trace.zip",
     "direct_db_readback": [
@@ -248,9 +302,17 @@
       "tag-legacy-save-failure-trace.zip"
     ],
     "tag_visual": "Final 1920x1080 owner Tag modal screenshots old/new manually viewed: same680px width, candidate shorter header/footer spacing; fields/buttons legible, popup overlay gone. Background scroll differs; no whole-page visual equivalence claimed.",
-    "tag_final_source": "tag-final-image-source-sha256.txt: all333 tracked client/server/common/exts product files match running candidate"
+    "tag_final_source": "tag-final-image-source-sha256.txt: all333 tracked client/server/common/exts product files match running candidate",
+    "batch7_visual": "Paired1920x1080 Tag duplicate/empty modal and category CRUD screenshots manually viewed. New Tag modal shorter but legible, no overlay. Tree indent/category header differs; shared project navigation difference already assigned integration owner. No whole-page visual equivalence claimed.",
+    "batch7_source": "batch7-image-source-sha256.txt",
+    "batch7_default_tests": "batch7-default-tests.log",
+    "batch7_db": [
+      "old-batch7-db.json",
+      "new-batch7-db.json"
+    ],
+    "batch7_fixture_ids": "batch7-fixture-ids.json"
   },
-  "remaining": "All unlisted original compound IDs remain notrun by this increment. project_tags-01 add/edit/delete and project_tags-04 duplicates/empty/removed-selected remain incomplete; combine C evidence without promoting missing assertions. Preserve main matrix.",
+  "remaining": "All unlisted original compounds remain notrun by this increment, including remaining tree navigation/cancel/back, creation validation/rapid submits, interface metadata/collaboration, Body/Schema/rich-editor gaps. Preserve main matrix and combine C Tag settings evidence.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -277,6 +339,12 @@
       "id": "project_tags-02",
       "before": "Both versions reused cancelled modal draft on reopen; future save could commit discarded names.",
       "after": "Owned Edit remounts a fresh cloned persisted Tag snapshot on explicit open, while failure retains modal draft for retry. No ProjectTag/settings/shared component edits."
+    },
+    {
+      "id": "interface-sort-authorization",
+      "before": "Both versions accepted guest sorting. Index endpoints trusted target IDs without checking their persisted project owners and responded before writes completed.",
+      "after": "Only upIndex/upCatIndex load and authorize every target before writing, reject mixed projects, await all writes. Owned InterfaceMenu awaits requests and displays nonzero errcode. B-owned proxy unchanged.",
+      "validation": "12 default unit tests; real paired guest drag, owner/dev success, mixed-project and revoked-session zero-write API checks."
     }
   ],
   "review_notes": [
@@ -344,7 +412,15 @@
       "status": "failed",
       "old": "failed",
       "new": "passed",
-      "checks": "Real alpha-to-beta selection change and interface save. Legacy returns40011/error even though tag persists; candidate errcode0/visible success/API read/reload all pass. Guest write denied and alpha retained. Full add/edit/delete compound remains notrun pending C evidence and remaining edit/delete coverage."
+      "checks": "Real alpha-to-beta selection change and interface save. Legacy returns40011/error even though tag persists; candidate errcode0/visible success/API read/reload all pass. Guest write denied and alpha retained. Interface-modal add/edit/delete now covered; C settings evidence remains independent."
+    },
+    {
+      "id": "interface_tree-05-cancel",
+      "scenario": "interface_tree-05",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Category add cancel/reopen and interface/category delete-confirm cancellation preserve records. Browser Back/Close/Escape portions still notrun."
     }
   ]
 }

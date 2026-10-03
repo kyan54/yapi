@@ -311,9 +311,11 @@ class InterfaceMenu extends Component {
         // 同一个分类下的接口交换顺序
         let colList = list[dropCatIndex].list;
         let changes = arrayChangeIndex(colList, dragIndex, dropIndex);
-        axios.post('/api/interface/up_index', changes).then();
+        const result = await axios.post('/api/interface/up_index', changes);
+        if (result.data.errcode !== 0) return message.error(result.data.errmsg);
       } else {
-        await axios.post('/api/interface/up', { id, catid: dropCatId });
+        const result = await axios.post('/api/interface/up', { id, catid: dropCatId });
+        if (result.data.errcode !== 0) return message.error(result.data.errmsg);
       }
       const { projectId, router } = this.props;
       this.props.fetchInterfaceListMenu(projectId);
@@ -326,8 +328,9 @@ class InterfaceMenu extends Component {
     } else {
       // 分类之间拖动
       let changes = arrayChangeIndex(list, dragIndex - 1, dropIndex - 1);
-      axios.post('/api/interface/up_cat_index', changes).then();
-      this.props.fetchInterfaceListMenu(this.props.projectId);
+      const result = await axios.post('/api/interface/up_cat_index', changes);
+      if (result.data.errcode !== 0) return message.error(result.data.errmsg);
+      await this.props.fetchInterfaceListMenu(this.props.projectId);
     }
   };
   // 数据过滤
