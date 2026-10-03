@@ -54,6 +54,7 @@ export default class ProjectMock extends Component {
   }
 
   handleSubmit = async () => {
+    this.setState({ saveReceipt: '' });
     let params = {
       id: this.props.projectId,
       project_mock_script: this.state.project_mock_script,
@@ -64,11 +65,11 @@ export default class ProjectMock extends Component {
     try {
       result = await this.props.updateProjectMock(params);
     } catch (error) {
-      message.error('保存失败，请检查网络后重试');
+      if (!error || error.errorMessageHandled !== true) message.error('保存失败，请检查网络后重试');
       return;
     }
     if (!result || result.error || !result.payload || !result.payload.data) {
-      message.error('保存失败，请检查网络后重试');
+      if (!result || result.errorMessageHandled !== true) message.error('保存失败，请检查网络后重试');
       return;
     }
     if (result.payload.data.errcode === 0) {
@@ -77,10 +78,12 @@ export default class ProjectMock extends Component {
         const refreshed = await this.props.getProject(this.props.projectId);
         if (!refreshed || refreshed.error || !refreshed.payload || !refreshed.payload.data ||
           refreshed.payload.data.errcode !== 0 || !refreshed.payload.data.data) {
-          message.error('保存成功，但刷新项目失败，请刷新页面');
+          this.setState({ saveReceipt: '保存成功，但刷新项目失败，请刷新页面' });
+          if (!refreshed || refreshed.errorMessageHandled !== true) message.error('保存成功，但刷新项目失败，请刷新页面');
         }
       } catch (error) {
-        message.error('保存成功，但刷新项目失败，请刷新页面');
+        this.setState({ saveReceipt: '保存成功，但刷新项目失败，请刷新页面' });
+        if (!error || error.errorMessageHandled !== true) message.error('保存成功，但刷新项目失败，请刷新页面');
       }
     } else {
       message.error('保存失败, ' + result.payload.data.errmsg);
@@ -110,6 +113,7 @@ export default class ProjectMock extends Component {
   render() {
     return (
       <div className="m-panel">
+        {this.state.saveReceipt && <div role="status">{this.state.saveReceipt}</div>}
         <Form>
           <FormItem
             label={
