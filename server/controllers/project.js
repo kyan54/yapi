@@ -698,6 +698,14 @@ class projectController extends baseController {
   async changeMemberEmailNotice(ctx) {
     try {
       let params = ctx.request.body;
+      const actorUid = this.getUid();
+      const memberUid = Number(params.member_uid);
+      if (!Number.isSafeInteger(actorUid) || actorUid <= 0 ||
+          !Number.isSafeInteger(memberUid) || memberUid <= 0 ||
+          (actorUid !== memberUid &&
+           (await this.checkAuth(params.id, 'project', 'danger')) !== true)) {
+        return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+      }
       let projectInst = yapi.getInst(projectModel);
       var check = await projectInst.checkMemberRepeat(params.id, params.member_uid);
       if (check === 0) {
