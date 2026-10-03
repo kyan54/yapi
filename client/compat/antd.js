@@ -64,7 +64,7 @@ Form.create = (options = {}) => Wrapped => {
   CompatibleForm.displayName = `Form(${Wrapped.displayName || Wrapped.name || 'Component'})`;
   return CompatibleForm;
 };
-export const Button = React.forwardRef(({ icon, type, ...props }, ref) => <Ant.Button {...props} ref={ref} danger={type === 'danger' || props.danger} type={type === 'danger' ? 'default' : type} icon={typeof icon === 'string' ? <Icon type={icon} /> : icon} />);
+export const Button = React.forwardRef(({ icon, type, ...props }, ref) => <Ant.Button {...props} ref={ref} danger={type === 'danger' || props.danger} type={type === 'danger' ? 'default' : type} icon={typeof icon === 'string' ? (icon ? <Icon type={icon} /> : undefined) : icon} />);
 Button.Group = ({ children, ...props }) => <Ant.Space.Compact {...props}>{children}</Ant.Space.Compact>;
 export const Input = React.forwardRef(({ type, autosize, ...props }, ref) => type === 'textarea' ? <Ant.Input.TextArea {...props} ref={ref} autoSize={autosize} /> : <Ant.Input {...props} type={type} ref={ref} />);
 Input.TextArea = React.forwardRef(({ autosize, ...props }, ref) => <Ant.Input.TextArea {...props} ref={ref} autoSize={props.autoSize || autosize} />);

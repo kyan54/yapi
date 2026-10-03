@@ -8,7 +8,7 @@ const Module = require('module');
 const { JSDOM } = require('jsdom');
 const root = path.resolve(__dirname, '..');
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/project/1/interface/api/1', pretendToBeVisual: true });
-for (const name of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'Node', 'Event', 'MouseEvent', 'MutationObserver', 'SVGElement', 'ShadowRoot', 'DocumentFragment', 'getComputedStyle']) Object.defineProperty(global, name, { value: dom.window[name], configurable: true, writable: true });
+for (const name of ['window', 'document', 'navigator', 'HTMLElement', 'HTMLTextAreaElement', 'HTMLInputElement', 'HTMLSelectElement', 'Element', 'Node', 'Event', 'MouseEvent', 'MutationObserver', 'SVGElement', 'ShadowRoot', 'DocumentFragment', 'getComputedStyle']) Object.defineProperty(global, name, { value: dom.window[name], configurable: true, writable: true });
 const NativeMessageChannel = global.MessageChannel;
 const channels = [];
 global.MessageChannel = class extends NativeMessageChannel { constructor() { super(); channels.push(this); } };
@@ -190,4 +190,11 @@ test('legacy autocomplete filter receives string children for modern value-only 
   await userEvent.type(screen.getByRole('combobox'), 'content');
   await waitFor(() => assert.ok(labels.includes('Content-Type')));
   assert.ok(labels.every(label => typeof label === 'string'));
+});
+
+
+test('legacy empty button icon is absent and preserves request-runner accessible name', () => {
+  render(h(Ant.Button, { icon: '' }, '发送'));
+  assert.ok(screen.getByRole('button', { name: /^发\s*送$/ }));
+  assert.equal(screen.queryByRole('img'), null);
 });
