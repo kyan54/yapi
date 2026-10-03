@@ -114,7 +114,7 @@ test('actual Mock route and authenticated collection assertions execute through 
   await connection.db.collection('project').updateOne({_id:11},{$set:{is_mock_open:true,project_mock_script:'mockJson.isolated = true; delay = 0;'}});
   try {
     const response=await page.request.get(baseURL+'/mock/11/orders/123');
-    expect(response.status()).toBe(200);
+    expect(response.status(), 'Mock response: '+await response.text()+'\nApplication log:\n'+log.slice(-6000)).toBe(200);
     const body=await response.json();expect(body.isolated).toBe(true);expect(typeof body.id).toBe('number');
     const checked=await page.request.post(baseURL+'/api/col/run_script',{data:{col_id:21,interface_id:17,response:{status:200,body:{id:123},header:{}},records:[],params:{},script:'assert.equal(status,200); assert.equal(body.id,123); log("asserted");'}});
     expect(checked.status()).toBe(200);const result=await checked.json();expect(result.errcode).toBe(0);expect(JSON.stringify(result.data.logs)).toContain('asserted');
