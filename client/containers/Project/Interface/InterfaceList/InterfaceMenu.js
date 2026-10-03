@@ -79,6 +79,12 @@ class InterfaceMenu extends Component {
     this.setState({ [key]: status, modalPending: false });
   };
 
+  captureSubmission = () => {
+    const projectId = this.props.projectId;
+    const epoch = this.modalEpoch;
+    return () => this.currentSubmission(projectId, epoch);
+  };
+
   setModalPending = pending => {
     this.modalPending = pending;
     this.setState({ modalPending: pending });
@@ -428,6 +434,7 @@ class InterfaceMenu extends Component {
               onCancel={() => this.changeModal('visible', false)}
               onSubmit={this.handleAddInterface}
               onPendingChange={this.setModalPending}
+              captureSubmission={this.captureSubmission}
             />
           </Modal>
         ) : (
@@ -449,6 +456,7 @@ class InterfaceMenu extends Component {
               onCancel={() => this.changeModal('add_cat_modal_visible', false)}
               onSubmit={this.handleAddInterfaceCat}
               onPendingChange={this.setModalPending}
+              captureSubmission={this.captureSubmission}
             />
           </Modal>
         ) : (
@@ -471,6 +479,7 @@ class InterfaceMenu extends Component {
               onCancel={() => this.changeModal('change_cat_modal_visible', false)}
               onSubmit={this.handleChangeInterfaceCat}
               onPendingChange={this.setModalPending}
+              captureSubmission={this.captureSubmission}
             />
           </Modal>
         ) : (

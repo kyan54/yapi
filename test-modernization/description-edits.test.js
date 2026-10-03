@@ -75,3 +75,11 @@ test('schema numeric precision is never changed as a side effect of reserializat
  const doc=fixture();doc.res_body='{"type":"number","maximum":1.00e3,"description":"text 999999999999999999999"}';
  assert.equal(JSON.parse(applyEdits(doc,[{field:'res_body',pointer:'/description',description:'Number'}]).res_body).maximum,1000);
 });
+
+test('inactive schema flags preserve raw bytes and refuse annotation edits without parsing raw text',()=>{
+ for(const [field,type,flag] of [['req_body_other','req_body_type','req_body_is_json_schema'],['res_body','res_body_type','res_body_is_json_schema']]){
+  const doc=fixture();doc[type]='raw';doc[flag]=true;doc[field]='Synthetic raw \u0000 body { not JSON';
+  const before=doc[field],edits=snapshot(doc);assert.equal(edits.some(e=>e.field===field),false);assert.equal(applyEdits(doc,[])[field],before);assert.throws(()=>applyEdits(doc,[{field,pointer:'/description',description:'must not parse'}]),{code:'INVALID_INPUT'});
+  doc[type]='json';assert.throws(()=>snapshot(doc),{code:'INVALID_INPUT'});
+ }
+});

@@ -133,6 +133,13 @@ class InterfaceList extends Component {
     this.setState({ visible, modalPending: false });
   };
 
+  captureSubmission = () => {
+    const projectId = this.props.curProject._id;
+    const epoch = this.modalEpoch;
+    return () => !this.disposed && epoch === this.modalEpoch &&
+      String(this.props.curProject._id) === String(projectId);
+  };
+
   setModalPending = pending => {
     this.modalPending = pending;
     this.setState({ modalPending: pending });
@@ -432,6 +439,7 @@ class InterfaceList extends Component {
               onCancel={() => this.changeModal(false)}
               onSubmit={this.handleAddInterface}
               onPendingChange={this.setModalPending}
+              captureSubmission={this.captureSubmission}
             />
           </Modal>
         )}

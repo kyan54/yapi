@@ -1,4 +1,5 @@
 'use strict';
+const {activeSchema}=require('./schema-mode');
 // Only annotation locations discovered in the ORIGINAL trusted document may be
 // changed. Provider schema views are redacted and must never be persisted.
 const PARAM_FIELDS = ['req_query','req_headers','req_params','req_body_form'];
@@ -95,8 +96,7 @@ function inventory(document) {
     if(object(node.dependencies))for(const name of Object.keys(node.dependencies))if(object(node.dependencies[name]))walk(field,node.dependencies[name],path+'/dependencies/'+escape(name),depth+1);
   }
   for(const field of SCHEMA_FIELDS) {
-    const flag=field==='res_body'?'res_body_is_json_schema':'req_body_is_json_schema';
-    if(document[flag]!==true)continue;
+    if(!activeSchema(document,field))continue;
     // Newly created legacy interfaces enable Schema mode before any body exists.
     // An absent/empty body has no annotations; keep its stored bytes unchanged.
     if(document[field]===undefined || document[field]==='')continue;

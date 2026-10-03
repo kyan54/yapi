@@ -11,6 +11,7 @@ class AddInterfaceForm extends Component {
     onSubmit: PropTypes.func,
     onCancel: PropTypes.func,
     onPendingChange: PropTypes.func,
+    captureSubmission: PropTypes.func,
     catdata: PropTypes.object
   };
   state = { submitting: false };
@@ -18,32 +19,31 @@ class AddInterfaceForm extends Component {
   disposed = false;
   componentWillUnmount() { this.disposed = true; }
 
-  handleSubmit = (e) => {
+  handleSubmit = async e => {
     e.preventDefault();
-    if (this.submitting) return;
+    if (this.submitting || this.disposed) return;
+    const isCurrent = this.props.captureSubmission ? this.props.captureSubmission() : () => true;
     this.submitting = true;
-    this.props.form.validateFields(async (err, values) => {
-      if (err) {
-        this.submitting = false;
-        return;
-      }
-      this.setState({ submitting: true });
-      if (this.props.onPendingChange) this.props.onPendingChange(true);
-      try {
-        await this.props.onSubmit(values);
-      } catch (error) {
-        if (this.disposed) return;
+    this.setState({ submitting: true });
+    if (this.props.onPendingChange) this.props.onPendingChange(true);
+    try {
+      const { err, values } = await new Promise(resolve =>
+        this.props.form.validateFields((err, values) => resolve({ err, values })));
+      if (err || this.disposed || !isCurrent()) return;
+      await this.props.onSubmit(values);
+    } catch (error) {
+      if (!this.disposed && isCurrent()) {
         const response = error.response && error.response.data;
         message.error((response && response.errmsg) || '分类提交失败，请重试');
-      } finally {
-        this.submitting = false;
-        if (!this.disposed) {
-          this.setState({ submitting: false });
-          if (this.props.onPendingChange) this.props.onPendingChange(false);
-        }
       }
-    });
-  }
+    } finally {
+      this.submitting = false;
+      if (!this.disposed && isCurrent()) {
+        this.setState({ submitting: false });
+        if (this.props.onPendingChange) this.props.onPendingChange(false);
+      }
+    }
+  };
 
   render() {
     const { getFieldDecorator, getFieldsError } = this.props.form;
