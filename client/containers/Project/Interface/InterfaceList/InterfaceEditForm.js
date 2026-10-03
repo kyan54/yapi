@@ -220,7 +220,7 @@ class InterfaceEditForm extends Component {
     if (this.props.saveDisabled) return message.error('编辑锁不可用，请重新打开编辑页面后再保存。');
     const fields = this.props.form.getFieldsValue();
     if ((fields.res_body_type === 'json' && fields.res_body_is_json_schema && !this.schemaValidity.response) ||
-        (fields.req_body_type === 'json' && fields.req_body_is_json_schema && !this.schemaValidity.request)) {
+        (HTTP_METHOD[this.state.method].request_body && fields.req_body_type === 'json' && fields.req_body_is_json_schema && !this.schemaValidity.request)) {
       return message.error('Schema JSON 无效，请修正后再保存');
     }
     this.submitting = true;
@@ -242,7 +242,7 @@ class InterfaceEditForm extends Component {
           values.res_body = this.state.res_body;
         }
       }
-      if (values.req_body_type === 'json') {
+      if (HTTP_METHOD[this.state.method].request_body && values.req_body_type === 'json') {
         if (this.state.req_body_other && validJson(this.state.req_body_other, this.props.projectMsg.is_json5 && !values.req_body_is_json_schema) === false) {
           return message.error('请求Body json格式有问题，请检查！');
         }
@@ -411,11 +411,16 @@ class InterfaceEditForm extends Component {
       height: '500px',
       initialValue: this.state.markdown || this.state.desc
     });
-    const initialMarkdown = this.editor.getMarkdown();
-    this.editor.on('change', () => {
-      if (this._isMounted && this.editor.getMarkdown() !== initialMarkdown) this.markDirty();
-    });
+    this.observedMarkdown = this.editor.getMarkdown();
+    this.editor.on('change', this.handleMarkdownChange);
   }
+
+  handleMarkdownChange = () => {
+    const markdown = this.editor.getMarkdown();
+    const changed = markdown !== this.observedMarkdown;
+    this.observedMarkdown = markdown;
+    if (this._isMounted && changed) this.markDirty();
+  };
 
   componentWillUnmount() {
     if (this.editor) this.editor.destroy();

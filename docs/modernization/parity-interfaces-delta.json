@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-15",
+  "scope": "A/interfaces/batches-1-16",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -188,6 +188,17 @@
       "note": "Body paired38 report has three real legacy JSON/RAW draft-loss failures and two random optional Mock-field test failures; required-field corrected paired6 passes. Explicit legacy defect observation tests do not imply parity passed. Full97 current candidate regression passed with B fixed four-file overlay.",
       "new_full_regression_passed": 97,
       "new_full_regression_failed": 0
+    },
+    "batch16_current_candidate": {
+      "new_related_regression_passed": 38,
+      "old_observation_passed": 9,
+      "old_candidate_only_skipped": 4,
+      "default_total": 350,
+      "default_passed": 344,
+      "default_failed": 0,
+      "default_skipped": 6,
+      "form_unit_passed": 14,
+      "note": "Current scoped Body/notes/Schema controls regression, not a rerun of full97. Legacy empty/duplicate displayed-name divergence and missing remark dirty prompt remain failed observations."
     }
   },
   "scenarios": [
@@ -489,9 +500,24 @@
       "overlay": "interfaces/docs-active-overlay-provenance.json",
       "visual": "1920x1080 old/new RAW-reopen screenshots manually inspected. New RAW text stays intact; old request source becomes empty object schema. Rows fit without overlap. Different scroll positions recorded; no pixel-identical page claim.",
       "full": "interfaces/batch15-new-results.json"
+    },
+    "batch16": {
+      "new": "interfaces/batch16-new-results.json",
+      "old": "interfaces/batch16-old-results.json",
+      "before": "interfaces/notes-return-before-results.json",
+      "before_screenshots": "interfaces/notes-new-results",
+      "get_before": "interfaces/body-get-before-results.json",
+      "get_paired": "interfaces/inactive-get-results.json",
+      "database": [
+        "interfaces/batch16-old-db.json",
+        "interfaces/batch16-new-db.json"
+      ],
+      "default": "interfaces/batch16-default-tests.log",
+      "source_sha256": "interfaces/batch16-source-sha256.json",
+      "visual_review": "1920x1080 saved-and-reverted remark screenshot inspected: original A visible after successful save/reload; editor and schema controls readable. Schema multiline/import old/new screenshots inspected; final report waits for old modal to close."
     }
   },
-  "remaining": "Invalid request Schema then switch to GET (ordinary invalid JSON already permits GET), notes, remaining tree navigation and additional Schema controls remain pending. Body core/JSON5/preview/F9 batch15 evidence added. Preserve original246 matrix.",
+  "remaining": "Remaining tree search/navigation/back and table routing/pagination edge audit; Schema add/delete/type/Mock and additional import/modal controls; remark toolbar detail coverage. No full246 claim. Batch16 closes inactive Schema GET and reviewA original-markdown dirty defect.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -542,6 +568,17 @@
       "before": "Explicit false was overwritten by project defaults; inactive schema editors could replace RAW text, RAW↔JSON source was stale, inactive fields leaked, Schema preview sent old hidden RAW source.",
       "after": "Default only undefined and only active JSON; preserve mode preference and source on switches; clear inactive payload fields; strict project parser policy; preview uses current valid schema draft.",
       "validation": "14 unit cases,19 new browser Body cases,6 corrected paired Schema preview cases,25 exact DB readbacks; overlay provenance recorded."
+    },
+    {
+      "id": "interface-inactive-schema-get",
+      "before": "Invalid request Schema validity prevented save after switching to GET although request body hidden.",
+      "after": "Gate request Schema validity and parsing by active method request_body; clear inactive payload. POST invalid active schema remains blocked."
+    },
+    {
+      "id": "interface-remark-observed-content",
+      "before": "Static initial markdown A comparison ignored B→A edit after B saved or pending, allowing older B save completion to clear dirty and navigation to lose visible A.",
+      "after": "Track each observed Markdown value; only real changes increment existing editRevision, including return to initial A. No initialization delay or revision reset.",
+      "validation": "Four real UI before failures/four after passes; actual Form initialization/success/pending tests; exact A database readback."
     }
   ],
   "review_notes": [
@@ -688,6 +725,46 @@
       "old": "passed",
       "new": "passed",
       "checks": "F9 on request/response, blur/refocus, browser Back cleanup and reopen focus tested paired; all roles F9 and owner navigation. Screenshots1920x1080."
+    },
+    {
+      "id": "interface-body-inactive-get",
+      "scenario": "interface_body-01",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "passed",
+      "checks": "Owner/dev/guest invalid request JSON or full Schema then method GET: candidate saves active GET payload with empty hidden source/rows and false schema flag, API0 or guest denial, reload and DB. Ordinary JSON old3 passed; old full-schema control unavailable, notrun. Candidate pre-fix full Schema validity blocked GET; source text ordinary JSON already passed."
+    },
+    {
+      "id": "interface-remark-wysiwyg-markdown",
+      "scenario": "interface_edit_meta-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Three roles: WYSIWYG→Markdown→WYSIWYG preserves headings/bold/code/list; save/reopen API and DB exact; guest denied. New first remark edit prompts/cancel preserves. Old first remark edit leaves without prompt and draft disappears."
+    },
+    {
+      "id": "interface-remark-original-after-save",
+      "scenario": "interface_edit_meta-04",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "passed",
+      "checks": "ReviewA followup: owner/dev × save B pending/completed then real UI change back to initial A. Four before failures; after all four keep navigation prompt even after old B response, Save A persists exact markdown/HTML and reload, initial identical editor load does not prompt. Old candidate-specific4 skipped."
+    },
+    {
+      "id": "schema-sample-require-multiline",
+      "scenario": "schema_visual-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three paired roles sample JSON import cancel/reopen/invalid-recover; require-all sets root and nested required; multiline description preserves newline through save/API0/visible result/DB/reload; guest denied."
+    },
+    {
+      "id": "schema-invalid-rename-display",
+      "scenario": "schema_visual-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Three paired roles empty/duplicate rename: old input keeps empty/beta while stored alpha remains; new alerts and resets alpha. Candidate Escape cancels draft. Valid gamma rename updates required and preserves minLength/extension; API0/guest deny/reload and exact DB."
     }
   ]
 }
