@@ -1,0 +1,78 @@
+{
+  "scope": "A/interfaces/batch-1",
+  "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
+  "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
+  "roles": [
+    "owner",
+    "developer"
+  ],
+  "ports": {
+    "old": 4184,
+    "new": 4185
+  },
+  "databases": [
+    "parity_fast_interfaces_old",
+    "parity_fast_interfaces_new"
+  ],
+  "fixture": {
+    "generator": "scripts/modernization/ui-parity-fixture.cjs",
+    "date": "2026-10-03",
+    "interface_id": 901016,
+    "tag": [],
+    "note": "Dedicated synthetic DBs only. Baseline tag save errors retained separately; tag cleared equally to isolate bulk behavior."
+  },
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
+    "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs."
+  },
+  "scenarios": [
+    {
+      "id": "interface_bulk-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_bulk-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_bulk-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_bulk-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed"
+    }
+  ],
+  "legacy_defects": [
+    {
+      "id": "interface_bulk-02",
+      "detail": "Malformed nonempty lines silently discarded. Empty-only import then reopen throws value.forEach is not a function (owner and developer). New version does not reproduce crash; malformed line rejection added."
+    },
+    {
+      "detail": "Legacy tagged /api/interface/up returns errcode 40011 after autoAddTag attempts project lookup; DB can still change. Not counted as save success."
+    }
+  ],
+  "evidence": {
+    "directory": "/Users/hujinwu/Documents/Codex/2026-10-03/task-4/interfaces",
+    "browser": "results.json",
+    "baseline_tagged_save": "baseline-results.json",
+    "legacy_empty": "legacy-empty-trace.zip",
+    "direct_db_readback": [
+      "old-db-final.json",
+      "new-db-final.json"
+    ],
+    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed.",
+    "candidate_source": "image-source-sha256.txt matches baseline client/server/common/exts before local fix"
+  },
+  "remaining": "All other assigned scenario IDs remain notrun in this increment; main 246 scenario matrix unchanged."
+}

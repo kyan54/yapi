@@ -541,7 +541,13 @@ class InterfaceEditForm extends Component {
     // { name: '', required: '1', desc: '', example: '' }
     let newValue = [];
 
-    this.state.bulkValue.split('\n').forEach((item, index) => {
+    const lines = this.state.bulkValue.split('\n');
+    const invalidLine = lines.findIndex(item => item.trim() && (item.indexOf(':') < 1 || !item.slice(0, item.indexOf(':')).trim()));
+    if (invalidLine !== -1) {
+      message.error(`第 ${invalidLine + 1} 行格式错误，请输入 name:example，参数名称不能为空`);
+      return;
+    }
+    lines.filter(item => item.trim()).forEach((item, index) => {
       let valueItem = Object.assign({}, curValue[index] || dataTpl[this.state.bulkName]);
       let indexOfColon = item.indexOf(':');
       if (indexOfColon!==-1) {
