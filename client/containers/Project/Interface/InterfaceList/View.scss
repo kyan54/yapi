@@ -133,3 +133,40 @@
     padding-left: .38rem;
   }
 }
+
+// Interface descriptions keep their persisted legacy HTML. Scope the content
+// presentation here because the modern editor no longer ships the old class.
+.caseContainer > .tui-editor-contents {
+  :not(table) { line-height: 160%; box-sizing: content-box; }
+  p { margin: 10px 0; color: #555; }
+  h1, h2, h3, h5, strong { font-weight: 700; }
+  address, cite, dfn, em, i, var { font-style: italic; }
+
+  ul, ol { display: block; padding-left: 17px; margin: 6px 0 10px; color: #555; }
+  ul { list-style-type: disc; }
+  ol { list-style-type: decimal; }
+  li { list-style-type: inherit; }
+  ul li { position: relative; }
+  ul p, ol p { margin: 0; }
+  ul ul, ul ol, ol ul, ol ol { margin-top: 0; margin-bottom: 0; }
+
+  blockquote { margin: 15px 0; border-left: 4px solid #ddd; padding: 0 15px; color: #777; }
+  blockquote > :first-child { margin-top: 0; }
+  blockquote > :last-child { margin-bottom: 0; }
+  code, pre { font-family: Consolas, Courier, monospace; border: 0; border-radius: 0; }
+  code { color: #c1788b; padding: 4px 4px 2px 0; letter-spacing: -.3px; }
+  pre { margin: 2px 0 8px; padding: 18px; background: #f5f7f8; }
+  pre code { padding: 0; color: inherit; white-space: pre-wrap; background: transparent; }
+  img { margin: 4px 0 10px; box-sizing: border-box; vertical-align: top; max-width: 100%; }
+
+  table { margin: 2px 0 14px; color: #555; width: auto; border-collapse: collapse; box-sizing: border-box; }
+  th, td { height: 32px; padding: 5px 14px 5px 12px; }
+  td { border: 1px solid #eaeaea; }
+  th p, td p { margin: 0; color: inherit; }
+  th { border: 1px solid #72777b; border-top: 0; background: #7b8184; font-weight: 300; color: #fff; padding-top: 6px; }
+  hr { border-top: 1px solid #eee; margin: 16px 0; }
+  a { text-decoration: underline; color: #5286bc; }
+  a:hover { color: #007cff; }
+  .task-list-item { border: 0px; list-style: none; padding-left: 22px; margin-left: -22px; background-repeat: no-repeat; background-size: 16px 16px; background-position: 0px 2px; background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAADdJREFUKBVjvHv37n8GMgALSI+SkhJJWu/du8fARJIOJMWjGpECA505GjjoIYLEB6dVUNojFQAA/1MJUFWet/4AAAAASUVORK5CYII="); }
+  .task-list-item.checked { background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAAMpJREFUKBVjjJ/64D8DGYCJDD1gLbTVyM3OxJDiJMzAxcYIdyALnIWDAdJU7i/OICfCxsDMxMgwc88bwk5F1vTs/W+GFUffwY2H+1FBlI2hLliCQYCbGSyJrqlzwwuGj9//YWoMtRBgUBJnZ6gMEGeQFWaFOw9kE7omkG5GWDyCPF7mJ86gIMbO8P//fwZGRkYGXJpAGuFO/fbrP0PXppcMD179JKgJRSOIA9N8/NZXrM4DqYEBjOgAaYYFOUwRNhruVGyS+MTI1ggAx8NTGcUtFVQAAAAASUVORK5CYII="); }
+}

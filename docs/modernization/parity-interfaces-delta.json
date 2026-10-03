@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-18",
+  "scope": "A/interfaces/batches-1-19",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -212,6 +212,12 @@
       "desktop_paired": "12/12 passed;1024 and1920 × owner/dev/guest",
       "database": "12 exact synthetic records",
       "runtime_source": "335 matched including B4 overlay"
+    },
+    "batch19": {
+      "paired": "18/18 passed;10 formatting buttons +4popup actions +existing preview ×3roles×2versions",
+      "final_content": "6/6 passed after saved-paragraph visual correction",
+      "database": "90 immediate per-save synthetic readbacks in18paired;6additional in final content",
+      "runtime_source": "335 matched including separately authorized B4 overlay"
     }
   },
   "scenarios": [
@@ -546,9 +552,17 @@
       "layout-old-db.json",
       "layout-new-db.json",
       "layout-source-sha256.json"
+    ],
+    "batch19": [
+      "content-before-results.json",
+      "legacy-content-css.json",
+      "batch19-results.json",
+      "batch19-db-readbacks.json",
+      "content-final-results.json",
+      "content-final-source-sha256.json"
     ]
   },
-  "remaining": "Original246 matrix retained. Continue A remark toolbar/button gaps; full compound coverage not claimed.",
+  "remaining": "Original246 matrix retained. Finish remark table context and list indent/outdent controls; absent legacy full-schema tab and absent list selection/sort/open-state filter are capability limits, not invented green.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -612,7 +626,8 @@
       "validation": "Four real UI before failures/four after passes; actual Form initialization/success/pending tests; exact A database readback."
     },
     "Batch17: when moving the final row out of the last category page, clamp current page to the refreshed total and refetch. Owner/dev API0+visible20rows+DB+reload; guest denied remains same page. Five actual component tests.",
-    "Batch18 parent1024 regression: modern Table inline auto layout overrides legacy fixed CSS. Set tableLayout=fixed only on InterfaceList Table. Long-path before: document1319/table scroll955 vs viewport1024/client612; after both versions document1024/scroll612 and identical column widths.1920 aligned; screenshots visually inspected."
+    "Batch18 parent1024 regression: modern Table inline auto layout overrides legacy fixed CSS. Set tableLayout=fixed only on InterfaceList Table. Long-path before: document1319/table scroll955 vs viewport1024/client612; after both versions document1024/scroll612 and identical column widths.1920 aligned; screenshots visually inspected.",
+    "Batch19 parent rich-content preview: modern editor no longer supplies legacy .tui-editor-contents styles. Restore only .caseContainer > .tui-editor-contents lists/nesting, paragraphs, emphasis, quotes, code, table borders/header, images, tasks and links. Saved modern paragraph wrappers inherit cell color and compact list/cell margins. View.js DOMPurify sanitizer unchanged; no global reset/compat changes."
   ],
   "review_notes": [
     {
@@ -846,6 +861,14 @@
       "old": "passed",
       "new": "passed",
       "checks": "1024/1920 ×3roles: status/tag combine-reset; status/category actual dropdown mutation API0 or guest denial, visible result, exact12 DB readbacks and reload. Long path does not hide tag. No global compat/styles changed."
+    },
+    {
+      "id": "interface-remark-toolbar-preview-batch19",
+      "scenario": "interface_edit_meta-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three paired roles actual bold/italic/strike/quote/UL/OL/task/inline-code/codeblock/HR; heading2/link/local-data-image/table popup apply; link/image cancel+reopen; API0 owner/dev or guest denied, every save immediate desc/markdown DB exact, reload. Existing and saved nested UL/OL17px, disc/decimal, code background/table borders/header white visually checked1920."
     }
   ]
 }
