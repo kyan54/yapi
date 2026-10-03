@@ -127,7 +127,11 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
   const [enumError, setEnumError] = React.useState('');
   React.useEffect(() => { setNameDraft(name || ''); setNameError(''); }, [name]);
   // Never apply a draft captured from an older externally replaced subtree.
-  React.useEffect(() => { setEditor(null); }, [schema]);
+  React.useEffect(() => { setEditor(current => current && current.open === false ? current : null); }, [schema]);
+  // Retain a closing dialog so AntD can finish its close/focus lifecycle.
+  // Opening always creates a fresh draft; external replacement while open
+  // still removes the old editor immediately, without restoring stale focus.
+  const closeEditor = () => setEditor(current => current ? { ...current, open: false } : null);
   const object = isObject(schema);
   const objectType = hasType(schema, 'object');
   const arrayType = hasType(schema, 'array');
@@ -159,7 +163,7 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
     try {
       if (editor.kind === 'advanced') onChange(parseSchema(editor.text));
       else patch({ [editor.kind]: editor.kind === 'mock' ? mockValue(schema, editor.text) : editor.text });
-      setEditor(null);
+      closeEditor();
     } catch (error) { setEditor({ ...editor, error: error.message }); }
   };
   const type = object && typeof schema.type === 'string' ? schema.type : '__custom__';
@@ -203,7 +207,7 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
         onChange={next => patch({ items: schema.items.map((value, position) => position === index ? next : value) })} />)}
       <Button onClick={() => patch({ items: [...schema.items, { type: 'string' }] })}>添加数组元素</Button>
     </React.Fragment> : <NodeEditor label="数组元素" depth={depth + 1} schema={schema.items === undefined ? { type: 'string' } : schema.items} onChange={items => patch({ items })} />)}
-    {editor && <Modal title={`${label} ${modalLabel}`} open mask={{ closable: false }} width={editor.kind === 'advanced' ? 780 : 520} okText="应用" okButtonProps={{ disabled: !!(editor.error || enumError) }} cancelText="取消" onCancel={() => setEditor(null)} onOk={saveEditor}>
+    {editor && <Modal title={`${label} ${modalLabel}`} open={editor.open !== false} mask={{ closable: false }} width={editor.kind === 'advanced' ? 780 : 520} okText="应用" okButtonProps={{ disabled: !!(editor.error || enumError) }} cancelText="取消" onCancel={closeEditor} afterClose={() => setEditor(current => current && current.open === false ? null : current)} onOk={saveEditor}>
       <p>应用后更新当前节点；保存接口后生效。</p>
       {editor.kind === 'advanced' && <AdvancedFields onError={setEnumError} text={editor.text} onChange={text => setEditor({ ...editor, text, error: '' })} />}
       <Input.TextArea aria-label={`${label} ${modalLabel}内容`} rows={editor.kind === 'advanced' ? 14 : 6} value={editor.text} onChange={event => setEditor({ ...editor, text: event.target.value, error: '' })} />

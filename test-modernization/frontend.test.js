@@ -307,33 +307,40 @@ test('schema require-all traverses nested objects and array tuples without touch
 test('schema multiline description and Mock drafts cancel, apply and reopen without losing keywords', async () => {
   const Editor = require('../client/components/SchemaEditor').default;
   let latest, changes = 0;
-  render(h(Editor, { data: JSON.stringify({ type: 'object', description: 'Root', properties: { code: { type: 'string', minLength: 2, description: 'Before', mock: { mock: '@word', 'x-option': 3 } } } }), onChange: value => { latest = JSON.parse(value); changes++; } }));
+  // CSS motion is covered by the real-browser focus regression.
+  render(h(Ant.ConfigProvider, { theme: { token: { motion: false } } }, h(Editor, { data: JSON.stringify({ type: 'object', description: 'Root', properties: { code: { type: 'string', minLength: 2, description: 'Before', mock: { mock: '@word', 'x-option': 3 } } } }), onChange: value => { latest = JSON.parse(value); changes++; } })));
   assert.equal(screen.getByLabelText('编辑 根节点 Mock').disabled, true);
   await userEvent.click(screen.getByLabelText('编辑 code 描述'));
   fireEvent.change(screen.getByLabelText('code 描述内容'), { target: { value: 'Discard\nthis' } });
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.equal(changes, 0);
   await userEvent.click(screen.getByLabelText('编辑 code 描述'));
   assert.equal(screen.getByLabelText('code 描述内容').value, 'Before');
   fireEvent.change(screen.getByLabelText('code 描述内容'), { target: { value: 'Line 1\nLine 2' } });
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.equal(latest.properties.code.description, 'Line 1\nLine 2');
   assert.equal(latest.properties.code.minLength, 2);
   await userEvent.click(screen.getByLabelText('编辑 code 描述'));
   assert.equal(screen.getByLabelText('code 描述内容').value, 'Line 1\nLine 2');
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   await userEvent.click(screen.getByLabelText('编辑 code Mock'));
   fireEvent.change(screen.getByLabelText('code Mock内容'), { target: { value: '@pick([\n"a", "b"\n])' } });
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.deepEqual(latest.properties.code.mock, { mock: '@pick([\n"a", "b"\n])', 'x-option': 3 });
   await userEvent.click(screen.getByLabelText('编辑 code Mock'));
   assert.equal(screen.getByLabelText('code Mock内容').value, latest.properties.code.mock.mock);
   fireEvent.change(screen.getByLabelText('code Mock内容'), { target: { value: '' } });
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.deepEqual(latest.properties.code.mock, { mock: '', 'x-option': 3 });
   await userEvent.click(screen.getByLabelText('编辑 根节点 描述'));
   fireEvent.change(screen.getByLabelText('根节点 描述内容'), { target: { value: 'Root\ndescription' } });
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.equal(latest.description, 'Root\ndescription');
 });
 
@@ -463,15 +470,18 @@ test('schema advanced drafts close on an external schema replacement instead of 
 test('schema plain Mock clearing uses the legacy empty representation and Cancel never publishes a draft', async () => {
   const Editor = require('../client/components/SchemaEditor').default;
   let latest, changes = 0;
-  render(h(Editor, { data: '{"type":"string","mock":{"mock":"@word"}}', onChange: value => { latest = JSON.parse(value); changes++; } }));
+  // CSS motion is covered by the real-browser focus regression.
+  render(h(Ant.ConfigProvider, { theme: { token: { motion: false } } }, h(Editor, { data: '{"type":"string","mock":{"mock":"@word"}}', onChange: value => { latest = JSON.parse(value); changes++; } })));
   await userEvent.click(screen.getByLabelText('编辑 根节点 Mock'));
   fireEvent.change(screen.getByLabelText('根节点 Mock内容'), { target: { value: '@discard' } });
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.equal(changes, 0);
   await userEvent.click(screen.getByLabelText('编辑 根节点 Mock'));
   assert.equal(screen.getByLabelText('根节点 Mock内容').value, '@word');
   fireEvent.change(screen.getByLabelText('根节点 Mock内容'), { target: { value: '' } });
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.equal(latest.mock, '');
   fireEvent.change(screen.getByLabelText('根节点 Mock'), { target: { value: '@integer' } });
   assert.deepEqual(latest.mock, { mock: '@integer' });
@@ -506,10 +516,12 @@ test('schema deep content and special property names survive edits without rewri
 test('schema dialogs discard Close and Escape drafts and reject invalid schema imports', async () => {
   const Editor = require('../client/components/SchemaEditor').default;
   let latest, changes = 0;
-  render(h(Editor, { data: '{"type":"string","description":"before"}', onChange: value => { latest = JSON.parse(value); changes++; } }));
+  // CSS motion is covered by the real-browser focus regression.
+  render(h(Ant.ConfigProvider, { theme: { token: { motion: false } } }, h(Editor, { data: '{"type":"string","description":"before"}', onChange: value => { latest = JSON.parse(value); changes++; } })));
   await userEvent.click(screen.getByLabelText('编辑 根节点 描述'));
   fireEvent.change(screen.getByLabelText('根节点 描述内容'), { target: { value: 'discard on close' } });
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.equal(changes, 0);
   await userEvent.click(screen.getByLabelText('高级设置 根节点'));
   fireEvent.change(screen.getByLabelText('根节点 高级设置内容'), { target: { value: '{"const":"discard on Escape"}' } });
@@ -525,6 +537,7 @@ test('schema dialogs discard Close and Escape drafts and reject invalid schema i
     assert.equal(changes, 0);
   }
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.equal(screen.getByLabelText('根节点 描述').value, 'before');
   await userEvent.click(screen.getByRole('button', { name: '导入 JSON' }));
   assert.equal(screen.getByLabelText('导入 JSON 内容').value, '');
@@ -552,7 +565,8 @@ test('schema table explicitly describes boolean roots instead of hiding false or
 test('legacy schema title, Mock choices, typed advanced drafts and tuple siblings remain independently editable', async () => {
   const Editor = require('../client/components/SchemaEditor').default;
   let latest;
-  render(h(Editor, { data: JSON.stringify({type:'object',properties:{amount:{type:'integer',enum:[0], 'x-retained':7}, tuple:{type:'array',items:[{type:'string'},{type:'integer'}]}}}), onChange:value => {latest=JSON.parse(value);} }));
+  // CSS motion is covered by the real-browser focus regression.
+  render(h(Ant.ConfigProvider, { theme: { token: { motion: false } } }, h(Editor, { data: JSON.stringify({type:'object',properties:{amount:{type:'integer',enum:[0], 'x-retained':7}, tuple:{type:'array',items:[{type:'string'},{type:'integer'}]}}}), onChange:value => {latest=JSON.parse(value);} })));
   fireEvent.change(screen.getByLabelText('amount 标题'), {target:{value:'金额'}});
   assert.equal(latest.properties.amount.title,'金额');
   await userEvent.type(screen.getByLabelText('amount Mock'), '@inte');
@@ -563,6 +577,7 @@ test('legacy schema title, Mock choices, typed advanced drafts and tuple sibling
   fireEvent.change(screen.getByRole('spinbutton',{name:'最小值'}),{target:{value:'2'}});
   fireEvent.blur(screen.getByRole('spinbutton',{name:'最小值'}));
   await userEvent.click(screen.getByRole('button',{name:'取 消'}));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.equal(latest.properties.amount.minimum,undefined);
   await userEvent.click(screen.getByRole('button',{name:'高级设置 amount'}));
   fireEvent.change(screen.getByRole('spinbutton',{name:'最小值'}),{target:{value:'2'}});
@@ -575,6 +590,7 @@ test('legacy schema title, Mock choices, typed advanced drafts and tuple sibling
   assert.ok(screen.getByRole('button',{name:'应 用'}).disabled);
   fireEvent.change(screen.getByLabelText('枚举值（每行一个）'),{target:{value:'2\n3'}});
   await userEvent.click(screen.getByRole('button',{name:'应 用'}));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
   assert.equal(latest.properties.amount.minimum,2);
   assert.deepEqual(latest.properties.amount.enum,[2,3]);
   assert.equal(latest.properties.amount['x-retained'],7);
