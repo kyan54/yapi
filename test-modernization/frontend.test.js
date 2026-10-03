@@ -38,7 +38,7 @@ Module._extensions['.js'] = function(module, filename) {
 };
 for (const extension of ['.css', '.scss', '.less', '.png', '.jpg', '.svg']) Module._extensions[extension] = module => { module.exports = ''; };
 const React = require('react');
-const { render, screen, fireEvent, waitFor, cleanup, act } = require('@testing-library/react');
+const { render, screen, fireEvent, waitFor, cleanup, act, within } = require('@testing-library/react');
 const userEvent = require('@testing-library/user-event').default;
 const h = React.createElement;
 const Ant = require('../client/compat/antd');
@@ -225,4 +225,322 @@ test('schema editor reports invalid draft without replacing the last valid value
   await waitFor(()=>assert.equal(validity,false));assert.equal(latest,undefined);
   fireEvent.change(screen.getByLabelText('JSON Schema'),{target:{value:'{"type":"string","minLength":2}'}});
   await waitFor(()=>assert.equal(validity,true));assert.equal(JSON.parse(latest).minLength,2);
+});
+
+test('schema rename rejects blank and duplicate drafts, resets display and moves required references', async () => {
+  const Editor = require('../client/components/SchemaEditor').default;
+  const original = { type: 'object', required: ['id', 'outside'], properties: { id: { type: 'integer', minimum: 1 }, other: { type: 'string' } }, 'x-vendor': { untouched: true } };
+  let latest, changes = 0;
+  const view = render(h(Editor, { data: JSON.stringify(original), onChange: value => { latest = JSON.parse(value); changes++; } }));
+  for (const value of ['', '   ', 'other']) {
+    const input = screen.getByLabelText('字段 id 名称');
+    fireEvent.change(input, { target: { value } });
+    fireEvent.blur(input);
+    assert.equal(screen.getByLabelText('字段 id 名称').value, 'id');
+    assert.match(screen.getByRole('alert').textContent, /已恢复原名称/);
+    assert.equal(changes, 0);
+  }
+  fireEvent.change(screen.getByLabelText('字段 id 名称'), { target: { value: 'discard' } });
+  fireEvent.keyDown(screen.getByLabelText('字段 id 名称'), { key: 'Escape' });
+  fireEvent.blur(screen.getByLabelText('字段 id 名称'));
+  assert.equal(changes, 0);
+  fireEvent.change(screen.getByLabelText('字段 id 名称'), { target: { value: 'identifier' } });
+  fireEvent.blur(screen.getByLabelText('字段 id 名称'));
+  assert.deepEqual(latest.required, ['identifier', 'outside']);
+  assert.deepEqual(Object.keys(latest.properties), ['identifier', 'other']);
+  assert.equal(latest.properties.identifier.minimum, 1);
+  assert.deepEqual(latest['x-vendor'], original['x-vendor']);
+  assert.equal(screen.getByLabelText('字段 identifier 名称').value, 'identifier');
+  const saved = JSON.stringify(latest);
+  view.unmount();
+  render(h(Editor, { data: saved, onChange: value => { latest = JSON.parse(value); } }));
+  assert.equal(screen.getByLabelText('字段 identifier 名称').value, 'identifier');
+  assert.equal(screen.getByLabelText('identifier 必填').checked, true);
+  await userEvent.click(screen.getByLabelText('删除字段 identifier'));
+  assert.deepEqual(latest.required, ['outside']);
+  assert.equal(latest.properties.identifier, undefined);
+});
+
+test('schema require-all traverses nested objects and array tuples without touching extension data', async () => {
+  const { default: Editor, setAllRequired } = require('../client/components/SchemaEditor');
+  const original = {
+    type: 'object', required: ['first'], additionalProperties: false,
+    properties: {
+      first: { type: 'string' },
+      nested: { type: 'object', properties: { yes: true, no: false } },
+      rows: { type: 'array', items: { type: 'object', properties: { id: { type: 'integer' } } } },
+      tuple: { type: 'array', items: [{ type: 'object', properties: { a: {} } }, { type: 'object', properties: { b: {} } }, false] },
+      closed: { type: 'array', items: false }
+    },
+    definitions: { retained: { type: 'object', required: ['old'], properties: { old: {} } } },
+    'x-vendor': { type: 'object', required: ['preserve'] },
+    default: { required: ['example'] }
+  };
+  const snapshot = JSON.stringify(original);
+  const checked = setAllRequired(original, true);
+  assert.equal(JSON.stringify(original), snapshot, 'require-all must not mutate its input');
+  assert.deepEqual(checked.required, Object.keys(original.properties));
+  assert.deepEqual(checked.properties.nested.required, ['yes', 'no']);
+  assert.deepEqual(checked.properties.rows.items.required, ['id']);
+  assert.deepEqual(checked.properties.tuple.items[1].required, ['b']);
+  assert.equal(checked.properties.tuple.items[2], false);
+  assert.equal(checked.properties.closed.items, false);
+  assert.deepEqual(checked.definitions, original.definitions);
+  assert.deepEqual(checked['x-vendor'], original['x-vendor']);
+  const cleared = setAllRequired(checked, false);
+  assert.equal('required' in cleared, false);
+  assert.equal('required' in cleared.properties.rows.items, false);
+  assert.equal('required' in cleared.properties.tuple.items[1], false);
+  assert.deepEqual(cleared.default, original.default);
+  let latest;
+  render(h(Editor, { data: snapshot, onChange: value => { latest = JSON.parse(value); } }));
+  assert.equal(screen.getByLabelText('全部字段必填').indeterminate, true);
+  await userEvent.click(screen.getByLabelText('全部字段必填'));
+  assert.deepEqual(latest, checked);
+  assert.equal(screen.getByLabelText('全部字段必填').checked, true);
+  await userEvent.click(screen.getByLabelText('全部字段必填'));
+  assert.deepEqual(latest, cleared);
+  await userEvent.click(screen.getByLabelText('全部字段必填'));
+  assert.deepEqual(latest, checked);
+});
+
+test('schema multiline description and Mock drafts cancel, apply and reopen without losing keywords', async () => {
+  const Editor = require('../client/components/SchemaEditor').default;
+  let latest, changes = 0;
+  render(h(Editor, { data: JSON.stringify({ type: 'object', description: 'Root', properties: { code: { type: 'string', minLength: 2, description: 'Before', mock: { mock: '@word', 'x-option': 3 } } } }), onChange: value => { latest = JSON.parse(value); changes++; } }));
+  assert.equal(screen.getByLabelText('编辑 根节点 Mock').disabled, true);
+  await userEvent.click(screen.getByLabelText('编辑 code 描述'));
+  fireEvent.change(screen.getByLabelText('code 描述内容'), { target: { value: 'Discard\nthis' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  assert.equal(changes, 0);
+  await userEvent.click(screen.getByLabelText('编辑 code 描述'));
+  assert.equal(screen.getByLabelText('code 描述内容').value, 'Before');
+  fireEvent.change(screen.getByLabelText('code 描述内容'), { target: { value: 'Line 1\nLine 2' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  assert.equal(latest.properties.code.description, 'Line 1\nLine 2');
+  assert.equal(latest.properties.code.minLength, 2);
+  await userEvent.click(screen.getByLabelText('编辑 code 描述'));
+  assert.equal(screen.getByLabelText('code 描述内容').value, 'Line 1\nLine 2');
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  await userEvent.click(screen.getByLabelText('编辑 code Mock'));
+  fireEvent.change(screen.getByLabelText('code Mock内容'), { target: { value: '@pick([\n"a", "b"\n])' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  assert.deepEqual(latest.properties.code.mock, { mock: '@pick([\n"a", "b"\n])', 'x-option': 3 });
+  await userEvent.click(screen.getByLabelText('编辑 code Mock'));
+  assert.equal(screen.getByLabelText('code Mock内容').value, latest.properties.code.mock.mock);
+  fireEvent.change(screen.getByLabelText('code Mock内容'), { target: { value: '' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  assert.deepEqual(latest.properties.code.mock, { mock: '', 'x-option': 3 });
+  await userEvent.click(screen.getByLabelText('编辑 根节点 描述'));
+  fireEvent.change(screen.getByLabelText('根节点 描述内容'), { target: { value: 'Root\ndescription' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  assert.equal(latest.description, 'Root\ndescription');
+});
+
+test('schema node advanced JSON rejects invalid shapes and replaces only the applied subtree', async () => {
+  const Editor = require('../client/components/SchemaEditor').default;
+  const original = { type: 'object', required: ['code'], additionalProperties: false, properties: { code: { type: 'string', pattern: '^[a-z]+$' }, other: { const: 'untouched', 'x-unknown': [1, 2] } } };
+  let latest, changes = 0;
+  const view = render(h(Editor, { data: JSON.stringify(original), onChange: value => { latest = JSON.parse(value); changes++; } }));
+  await userEvent.click(screen.getByLabelText('高级设置 code'));
+  for (const value of ['{invalid', '[]', 'null', '0', '"string"', '']) {
+    fireEvent.change(screen.getByLabelText('code 高级设置内容'), { target: { value } });
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+    assert.ok(within(screen.getByRole('dialog')).getByRole('alert'));
+    assert.equal(changes, 0);
+  }
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  await userEvent.click(screen.getByLabelText('高级设置 code'));
+  assert.deepEqual(JSON.parse(screen.getByLabelText('code 高级设置内容').value), original.properties.code);
+  const subtree = { type: ['string', 'null'], anyOf: [{ maxLength: 10 }, { const: null }], 'x-custom': { a: 1 } };
+  fireEvent.change(screen.getByLabelText('code 高级设置内容'), { target: { value: JSON.stringify(subtree) } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  assert.deepEqual(latest, { ...original, properties: { ...original.properties, code: subtree } });
+  await userEvent.click(screen.getByLabelText('高级设置 code'));
+  assert.deepEqual(JSON.parse(screen.getByLabelText('code 高级设置内容').value), subtree);
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  const saved = JSON.stringify(latest);
+  view.unmount();
+  render(h(Editor, { data: saved, onChange: value => { latest = JSON.parse(value); } }));
+  await userEvent.click(screen.getByLabelText('高级设置 code'));
+  assert.deepEqual(JSON.parse(screen.getByLabelText('code 高级设置内容').value), subtree);
+  fireEvent.change(screen.getByLabelText('code 高级设置内容'), { target: { value: 'false' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  assert.equal(latest.properties.code, false);
+  assert.deepEqual(latest.required, ['code']);
+  assert.deepEqual(latest.properties.other, original.properties.other);
+});
+
+test('schema boolean roots stay lossless through mount, JSON changes, advanced edits and imports', async () => {
+  const { default: Editor, parseSchema } = require('../client/components/SchemaEditor');
+  assert.equal(parseSchema('false'), false);
+  assert.equal(parseSchema('true'), true);
+  for (const value of ['null', '[]', '0', '"object"', '']) assert.throws(() => parseSchema(value));
+  let latest, validity;
+  const onChange = value => { latest = value; };
+  const onValidityChange = value => { validity = value; };
+  const view = render(h(Editor, { data: false, onChange, onValidityChange }));
+  assert.equal(validity, true);
+  assert.ok(screen.getByText('根节点: false'));
+  assert.equal(latest, undefined);
+  await userEvent.click(screen.getByRole('tab', { name: 'JSON（完整 Schema）' }));
+  assert.equal(screen.getByLabelText('JSON Schema').value, 'false');
+  for (const value of ['true', 'false']) {
+    fireEvent.change(screen.getByLabelText('JSON Schema'), { target: { value } });
+    assert.equal(latest, value);
+    assert.equal(validity, true);
+  }
+  for (const value of ['', 'null', '[]', '{']) {
+    fireEvent.change(screen.getByLabelText('JSON Schema'), { target: { value } });
+    assert.equal(validity, false);
+    assert.equal(latest, 'false');
+  }
+  fireEvent.change(screen.getByLabelText('JSON Schema'), { target: { value: 'true' } });
+  await userEvent.click(screen.getByRole('tab', { name: '可视化 Schema' }));
+  await userEvent.click(screen.getByLabelText('高级设置 根节点'));
+  fireEvent.change(screen.getByLabelText('根节点 高级设置内容'), { target: { value: 'false' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  assert.equal(latest, 'false');
+  for (const value of ['true', 'false']) {
+    await userEvent.click(screen.getByRole('button', { name: '导入 JSON' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'JSON Schema' }));
+    fireEvent.change(screen.getByLabelText('导入 JSON 内容'), { target: { value } });
+    await userEvent.click(screen.getByRole('button', { name: '导入并替换' }));
+    assert.equal(latest, value);
+    assert.equal(validity, true);
+  }
+  view.unmount();
+  render(h(Editor, { data: latest, onChange, onValidityChange }));
+  assert.ok(screen.getByText('根节点: false'));
+  assert.equal(validity, true);
+});
+
+test('schema array edits retain boolean and tuple items, complex keywords, collapse and repeat actions', async () => {
+  const Editor = require('../client/components/SchemaEditor').default;
+  const original = { type: 'array', items: [{ type: 'object', properties: { id: { type: 'integer' } }, unevaluatedProperties: false }, false, { $ref: '#/$defs/tail' }], $defs: { tail: { type: ['string', 'null'] } }, prefixItems: [true, false], 'x-unknown': { keep: true } };
+  let latest;
+  render(h(Editor, { data: JSON.stringify(original), onChange: value => { latest = JSON.parse(value); } }));
+  await userEvent.click(screen.getByLabelText('折叠 数组元素'));
+  assert.equal(screen.queryByLabelText('字段 id 名称'), null);
+  await userEvent.click(screen.getByLabelText('添加字段 数组元素'));
+  assert.ok(screen.getByLabelText('字段 id 名称'));
+  assert.ok(screen.getByLabelText('字段 field1 名称'));
+  await userEvent.click(screen.getByLabelText('添加字段 数组元素'));
+  assert.ok(screen.getByLabelText('字段 field2 名称'));
+  await userEvent.click(screen.getByLabelText('删除字段 field1'));
+  await userEvent.click(screen.getByLabelText('添加字段 数组元素'));
+  assert.ok(screen.getByLabelText('字段 field1 名称'));
+  assert.equal(latest.items[0].unevaluatedProperties, false);
+  assert.deepEqual(latest.items.slice(1), original.items.slice(1));
+  assert.deepEqual(latest.$defs, original.$defs);
+  assert.deepEqual(latest.prefixItems, original.prefixItems);
+  assert.deepEqual(latest['x-unknown'], original['x-unknown']);
+  await userEvent.click(screen.getByLabelText('高级设置 数组元素'));
+  fireEvent.change(screen.getByLabelText('数组元素 高级设置内容'), { target: { value: 'false' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  assert.equal(latest.items[0], false);
+  assert.deepEqual(latest.items.slice(1), original.items.slice(1));
+  assert.ok(screen.getByText('数组元素: false'));
+  await userEvent.click(screen.getByLabelText('高级设置 数组元素'));
+  assert.equal(screen.getByLabelText('数组元素 高级设置内容').value, 'false');
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+});
+
+test('schema advanced drafts close on an external schema replacement instead of overwriting newer data', async () => {
+  const Editor = require('../client/components/SchemaEditor').default;
+  let latest;
+  const onChange = value => { latest = value; };
+  const view = render(h(Editor, { data: '{"type":"string","description":"before"}', onChange }));
+  await userEvent.click(screen.getByLabelText('高级设置 根节点'));
+  fireEvent.change(screen.getByLabelText('根节点 高级设置内容'), { target: { value: '{"const":"stale"}' } });
+  view.rerender(h(Editor, { data: '{"type":"number","minimum":5}', onChange }));
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
+  assert.equal(latest, undefined);
+  await userEvent.click(screen.getByLabelText('高级设置 根节点'));
+  assert.deepEqual(JSON.parse(screen.getByLabelText('根节点 高级设置内容').value), { type: 'number', minimum: 5 });
+});
+
+test('schema plain Mock clearing uses the legacy empty representation and Cancel never publishes a draft', async () => {
+  const Editor = require('../client/components/SchemaEditor').default;
+  let latest, changes = 0;
+  render(h(Editor, { data: '{"type":"string","mock":{"mock":"@word"}}', onChange: value => { latest = JSON.parse(value); changes++; } }));
+  await userEvent.click(screen.getByLabelText('编辑 根节点 Mock'));
+  fireEvent.change(screen.getByLabelText('根节点 Mock内容'), { target: { value: '@discard' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  assert.equal(changes, 0);
+  await userEvent.click(screen.getByLabelText('编辑 根节点 Mock'));
+  assert.equal(screen.getByLabelText('根节点 Mock内容').value, '@word');
+  fireEvent.change(screen.getByLabelText('根节点 Mock内容'), { target: { value: '' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
+  assert.equal(latest.mock, '');
+  fireEvent.change(screen.getByLabelText('根节点 Mock'), { target: { value: '@integer' } });
+  assert.deepEqual(latest.mock, { mock: '@integer' });
+  fireEvent.change(screen.getByLabelText('根节点 Mock'), { target: { value: '' } });
+  assert.equal(latest.mock, '');
+});
+
+test('schema deep content and special property names survive edits without rewriting unrelated keywords', async () => {
+  const Editor = require('../client/components/SchemaEditor').default;
+  let deep = { const: 7, 'x-deep': true };
+  for (let index = 14; index >= 0; index--) deep = { type: 'object', properties: { ['depth' + index]: deep } };
+  const original = { type: 'object', required: ['old'], properties: { old: { type: 'string' }, deep }, $defs: { other: false }, allOf: [{ 'x-keyword': { required: ['leave'] } }] };
+  let latest;
+  render(h(Editor, { data: JSON.stringify(original), onChange: value => { latest = JSON.parse(value); } }));
+  assert.ok(screen.getByText('更深层级请使用高级设置或 JSON 编辑，内容将完整保留。'));
+  fireEvent.change(screen.getByLabelText('字段 old 名称'), { target: { value: '__proto__' } });
+  fireEvent.blur(screen.getByLabelText('字段 old 名称'));
+  assert.ok(Object.prototype.hasOwnProperty.call(latest.properties, '__proto__'));
+  assert.deepEqual(latest.required, ['__proto__']);
+  assert.deepEqual(latest.properties.deep, deep);
+  assert.deepEqual(latest.$defs, original.$defs);
+  assert.deepEqual(latest.allOf, original.allOf);
+  assert.equal(Object.getPrototypeOf(latest.properties), Object.prototype);
+  await userEvent.click(screen.getByRole('tab', { name: 'JSON（完整 Schema）' }));
+  assert.deepEqual(JSON.parse(screen.getByLabelText('JSON Schema').value), latest);
+});
+
+test('schema dialogs discard Close and Escape drafts and reject invalid schema imports', async () => {
+  const Editor = require('../client/components/SchemaEditor').default;
+  let latest, changes = 0;
+  render(h(Editor, { data: '{"type":"string","description":"before"}', onChange: value => { latest = JSON.parse(value); changes++; } }));
+  await userEvent.click(screen.getByLabelText('编辑 根节点 描述'));
+  fireEvent.change(screen.getByLabelText('根节点 描述内容'), { target: { value: 'discard on close' } });
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }));
+  assert.equal(changes, 0);
+  await userEvent.click(screen.getByLabelText('高级设置 根节点'));
+  fireEvent.change(screen.getByLabelText('根节点 高级设置内容'), { target: { value: '{"const":"discard on Escape"}' } });
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', keyCode: 27 });
+  await waitFor(() => assert.equal(screen.queryByRole('dialog'), null));
+  assert.equal(changes, 0);
+  await userEvent.click(screen.getByRole('button', { name: '导入 JSON' }));
+  await userEvent.click(screen.getByRole('radio', { name: 'JSON Schema' }));
+  for (const value of ['{', 'null', '[]', '1']) {
+    fireEvent.change(screen.getByLabelText('导入 JSON 内容'), { target: { value } });
+    await userEvent.click(screen.getByRole('button', { name: '导入并替换' }));
+    assert.ok(within(screen.getByRole('dialog')).getByRole('alert'));
+    assert.equal(changes, 0);
+  }
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
+  assert.equal(screen.getByLabelText('根节点 描述').value, 'before');
+  await userEvent.click(screen.getByRole('button', { name: '导入 JSON' }));
+  assert.equal(screen.getByLabelText('导入 JSON 内容').value, '');
+  await userEvent.click(screen.getByRole('radio', { name: 'JSON 示例' }));
+  fireEvent.change(screen.getByLabelText('导入 JSON 内容'), { target: { value: 'false' } });
+  await userEvent.click(screen.getByRole('button', { name: '导入并替换' }));
+  assert.deepEqual(latest, { type: 'boolean' });
+});
+
+test('schema table explicitly describes boolean roots instead of hiding false or rendering an empty true row', () => {
+  const SchemaTable = require('../client/components/SchemaTable/SchemaTable').default;
+  const view = render(h(SchemaTable, { dataSource: 'false' }));
+  assert.match(screen.getByTestId('boolean-schema-preview').textContent, /JSON Schema: false/);
+  assert.match(screen.getByTestId('boolean-schema-preview').textContent, /不允许任何 JSON 值。/);
+  assert.equal(screen.queryByRole('table'), null);
+  view.rerender(h(SchemaTable, { dataSource: 'true' }));
+  assert.match(screen.getByTestId('boolean-schema-preview').textContent, /JSON Schema: true/);
+  assert.match(screen.getByTestId('boolean-schema-preview').textContent, /允许任意 JSON 值。/);
+  assert.equal(screen.queryByRole('table'), null);
+  view.rerender(h(SchemaTable, { dataSource: '{"type":"object","properties":{"id":{"type":"integer"}}}' }));
+  assert.ok(screen.getByRole('table'));
+  assert.equal(screen.queryByTestId('boolean-schema-preview'), null);
 });

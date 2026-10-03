@@ -1,0 +1,8 @@
+# TRUSTED test-only service, on a dedicated disposable Docker daemon.
+# Only this service gets docker.sock. Neither YApi app gets that capability.
+FROM docker:28-cli AS dockercli
+FROM node:24-bookworm-slim
+COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
+WORKDIR /service
+COPY server/sandbox/ ./
+CMD ["node", "service.js"]

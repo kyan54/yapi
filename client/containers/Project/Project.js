@@ -10,23 +10,12 @@ import Interface from './Interface/Interface.js';
 import Activity from './Activity/Activity.js';
 import Setting from './Setting/Setting.js';
 import Loading from '../../components/Loading/Loading';
+import { Alert, Button } from 'antd';
+import { actionData, resourceId } from '../Group/navigation';
 import ProjectMember from './Setting/ProjectMember/ProjectMember.js';
 import ProjectData from './Setting/ProjectData/ProjectData.js';
 const plugin = require('client/plugin.js');
-@connect(
-  state => {
-    return {
-      curProject: state.project.currProject,
-      currGroup: state.group.currGroup
-    };
-  },
-  {
-    getProject,
-    fetchGroupMsg,
-    setBreadcrumb
-  }
-)
-export default class Project extends Component {
+export class Project extends Component {
   static propTypes = {
     match: PropTypes.object,
     curProject: PropTypes.object,
@@ -41,41 +30,56 @@ export default class Project extends Component {
     super(props);
   }
 
-  async componentWillMount() {
-    await this.props.getProject(this.props.match.params.id);
-    await this.props.fetchGroupMsg(this.props.curProject.group_id);
+  state = { loading: true, loadError: '' };
+  requestVersion = 0;
 
-    this.props.setBreadcrumb([
-      {
-        name: this.props.currGroup.group_name,
-        href: '/group/' + this.props.currGroup._id
-      },
-      {
-        name: this.props.curProject.name
+  componentDidMount() {
+    this.mounted = true;
+    this.loadProject();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.match.params.id !== this.props.match.params.id) this.loadProject();
+  }
+
+  componentWillUnmount() {
+    this.mounted = false;
+    this.requestVersion++;
+  }
+
+  loadProject = async () => {
+    const version = ++this.requestVersion;
+    const id = resourceId(this.props.match.params.id);
+    const isCurrent = () => this.mounted && version === this.requestVersion &&
+      resourceId(this.props.match.params.id) === id;
+    this.setState({ loading: true, loadError: '' });
+    try {
+      if (!id) throw new Error('无效的项目 ID');
+      const project = actionData(await this.props.getProject(id, { isCurrent }));
+      if (!isCurrent()) return;
+      if (!project || resourceId(project._id) !== id || !resourceId(project.group_id)) {
+        throw new Error('项目信息格式错误');
       }
-    ]);
-  }
-
-  async componentWillReceiveProps(nextProps) {
-    const currProjectId = this.props.match.params.id;
-    const nextProjectId = nextProps.match.params.id;
-    if (currProjectId !== nextProjectId) {
-      await this.props.getProject(nextProjectId);
-      await this.props.fetchGroupMsg(this.props.curProject.group_id);
+      const group = actionData(await this.props.fetchGroupMsg(project.group_id, { isCurrent }));
+      if (!isCurrent()) return;
+      if (!group || resourceId(group._id) !== resourceId(project.group_id)) throw new Error('分组信息格式错误');
       this.props.setBreadcrumb([
-        {
-          name: this.props.currGroup.group_name,
-          href: '/group/' + this.props.currGroup._id
-        },
-        {
-          name: this.props.curProject.name
-        }
+        { name: group.group_name, href: `/group/${group._id}` },
+        { name: project.name }
       ]);
+      this.setState({ loading: false });
+    } catch (error) {
+      if (isCurrent()) this.setState({ loading: false, loadError: error.message || '项目加载失败' });
     }
-  }
+  };
 
   render() {
     const { match, location } = this.props;
+    if (this.state.loadError) return <Alert type="error" message={this.state.loadError}
+      action={<Button onClick={this.loadProject}>重试</Button>} />;
+    if (this.state.loading || resourceId(this.props.curProject && this.props.curProject._id) !== resourceId(match.params.id)) {
+      return <Loading visible />;
+    }
     let routers = {
       interface: { name: '接口', path: '/project/:id/interface/:action', component: Interface },
       activity: { name: '动态', path: '/project/:id/activity', component: Activity },
@@ -173,3 +177,17 @@ export default class Project extends Component {
     );
   }
 }
+
+export default connect(
+  state => {
+    return {
+      curProject: state.project.currProject,
+      currGroup: state.group.currGroup
+    };
+  },
+  {
+    getProject,
+    fetchGroupMsg,
+    setBreadcrumb
+  }
+)(Project);

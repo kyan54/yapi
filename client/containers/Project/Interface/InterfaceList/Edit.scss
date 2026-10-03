@@ -126,7 +126,7 @@
   .schema-tree-scroll { overflow-x: auto; }
   .schema-node-row {
     display: grid;
-    grid-template-columns: 28px minmax(130px, 2fr) 28px 110px minmax(100px, 1fr) minmax(150px, 1.5fr) 68px;
+    grid-template-columns: 28px minmax(130px, 2fr) 28px 110px minmax(100px, 1fr) minmax(150px, 1.5fr) 96px;
     align-items: center;
     gap: 8px;
     min-width: 720px;
@@ -134,5 +134,14 @@
     box-sizing: border-box;
     .ant-input, .ant-select { width: 100%; min-width: 0; }
   }
-  .schema-node-actions { display: flex; }
+  .schema-node-input-editor {
+    display: flex;
+    min-width: 0;
+    .ant-input { flex: 1; }
+    .ant-btn { flex: 0 0 28px; width: 28px; padding-inline: 0; }
+  }
+  .schema-node-actions {
+    display: flex;
+    .ant-btn { width: 32px; padding-inline: 0; }
+  }
 }

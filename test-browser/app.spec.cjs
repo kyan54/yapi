@@ -201,6 +201,7 @@ test('statistics real API, legacy typography, empty data and failed-request retr
   await expect(page.getByRole('heading', { name: 'mock 接口访问总数为：2', exact: true })).toBeVisible();
   await expect(page.locator('.g-statistic .ant-spin-spinning')).toHaveCount(0);
   await expect(page.getByRole('cell', { name: 'Synthetic browser group', exact: true })).toBeVisible();
+  await expect(page.locator('.system-content .gutter-box').first()).toHaveText(/\S/);
   const geometry = await page.evaluate(() => {
     const heading = document.querySelector('.m-row-table .statis-title');
     const input = document.querySelector('input[placeholder="搜索分组/项目/接口"]');
@@ -243,5 +244,162 @@ test('statistics real API, legacy typography, empty data and failed-request retr
   await expect(page.getByText('Mock 统计加载失败', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'mock 接口访问总数为：0', exact: true })).toBeVisible();
   await expect(page.locator('.g-statistic .ant-spin-spinning')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('statistics enforce admin access for all real endpoints and direct non-admin navigation', async ({ page }, testInfo) => {
+  const endpoints = ['count', 'get', 'get_system_status', 'group_data_statis'];
+  for (const endpoint of endpoints) {
+    const response = await page.request.get(baseURL + '/api/plugin/statismock/' + endpoint);
+    const body = await response.json();
+    expect(body.errcode).toBe(40011);
+    expect(body.data).toBeNull();
+  }
+  await login(page);
+  for (const endpoint of endpoints) {
+    const response = await page.request.get(baseURL + '/api/plugin/statismock/' + endpoint);
+    const body = await response.json();
+    expect(body.errcode, endpoint + ': ' + JSON.stringify(body)).toBe(0);
+  }
+  const email = 'statistics-member@example.invalid';
+  const password = 'synthetic-statistics-password';
+  const passsalt = 'synthetic-statistics-salt';
+  await connection.db.collection('user').insertOne({ _id: 99, username: 'Synthetic statistics member', email,
+    role: 'member', type: 'site', study: true, passsalt, password: sha1(password + sha1(passsalt)) });
+  const memberLogin = await page.request.post(baseURL + '/api/user/login', { data: { email, password } });
+  expect((await memberLogin.json()).errcode).toBe(0);
+  for (const endpoint of endpoints) {
+    const response = await page.request.get(baseURL + '/api/plugin/statismock/' + endpoint);
+    const body = await response.json();
+    expect(body.errcode, endpoint).toBe(405);
+    expect(body.data, endpoint).toBeNull();
+    expect(body.errmsg, endpoint).toContain('管理员');
+  }
+  const statisticRequests = [];
+  page.on('request', request => { if (request.url().includes('/api/plugin/statismock/')) statisticRequests.push(request.url()); });
+  await page.goto(baseURL + '/statistic');
+  await expect(page.getByText('仅管理员可以查看系统统计', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '分组数据详情', exact: true })).toHaveCount(0);
+  expect(statisticRequests).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath('statistics-permission-denied.png'), fullPage: true });
+});
+
+test('schema legacy controls preserve drafts, recursive required fields and boolean roots through real saves', async ({ page }, testInfo) => {
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  const schema = { type: 'object', additionalProperties: false, 'x-preserve': { flag: true }, properties: {
+    name: { type: 'string', minLength: 2, description: 'Original description', mock: { mock: '@name', extension: 'keep' } },
+    details: { type: 'object', properties: { enabled: { type: 'boolean' }, nullable: { type: ['string', 'null'] } } },
+    items: { type: 'array', items: { type: 'object', properties: { sku: { type: 'string' } } } }
+  } };
+  await connection.db.collection('interface').insertOne({ ...fixture, _id: 19, uid: 9,
+    title: 'Schema controls fixture', method: 'POST', path: '/schema-controls-fixture',
+    req_params: [], req_query: [], req_headers: [], req_body_type: 'form', req_body_form: [],
+    req_body_is_json_schema: false, req_body_other: '', res_body_is_json_schema: true, res_body: JSON.stringify(schema) });
+  await login(page); await page.goto(baseURL + '/project/11/interface/api/19');
+  await page.getByRole('tab', { name: '编辑', exact: true }).click();
+  const editor = page.locator('.schema-editor-modern').filter({ visible: true });
+  await expect(editor).toHaveCount(1);
+  const rename = editor.getByLabel('字段 name 名称', { exact: true });
+  for (const rejected of ['', 'details']) {
+    await rename.fill(rejected); await rename.press('Tab');
+    await expect(rename).toHaveValue('name');
+  }
+  await editor.getByLabel('全部字段必填', { exact: true }).check();
+  await expect(editor.getByLabel('enabled 必填', { exact: true })).toBeChecked();
+  await expect(editor.getByLabel('sku 必填', { exact: true })).toBeChecked();
+  await editor.getByLabel('全部字段必填', { exact: true }).uncheck();
+  await expect(editor.getByLabel('enabled 必填', { exact: true })).not.toBeChecked();
+  await editor.getByLabel('全部字段必填', { exact: true }).check();
+  await expect(editor.getByRole('button', { name: '编辑 根节点 Mock', exact: true })).toBeDisabled();
+  await editor.getByRole('button', { name: '编辑 name 描述', exact: true }).click();
+  await page.getByLabel('name 描述内容', { exact: true }).fill('Discard this draft');
+  await page.getByRole('button', { name: /^取\s*消$/ }).click();
+  await editor.getByRole('button', { name: '编辑 name 描述', exact: true }).click();
+  await expect(page.getByLabel('name 描述内容', { exact: true })).toHaveValue('Original description');
+  await page.getByLabel('name 描述内容', { exact: true }).fill('Line one\nLine two');
+  await page.getByRole('button', { name: /^应\s*用$/ }).click();
+  await editor.getByRole('button', { name: '编辑 name Mock', exact: true }).click();
+  await page.getByLabel('name Mock内容', { exact: true }).fill('@pick(["alpha", "beta"])\n');
+  await page.getByRole('button', { name: /^应\s*用$/ }).click();
+  await editor.getByRole('button', { name: '高级设置 details', exact: true }).click();
+  const advanced = page.getByLabel('details 高级设置内容', { exact: true });
+  const details = JSON.parse(await advanced.inputValue());
+  await advanced.fill('{invalid');
+  await page.getByRole('button', { name: /^应\s*用$/ }).click();
+  await expect(advanced).toBeVisible();
+  await advanced.fill(JSON.stringify({ ...details, additionalProperties: false, 'x-advanced': 'preserve' }));
+  await page.screenshot({ path: testInfo.outputPath('schema-node-advanced.png'), fullPage: true });
+  await page.getByRole('button', { name: /^应\s*用$/ }).click();
+  expect(JSON.parse((await connection.db.collection('interface').findOne({ _id: 19 })).res_body)).toEqual(schema);
+  await page.getByRole('button', { name: /^保\s*存$/ }).click();
+  await expect.poll(async () => JSON.parse((await connection.db.collection('interface').findOne({ _id: 19 })).res_body).properties.name.description).toBe('Line one\nLine two');
+  const saved = JSON.parse((await connection.db.collection('interface').findOne({ _id: 19 })).res_body);
+  expect(saved.required).toEqual(['name', 'details', 'items']);
+  expect(saved.properties.details.required).toEqual(['enabled', 'nullable']);
+  expect(saved.properties.items.items.required).toEqual(['sku']);
+  expect(saved.properties.name.mock).toEqual({ mock: '@pick(["alpha", "beta"])\n', extension: 'keep' });
+  expect(saved.properties.name.minLength).toBe(2);
+  expect(saved.properties.details['x-advanced']).toBe('preserve');
+  expect(saved['x-preserve']).toEqual({ flag: true });
+  await page.getByRole('tab', { name: '预览', exact: true }).first().click();
+  await page.getByRole('tab', { name: '编辑', exact: true }).click();
+  await editor.getByRole('button', { name: '编辑 name 描述', exact: true }).click();
+  await expect(page.getByLabel('name 描述内容', { exact: true })).toHaveValue('Line one\nLine two');
+  await page.getByRole('button', { name: /^取\s*消$/ }).click();
+  for (const value of [false, true]) {
+    await editor.getByRole('button', { name: '高级设置 根节点', exact: true }).click();
+    await page.getByLabel('根节点 高级设置内容', { exact: true }).fill(String(value));
+    await page.getByRole('button', { name: /^应\s*用$/ }).click();
+    await page.getByRole('button', { name: /^保\s*存$/ }).click();
+    await expect.poll(async () => (await connection.db.collection('interface').findOne({ _id: 19 })).res_body).toBe(String(value));
+    await page.getByRole('tab', { name: '预览', exact: true }).first().click();
+    await expect(page.getByTestId('boolean-schema-preview')).toContainText('JSON Schema: ' + value);
+    await page.getByRole('tab', { name: '编辑', exact: true }).click();
+    await editor.getByRole('button', { name: '高级设置 根节点', exact: true }).click();
+    await expect(page.getByLabel('根节点 高级设置内容', { exact: true })).toHaveValue(String(value));
+    await page.getByRole('button', { name: /^取\s*消$/ }).click();
+  }
+  await page.screenshot({ path: testInfo.outputPath('schema-boolean-root.png'), fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test('group and project navigation use current IDs without duplicate selection or uncaught errors', async ({ page }, testInfo) => {
+  const errors = [], requests = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('request', request => {
+    const url = new URL(request.url());
+    if (['/api/group/get', '/api/project/get'].includes(url.pathname)) requests.push({ path: url.pathname, id: url.searchParams.get('id') });
+  });
+  await login(page);
+  await expect(page).toHaveURL(/\/group\/\d+$/);
+  const publicGroup = page.getByRole('menuitem').filter({ hasText: 'Synthetic browser group' });
+  await expect(publicGroup).toBeVisible();
+  await publicGroup.click();
+  await expect(page).toHaveURL(baseURL + '/group/8');
+  await expect(page.locator('.project-list-header')).toContainText('Synthetic browser group');
+  await expect(page.getByText('Synthetic browser project', { exact: true })).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  const beforeRepeat = requests.filter(request => request.path === '/api/group/get' && request.id === '8').length;
+  await publicGroup.click();
+  await page.waitForLoadState('networkidle');
+  expect(requests.filter(request => request.path === '/api/group/get' && request.id === '8')).toHaveLength(beforeRepeat);
+
+  await page.goto(baseURL + '/project/11/interface/api/17');
+  await expect(page.getByRole('tab', { name: '预览', exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(baseURL + '/group/8');
+  await expect(page.locator('.project-list-header')).toContainText('Synthetic browser group');
+  await page.goForward();
+  await expect(page).toHaveURL(baseURL + '/project/11/interface/api/17');
+  await expect(page.getByRole('tab', { name: '预览', exact: true })).toBeVisible();
+
+  await page.goto(baseURL + '/group/invalid');
+  await expect(page.getByText('无效的分组 ID', { exact: true })).toBeVisible();
+  await page.goto(baseURL + '/project/invalid/interface/api');
+  await expect(page.getByText('无效的项目 ID', { exact: true })).toBeVisible();
+  await page.goto(baseURL + '/group/8');
+  await expect(page.locator('.project-list-header')).toContainText('Synthetic browser group');
+  await page.screenshot({ path: testInfo.outputPath('group-navigation.png'), fullPage: true });
+  expect(requests.every(request => request.id !== null && /^[1-9]\d*$/.test(request.id))).toBe(true);
   expect(errors).toEqual([]);
 });

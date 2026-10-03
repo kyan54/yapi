@@ -32,8 +32,11 @@ const initialState = {
 };
 
 export default (state = initialState, action) => {
+  if (action.meta && action.meta.isCurrent && !action.meta.isCurrent()) return state;
+  if (action.error) return state;
   switch (action.type) {
     case FETCH_GROUP_LIST: {
+      if (!action.payload.data || action.payload.data.errcode || !Array.isArray(action.payload.data.data)) return state;
       return {
         ...state,
         groupList: action.payload.data.data
@@ -46,6 +49,7 @@ export default (state = initialState, action) => {
       };
     }
     case SET_CURR_GROUP: {
+      if (!action.payload.data || action.payload.data.errcode || !action.payload.data.data) return state;
       return {
         ...state,
         currGroup: action.payload.data.data
@@ -58,6 +62,7 @@ export default (state = initialState, action) => {
       };
     }
     case FETCH_GROUP_MSG: {
+      if (!action.payload.data || action.payload.data.errcode || !action.payload.data.data) return state;
 
       // const {role,group_name,group_desc,} = action.payload.data.data
       return {
@@ -77,9 +82,10 @@ export default (state = initialState, action) => {
 };
 
 // 获取 group 信息 (权限信息)
-export function fetchGroupMsg(id) {
+export function fetchGroupMsg(id, meta) {
   return {
     type: FETCH_GROUP_MSG,
+    meta,
     payload: axios.get('/api/group/get', {
       params: { id }
     })
@@ -152,9 +158,10 @@ export function fetchGroupList() {
   };
 }
 
-export function setCurrGroup(group) {
+export function setCurrGroup(group, meta) {
   return {
     type: SET_CURR_GROUP,
+    meta,
     payload: axios.get('/api/group/get', {
       params: { id: group._id }
     })

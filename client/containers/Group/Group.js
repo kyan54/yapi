@@ -7,51 +7,51 @@ import GroupSetting from './GroupSetting/GroupSetting.js';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { Route, Switch, Redirect } from 'react-router-dom';
-import { Tabs, Layout, Spin } from 'antd';
+import { Tabs, Layout, Spin, Alert, Button } from 'antd';
+import { resourceId, routeGroupId } from './navigation';
 const { Content, Sider } = Layout;
 const TabPane = Tabs.TabPane;
 import { fetchNewsData } from '../../reducer/modules/news.js';
-import {
-  setCurrGroup
-} from '../../reducer/modules/group';
 import './Group.scss';
 import axios from 'axios'
 
-@connect(
-  state => {
-    return {
-      curGroupId: state.group.currGroup._id,
-      curUserRole: state.user.role,
-      curUserRoleInGroup: state.group.currGroup.role || state.group.role,
-      currGroup: state.group.currGroup
-    };
-  },
-  {
-    fetchNewsData: fetchNewsData,
-    setCurrGroup
-  }
-)
-export default class Group extends Component {
+export class Group extends Component {
   constructor(props) {
     super(props);
 
-    this.state = {
-      groupId: -1
+    this.state = { groupId: null, loading: !routeGroupId(props), loadError: '' };
+  }
+
+  componentDidMount() {
+    this.mounted = true;
+    if (!routeGroupId(this.props)) this.loadDefaultGroup();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (routeGroupId(prevProps) && !routeGroupId(this.props) && !this.state.groupId) {
+      this.loadDefaultGroup();
     }
   }
 
-  async componentDidMount(){
-    let r = await axios.get('/api/group/get_mygroup')
-    try{
-      let group = r.data.data;
-      this.setState({
-        groupId: group._id
-      })
-      this.props.setCurrGroup(group)
-    }catch(e){
-      console.error(e)
-    }
+  componentWillUnmount() {
+    this.mounted = false;
   }
+
+  loadDefaultGroup = async () => {
+    this.setState({ loading: true, loadError: '' });
+    try {
+      const response = await axios.get('/api/group/get_mygroup');
+      if (!this.mounted) return;
+      const body = response.data;
+      if (!body || body.errcode) throw new Error((body && body.errmsg) || '个人空间加载失败');
+      const id = resourceId(body.data && body.data._id);
+      if (!id) throw new Error('个人空间加载失败');
+      // Selecting the group belongs to the route, not this default-URL lookup.
+      this.setState({ groupId: id, loading: false });
+    } catch (error) {
+      if (this.mounted) this.setState({ loading: false, loadError: error.message || '个人空间加载失败' });
+    }
+  };
 
   static propTypes = {
     fetchNewsData: PropTypes.func,
@@ -59,7 +59,8 @@ export default class Group extends Component {
     curUserRole: PropTypes.string,
     currGroup: PropTypes.object,
     curUserRoleInGroup: PropTypes.string,
-    setCurrGroup: PropTypes.func
+    match: PropTypes.object,
+    location: PropTypes.object
   };
   // onTabClick=(key)=> {
   //   // if (key == 3) {
@@ -67,7 +68,11 @@ export default class Group extends Component {
   //   // }
   // }
   render() {
-    if(this.state.groupId === -1)return <Spin />
+    const requested = routeGroupId(this.props);
+    if (!requested && this.state.loading) return <Spin />;
+    if (!requested && this.state.loadError) return <Alert type="error" message={this.state.loadError}
+      action={<Button onClick={this.loadDefaultGroup}>重试</Button>} />;
+    const groupReady = resourceId(requested) && resourceId(requested) === resourceId(this.props.currGroup._id);
     const GroupContent = (
       <Layout style={{ minHeight: 'calc(100vh - 100px)', marginLeft: '24px', marginTop: '24px' }}>
         <Sider style={{ height: '100%' }} width={300}>
@@ -83,7 +88,7 @@ export default class Group extends Component {
               backgroundColor: '#fff'
             }}
           >
-            <Tabs type="card" className="m-tab tabs-large" style={{ height: '100%' }}>
+            {groupReady ? <Tabs type="card" className="m-tab tabs-large" style={{ height: '100%' }}>
               <TabPane tab="项目列表" key="1">
                 <ProjectList />
               </TabPane>
@@ -106,7 +111,7 @@ export default class Group extends Component {
                   <GroupSetting />
                 </TabPane>
               ) : null}
-            </Tabs>
+            </Tabs> : <Spin />}
           </Content>
         </Layout>
       </Layout>
@@ -114,10 +119,24 @@ export default class Group extends Component {
     return (
       <div className="projectGround">
         <Switch>
-          <Redirect exact from="/group" to={"/group/" + this.state.groupId} />
+          {this.state.groupId && <Redirect exact from="/group" to={`/group/${this.state.groupId}`} />}
           <Route path="/group/:groupId" render={() => GroupContent} />
         </Switch>
       </div>
     );
   }
 }
+
+export default connect(
+  state => {
+    return {
+      curGroupId: state.group.currGroup._id,
+      curUserRole: state.user.role,
+      curUserRoleInGroup: state.group.currGroup.role || state.group.role,
+      currGroup: state.group.currGroup
+    };
+  },
+  {
+    fetchNewsData: fetchNewsData
+  }
+)(Group);

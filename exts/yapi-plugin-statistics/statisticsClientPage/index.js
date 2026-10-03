@@ -7,7 +7,7 @@ import axios from 'axios';
 import PropTypes from 'prop-types';
 import './index.scss';
 // import { withRouter } from 'react-router-dom';
-import { Row, Col, Tooltip, Icon } from 'antd';
+import { Alert, Row, Col, Tooltip, Icon } from 'antd';
 import { setBreadcrumb } from 'client/reducer/modules/user';
 import StatisChart from './StatisChart';
 import StatisTable from './StatisTable';
@@ -110,14 +110,15 @@ StatusOverview.propTypes = {
 };
 
 @connect(
-  null,
+  state => ({ isAdmin: state.user.role === 'admin' }),
   {
     setBreadcrumb
   }
 )
 class statisticsPage extends Component {
   static propTypes = {
-    setBreadcrumb: PropTypes.func
+    setBreadcrumb: PropTypes.func,
+    isAdmin: PropTypes.bool
   };
 
   constructor(props) {
@@ -140,8 +141,9 @@ class statisticsPage extends Component {
     };
   }
 
-  async componentWillMount() {
+  componentDidMount() {
     this.props.setBreadcrumb([{ name: '系统信息' }]);
+    if (!this.props.isAdmin) return;
     this.getStatisData();
     this.getSystemStatusData();
     this.getGroupData();
@@ -186,6 +188,7 @@ class statisticsPage extends Component {
   }
 
   render() {
+    if (!this.props.isAdmin) return <Alert type="error" showIcon message="仅管理员可以查看系统统计" />;
     const { count, status, dataTotal } = this.state;
 
     return (

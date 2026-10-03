@@ -129,6 +129,14 @@
     "exts/yapi-plugin-statistics/statisticsClientPage/StatisChart.js": {
       "baselineSha256": "39bf7265e74df43e4c52b5d7f08f9cd1aa90deca53c0aacd30f1797dab7c1ddd",
       "reason": "Stop perpetual loading on failed statistics responses, provide retry, and ignore unmounted or superseded requests without changing chart data semantics."
+    },
+    "exts/yapi-plugin-statistics/controller.js": {
+      "baselineSha256": "ce406e77bdd48af441153815b21189ae93110ae4e23370cb58b0314d4989db11",
+      "reason": "Intentional security correction: enforce the existing admin-only statistics policy on every endpoint before querying cross-project or operating-system data; replace ineffective negation comparison."
+    },
+    "exts/yapi-plugin-statistics/statisticsClientPage/index.js": {
+      "baselineSha256": "07b4a53e78e4ef4736bb74d034febd1e16dcf32cf03b62056cdef84bb5439c9e",
+      "reason": "Show an explicit admin-only refusal on direct non-admin navigation and do not request protected statistics; preserve administrator page layout and data sources."
     }
   },
   "dependencies": {
