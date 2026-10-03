@@ -208,7 +208,7 @@ test('new interface with empty enabled schema bodies supports ordinary edits and
 
 test('JSON raw JSON transitions and stale raw schema flags retain exact bytes and revision lineage',async()=>{
  for(const [field,type,flag] of [['req_body_other','req_body_type','req_body_is_json_schema'],['res_body','res_body_type','res_body_is_json_schema']]){
-  const seed={...initial(),[type]:'json',[flag]:true,[field]:'{"type":"string","description":"schema"}'};const{model,get,history}=setup(seed);
+  const seed={...initial(),method:'POST',[type]:'json',[flag]:true,[field]:'{"type":"string","description":"schema"}'};const{model,get,history}=setup(seed);
   await writeLegacyInterface(model,17,{[type]:'raw',[field]:'synthetic response'},options);assert.equal(get()[flag],true);assert.equal(get()[field],'synthetic response');assert.equal(get().docs_revision,1);
   await writeLegacyInterface(model,17,{title:'metadata on raw'},options);assert.equal(get()[field],'synthetic response');assert.equal(get().docs_revision,2);
   await writeLegacyInterface(model,17,{[field]:'{ "x": 1 }'},options);await writeLegacyInterface(model,17,{[field]:'{"x":1}'},options);assert.equal(get()[field],'{"x":1}');assert.equal(get().docs_revision,4);
