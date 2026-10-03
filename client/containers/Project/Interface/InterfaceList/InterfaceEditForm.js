@@ -15,6 +15,7 @@ import { MOCK_SOURCE } from '../../../../constants/variable.js';
 import Editor from '@toast-ui/editor';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import SchemaEditor from 'client/components/SchemaEditor';
+import checkIsJsonSchema from './normalizeSchema';
 const ResBodySchema = SchemaEditor;
 const ReqBodySchema = SchemaEditor;
 const TabPane = Tabs.TabPane;
@@ -24,29 +25,6 @@ const TabPane = Tabs.TabPane;
 
 require('./editor.css');
 
-
-function checkIsJsonSchema(json) {
-  try {
-    json = json5.parse(json);
-    if (json.properties && typeof json.properties === 'object' && !json.type) {
-      json.type = 'object';
-    }
-    if (json.items && typeof json.items === 'object' && !json.type) {
-      json.type = 'array';
-    }
-    if (!json.type) {
-      return false;
-    }
-    json.type = json.type.toLowerCase();
-    let types = ['object', 'string', 'number', 'array', 'boolean', 'integer'];
-    if (types.indexOf(json.type) === -1) {
-      return false;
-    }
-    return JSON.stringify(json);
-  } catch (e) {
-    return false;
-  }
-}
 
 let EditFormContext;
 const validJson = json => {

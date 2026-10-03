@@ -74,10 +74,12 @@ The visual tree does not invent a scalar type for a missing or union `type`. Boo
 
 Checks on 2026-10-03:
 
-- All 23 mounted frontend tests passed in the final aggregate, including 14 schema/editor/preview cases.
-- Focused ESLint for `SchemaEditor.js` and `SchemaTable.js` passed with the repository rules; `git diff --check` passed. Legacy ESLint emits Node deprecation warnings.
-- `npm test`: 32 passed, 1 skipped because the isolated runner is not configured.
-- Latest whole-worktree `npm run test:modernization`: 226 passed, 6 integration skips, 1 unrelated failure in the concurrently edited `group-navigation.test.js` (`direct group missing from list remains authoritative and failed selection is retryable`, line 150). The group-navigation owner subsequently reported its button-selector fix and a 15/15 focused pass. This is not an aggregate green result; the coordinating task must rerun the combined worktree.
-- Standard `npm run build-client` was killed before compilation results. A command-only serial-minimizer attempt stopped before compilation because this installed Webpack uses `minimizer-webpack-plugin`, not `terser-webpack-plugin`; no packages/configuration were changed. Final production build is left to the coordinating task to avoid concurrent build contention.
+- All 23 mounted frontend tests passed, including 14 schema/editor/preview cases.
+- Five focused save-normalizer tests cover boolean roots, typeless references/compositions, null/union types, legacy implicit types, invalid inputs and both request/response save paths.
+- Whole-candidate `npm run test:modernization`: 244 tests, 238 passed, 6 explicitly gated integration skips, 0 failures in this workspace. `npm test`: 32 passed, 1 isolated-runner skip. Real Mongo/runner coverage is checked separately in exact-commit CI.
+- Focused changed-source ESLint and `git diff --check` passed. Legacy ESLint emits Node deprecation warnings.
+- Standard production build passed for the combined source. These local checks do not replace real save/preview/reopen browser acceptance.
+- The original form-level normalizer required a single root `type`, conflicting with the restored editor's valid boolean, null, union and typeless schema states. Both request and response saves now use `normalizeSchema.js`; unknown keywords remain intact and legacy implicit object/array normalization is retained.
+- Exact-final-head browser results must be recorded separately. Earlier component-only boolean tests did not exercise the legacy outer save normalizer.
 
 jsdom reports its known pseudo-element `getComputedStyle` limitation. Browser execution was not attempted in the restricted cloud environment. No screenshot/rendered-parity claim is made.
