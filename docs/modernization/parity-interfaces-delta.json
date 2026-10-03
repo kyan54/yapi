@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-19",
+  "scope": "A/interfaces/batches-1-20",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -218,6 +218,12 @@
       "final_content": "6/6 passed after saved-paragraph visual correction",
       "database": "90 immediate per-save synthetic readbacks in18paired;6additional in final content",
       "runtime_source": "335 matched including separately authorized B4 overlay"
+    },
+    "batch20": {
+      "paired": "54 total:48passed,5skipped,1old baseline noncollapsed selection failure;new27/27 passed",
+      "database": "120 immediate per-save synthetic readbacks",
+      "default": "355total349passed6skipped",
+      "runtime_source": "335 matched including B4 overlay"
     }
   },
   "scenarios": [
@@ -560,9 +566,16 @@
       "batch19-db-readbacks.json",
       "content-final-results.json",
       "content-final-source-sha256.json"
+    ],
+    "batch20": [
+      "context-before-results.json",
+      "batch20-results.json",
+      "batch20-db-readbacks.json",
+      "batch20-source-sha256.json",
+      "batch20-default-tests.log"
     ]
   },
-  "remaining": "Original246 matrix retained. Finish remark table context and list indent/outdent controls; absent legacy full-schema tab and absent list selection/sort/open-state filter are capability limits, not invented green.",
+  "remaining": "Full Schema source refs/combinators and formatting gap being finalized; absent legacy full-schema tab/list selection/sort/open-state filter retained as capability limits. Original246 matrix not replaced.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -627,7 +640,9 @@
     },
     "Batch17: when moving the final row out of the last category page, clamp current page to the refreshed total and refetch. Owner/dev API0+visible20rows+DB+reload; guest denied remains same page. Five actual component tests.",
     "Batch18 parent1024 regression: modern Table inline auto layout overrides legacy fixed CSS. Set tableLayout=fixed only on InterfaceList Table. Long-path before: document1319/table scroll955 vs viewport1024/client612; after both versions document1024/scroll612 and identical column widths.1920 aligned; screenshots visually inspected.",
-    "Batch19 parent rich-content preview: modern editor no longer supplies legacy .tui-editor-contents styles. Restore only .caseContainer > .tui-editor-contents lists/nesting, paragraphs, emphasis, quotes, code, table borders/header, images, tasks and links. Saved modern paragraph wrappers inherit cell color and compact list/cell margins. View.js DOMPurify sanitizer unchanged; no global reset/compat changes."
+    "Batch19 parent rich-content preview: modern editor no longer supplies legacy .tui-editor-contents styles. Restore only .caseContainer > .tui-editor-contents lists/nesting, paragraphs, emphasis, quotes, code, table borders/header, images, tasks and links. Saved modern paragraph wrappers inherit cell color and compact list/cell margins. View.js DOMPurify sanitizer unchanged; no global reset/compat changes.",
+    "Batch20 remark direct right-click: public editor command synchronizes collapsed cursor to clicked cell, only mouse button2 in this mounted WW container. Noncollapsed selections and keyboard context untouched; handler removed at unmount. Three paired roles verify fresh direct right-click and wrong-table cursor, row/column/align/remove save/reload.",
+    "Batch20 HTML-only historical note initialization: initialValue interpreted HTML as Markdown; table edits serialized mixed raw HTML and GFM and lost rows after reopen. Use DOMPurify.sanitize + public setHTML only when stored Markdown is empty. Existing Markdown path unchanged; sanitized attributes and no false dirty prompt verified."
   ],
   "review_notes": [
     {
@@ -869,6 +884,14 @@
       "old": "passed",
       "new": "passed",
       "checks": "Three paired roles actual bold/italic/strike/quote/UL/OL/task/inline-code/codeblock/HR; heading2/link/local-data-image/table popup apply; link/image cancel+reopen; API0 owner/dev or guest denied, every save immediate desc/markdown DB exact, reload. Existing and saved nested UL/OL17px, disc/decimal, code background/table borders/header white visually checked1920."
+    },
+    {
+      "id": "remark-structure-context-batch20",
+      "scenario": "interface_edit_meta-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Table insert/delete row+col, alignment left/center/right, delete table, list indent/outdent/reindent, local1px image file, direct right-click correct target, noncollapsed/keyboard context, owner/dev API0 and guest denial.120 immediate DB readbacks. Old noncollapsed selection collapses; candidate preserved. Candidate-only sanitizer case skipped old.1920 direct-target screenshot visually reviewed."
     }
   ]
 }

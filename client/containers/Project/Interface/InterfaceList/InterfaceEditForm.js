@@ -12,6 +12,7 @@ import AceEditor from 'client/components/AceEditor/AceEditor';
 import axios from 'axios';
 import { MOCK_SOURCE } from '../../../../constants/variable.js';
 import Editor from '@toast-ui/editor';
+import DOMPurify from 'dompurify';
 import '@toast-ui/editor/dist/toastui-editor.css';
 import SchemaEditor from 'client/components/SchemaEditor';
 import checkIsJsonSchema from './normalizeSchema';
@@ -404,16 +405,38 @@ class InterfaceEditForm extends Component {
       readOnly: true
     });
 
+    this.remarkEditorElement = document.querySelector('#desc');
     this.editor = new Editor({
-      el: document.querySelector('#desc'),
+      el: this.remarkEditorElement,
       initialEditType: 'wysiwyg',
       usageStatistics: false,
       height: '500px',
-      initialValue: this.state.markdown || this.state.desc
+      initialValue: this.state.markdown || ''
     });
+    // HTML-only historical notes must enter through the HTML parser. Treating
+    // them as Markdown leaves raw table wrappers mixed with generated GFM.
+    if (!this.state.markdown && this.state.desc) {
+      this.editor.setHTML(DOMPurify.sanitize(this.state.desc), false);
+    }
+    this.editor.addCommand('wysiwyg', 'selectRemarkContextCell', ({ cell }, state, dispatch, view) => {
+      // Preserve existing text/cell selections, including keyboard menu use.
+      if (!state.selection.empty || !view.dom.contains(cell)) return;
+      const paragraph = cell.querySelector('p') || cell;
+      const position = view.posAtDOM(paragraph, 0);
+      this.editor.setSelection(position, position);
+    });
+    this.remarkEditorElement.addEventListener('contextmenu', this.handleRemarkTableContextMenu, true);
     this.observedMarkdown = this.editor.getMarkdown();
     this.editor.on('change', this.handleMarkdownChange);
   }
+
+  handleRemarkTableContextMenu = event => {
+    if (event.button !== 2 || !event.target || !event.target.closest) return;
+    const cell = event.target.closest('.toastui-editor-ww-container td, .toastui-editor-ww-container th');
+    if (cell && this.remarkEditorElement.contains(cell)) {
+      this.editor.exec('selectRemarkContextCell', { cell });
+    }
+  };
 
   handleMarkdownChange = () => {
     const markdown = this.editor.getMarkdown();
@@ -423,6 +446,9 @@ class InterfaceEditForm extends Component {
   };
 
   componentWillUnmount() {
+    if (this.remarkEditorElement) {
+      this.remarkEditorElement.removeEventListener('contextmenu', this.handleRemarkTableContextMenu, true);
+    }
     if (this.editor) this.editor.destroy();
     this.props.changeEditStatus(false);
     if (EditFormContext === this) EditFormContext = null;
