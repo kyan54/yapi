@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-19",
+  "scope": "A/interfaces/batches-1-22",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -218,6 +218,26 @@
       "final_content": "6/6 passed after saved-paragraph visual correction",
       "database": "90 immediate per-save synthetic readbacks in18paired;6additional in final content",
       "runtime_source": "335 matched including separately authorized B4 overlay"
+    },
+    "batch20": {
+      "paired": "54 total:48passed,5skipped,1old baseline noncollapsed selection failure;new27/27 passed",
+      "database": "120 immediate per-save synthetic readbacks",
+      "default": "355total349passed6skipped",
+      "runtime_source": "335 matched including B4 overlay"
+    },
+    "batch21": {
+      "paired_source": "12/12 passed;request/response ×3roles; old root-advanced alternative, new full-source tab",
+      "related_candidate": "49/49 passed",
+      "database": "12 immediate exact synthetic source readbacks; new owner/dev exact four-space text in request, DB and reopen",
+      "modernization": "358 total352 passed6 skipped; default33 total32 passed1 skipped",
+      "runtime_source": "335 matched including separately authorized B4 overlay"
+    },
+    "batch22": {
+      "view": "1920 paired12 runner passes, including3 old unsafe-HTML failed observations;1024 metadata6/6",
+      "unsaved": "new6/6;old repeated Back3 failed and native-warning3 failed observations; separate single Back/Forward6/6",
+      "clean_editor_lifecycle": "6/6 paired roles, three full switching cycles with one editor and correct record content",
+      "database": "39 exact synthetic records: old18/new21; bounded IDs only; Mongo $oid normalized to API string representation",
+      "runtime_source": "335 matched; View.scss only product diff; no router/global style changes"
     }
   },
   "scenarios": [
@@ -560,9 +580,35 @@
       "batch19-db-readbacks.json",
       "content-final-results.json",
       "content-final-source-sha256.json"
+    ],
+    "batch20": [
+      "context-before-results.json",
+      "batch20-results.json",
+      "batch20-db-readbacks.json",
+      "batch20-source-sha256.json",
+      "batch20-default-tests.log"
+    ],
+    "batch21": [
+      "schema-source-before-results.json",
+      "schema-source-submit-results.json",
+      "batch21-final-results.json",
+      "batch21-final-source-sha256.json",
+      "batch21-modernization-final.log",
+      "batch21-final-default-tests.log"
+    ],
+    "batch22": [
+      "view-label-before-results.json",
+      "view-final-results.json",
+      "view-1024-results.json",
+      "unsaved-results.json",
+      "single-back-results.json",
+      "clean-mount-final-results.json",
+      "batch22-old-db.json",
+      "batch22-new-db.json",
+      "batch22-source-sha256.json"
     ]
   },
-  "remaining": "Original246 matrix retained. Finish remark table context and list indent/outdent controls; absent legacy full-schema tab and absent list selection/sort/open-state filter are capability limits, not invented green.",
+  "remaining": "A executable gaps covered with precise dispositions in parity-interfaces-remaining-disposition.json. Absent full-schema tab, open-state filter, path link, row selection/bulk and sort remain blocked capabilities under original246 standard. Legacy defects remain failed; baseline typedSchema proof is explicitly identified rather than re-run. Parent integration and shared visual differences remain separate.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -627,7 +673,9 @@
     },
     "Batch17: when moving the final row out of the last category page, clamp current page to the refreshed total and refetch. Owner/dev API0+visible20rows+DB+reload; guest denied remains same page. Five actual component tests.",
     "Batch18 parent1024 regression: modern Table inline auto layout overrides legacy fixed CSS. Set tableLayout=fixed only on InterfaceList Table. Long-path before: document1319/table scroll955 vs viewport1024/client612; after both versions document1024/scroll612 and identical column widths.1920 aligned; screenshots visually inspected.",
-    "Batch19 parent rich-content preview: modern editor no longer supplies legacy .tui-editor-contents styles. Restore only .caseContainer > .tui-editor-contents lists/nesting, paragraphs, emphasis, quotes, code, table borders/header, images, tasks and links. Saved modern paragraph wrappers inherit cell color and compact list/cell margins. View.js DOMPurify sanitizer unchanged; no global reset/compat changes."
+    "Batch19 parent rich-content preview: modern editor no longer supplies legacy .tui-editor-contents styles. Restore only .caseContainer > .tui-editor-contents lists/nesting, paragraphs, emphasis, quotes, code, table borders/header, images, tasks and links. Saved modern paragraph wrappers inherit cell color and compact list/cell margins. View.js DOMPurify sanitizer unchanged; no global reset/compat changes.",
+    "Batch20 remark direct right-click: public editor command synchronizes collapsed cursor to clicked cell, only mouse button2 in this mounted WW container. Noncollapsed selections and keyboard context untouched; handler removed at unmount. Three paired roles verify fresh direct right-click and wrong-table cursor, row/column/align/remove save/reload.",
+    "Batch20 HTML-only historical note initialization: initialValue interpreted HTML as Markdown; table edits serialized mixed raw HTML and GFM and lost rows after reopen. Use DOMPurify.sanitize + public setHTML only when stored Markdown is empty. Existing Markdown path unchanged; sanitized attributes and no false dirty prompt verified."
   ],
   "review_notes": [
     {
@@ -648,7 +696,10 @@
       "status": "notrun",
       "reason": "Legacy lacks full-schema JSON tab; root advanced source is a separate paired path. Do not count legacy capability observations as completed JSON-tab tests."
     },
-    "Batch15 runtime includes exact B commit 1b08f0701a743b75b1b6b1af6feeb7d071557744 documentation schema-mode/description-edits/outbound/semantic-change four-file overlay; 335 hashes match A source plus that overlay. B product files are not in A commit; integration must include B commit."
+    "Batch15 runtime includes exact B commit 1b08f0701a743b75b1b6b1af6feeb7d071557744 documentation schema-mode/description-edits/outbound/semantic-change four-file overlay; 335 hashes match A source plus that overlay. B product files are not in A commit; integration must include B commit.",
+    "Batch21 correction: source compaction was in client render and final submit normalize, not server canonicalization. Both client paths now preserve valid unchanged strict JSON text; implicit type/JSON5 normalization and invalid rejection retained.",
+    "Batch22 removes erroneous schema_json-03-batch21 mapping: batch21 source refs/formatting supports01, not first-invalid03.03 remains candidate passed / legacy unavailable per existing precise record. Strict01 legacy full-tab switching remains blocked; alternative root advanced source is separate.",
+    "1024 old long description produces extreme vertical wrapping; candidate remains readable.1920 View labels now match100px. Shared tabs/tree/SchemaTable expand-glyph visual differences visible in screenshots are outside this local product patch."
   ],
   "atomic_additions": [
     {
@@ -869,6 +920,94 @@
       "old": "passed",
       "new": "passed",
       "checks": "Three paired roles actual bold/italic/strike/quote/UL/OL/task/inline-code/codeblock/HR; heading2/link/local-data-image/table popup apply; link/image cancel+reopen; API0 owner/dev or guest denied, every save immediate desc/markdown DB exact, reload. Existing and saved nested UL/OL17px, disc/decimal, code background/table borders/header white visually checked1920."
+    },
+    {
+      "id": "remark-structure-context-batch20",
+      "scenario": "interface_edit_meta-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Table insert/delete row+col, alignment left/center/right, delete table, list indent/outdent/reindent, local1px image file, direct right-click correct target, noncollapsed/keyboard context, owner/dev API0 and guest denial.120 immediate DB readbacks. Old noncollapsed selection collapses; candidate preserved. Candidate-only sanitizer case skipped old.1920 direct-target screenshot visually reviewed."
+    },
+    {
+      "id": "schema_json-01-batch21",
+      "scenario": "schema_json-01",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "passed",
+      "checks": "Request/response ×3roles actual root advanced source(old alternative) and full Schema tab(new); $defs/$ref, oneOf/allOf, nested extension, four-space formatting survives candidate visual switch/save payload/exact DB/reload; guest denied unchanged. Old has no dedicated full tab; not claiming same-control coverage. Strict compound old visual/full-JSON switching is blocked by absent full tab; root advanced alternative passed separately."
+    },
+    {
+      "id": "interface_view-01-batch22",
+      "scenario": "interface_view-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three roles ×old/new ×1920/1024: metadata, creator link, complete basepath+path copy twice and clipboard, refresh. Restore local100px label flex basis; screenshots visually reviewed."
+    },
+    {
+      "id": "interface_view-02-batch22",
+      "scenario": "interface_view-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Path/header/query/form rows retain flags/examples/descriptions/file types; schema content; exact DB and refresh."
+    },
+    {
+      "id": "interface_view-03-batch22",
+      "scenario": "interface_view-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Expand/collapse/reexpand nested schema, constraints and long description visible;1920 layout readable.1024 candidate wraps readable; legacy narrow description column produces very tall row, documented visual limitation. Shared expand glyph styling not changed."
+    },
+    {
+      "id": "interface_view-04-batch22",
+      "scenario": "interface_view-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Both readable semantic HTML after local styling; legacy leaves2 dangerous attributes, candidate strips both without executing payloads."
+    },
+    {
+      "id": "rich_editor-04-batch22",
+      "scenario": "rich_editor-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three paired roles repeat clean first/second interface switches3cycles; exactlyone toolbar/editor with correct note; no false dirty modal; first record exact DB unchanged."
+    },
+    {
+      "id": "unsaved-01-batch22",
+      "scenario": "unsaved-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three paired roles dirty tab Cancel retains draft; save/discard and repeated navigation checks; candidate native warning tracks dirty state."
+    },
+    {
+      "id": "unsaved-02-batch22",
+      "scenario": "unsaved-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Separate single Back Cancel/Confirm/Forward six paired tests pass; exact record title retained after discard."
+    },
+    {
+      "id": "unsaved-03-batch22",
+      "scenario": "unsaved-03",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Three roles legacy second Back bypasses prompt; candidate one prompt, Cancel restores draft and Confirm leaves correctly."
+    },
+    {
+      "id": "unsaved-04-batch22",
+      "scenario": "unsaved-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Legacy no native reload warning; candidate dismiss reload/close retains draft; save/discard removes warning; guest save denied."
     }
   ]
 }

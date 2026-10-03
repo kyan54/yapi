@@ -1,0 +1,360 @@
+{
+  "scope": "A parent remaining31 IDs",
+  "standard": "Original246 compound assertions retained; supporting atomic evidence is not blanket pass. Report filenames resolve in task-4/interfaces unless explicitly parent evidence.",
+  "rows": [
+    {
+      "id": "interface_tree-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "batch17-new-results.json",
+        "navigation-final-results.json"
+      ],
+      "limits": ""
+    },
+    {
+      "id": "interface_tree-05",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "evidence": [
+        "batch17-new-results.json",
+        "navigation-final-results.json"
+      ],
+      "limits": "Legacy modal survives Back."
+    },
+    {
+      "id": "interface_add-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "batch9-aggregate-results.json",
+        "validation-role-results.json"
+      ],
+      "limits": "Detailed method/category/title/path checks in earlier A batch9; see delta ledger."
+    },
+    {
+      "id": "interface_list-01",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "evidence": [
+        "list-results.json",
+        "layout-final-results.json",
+        "batch17-new-results.json"
+      ],
+      "limits": "Executed status/tag combine/reset, title/add navigation, pagination/move. Strict compound includes absent public/open filter, path link, checkbox/bulk or sorter. Do not invent completed capabilities."
+    },
+    {
+      "id": "interface_list-02",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "evidence": [
+        "list-results.json",
+        "layout-final-results.json",
+        "batch17-new-results.json"
+      ],
+      "limits": "Executed status/tag combine/reset, title/add navigation, pagination/move. Strict compound includes absent public/open filter, path link, checkbox/bulk or sorter. Do not invent completed capabilities."
+    },
+    {
+      "id": "interface_list-03",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "evidence": [
+        "list-results.json",
+        "layout-final-results.json",
+        "batch17-new-results.json"
+      ],
+      "limits": "Executed status/tag combine/reset, title/add navigation, pagination/move. Strict compound includes absent public/open filter, path link, checkbox/bulk or sorter. Do not invent completed capabilities."
+    },
+    {
+      "id": "interface_list-04",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "evidence": [
+        "list-results.json",
+        "layout-final-results.json",
+        "batch17-new-results.json"
+      ],
+      "limits": "Executed status/tag combine/reset, title/add navigation, pagination/move. Strict compound includes absent public/open filter, path link, checkbox/bulk or sorter. Do not invent completed capabilities."
+    },
+    {
+      "id": "interface_view-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "view-final-results.json",
+        "view-1024-results.json",
+        "batch22-old-db.json",
+        "batch22-new-db.json"
+      ],
+      "limits": "Old1024 narrow long-description cell produces very tall row;1920 layout inspected."
+    },
+    {
+      "id": "interface_view-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "view-final-results.json",
+        "view-1024-results.json",
+        "batch22-old-db.json",
+        "batch22-new-db.json"
+      ],
+      "limits": "Old1024 narrow long-description cell produces very tall row;1920 layout inspected."
+    },
+    {
+      "id": "interface_view-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "view-final-results.json",
+        "view-1024-results.json",
+        "batch22-old-db.json",
+        "batch22-new-db.json"
+      ],
+      "limits": "Old1024 narrow long-description cell produces very tall row;1920 layout inspected."
+    },
+    {
+      "id": "interface_view-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "evidence": [
+        "view-final-results.json"
+      ],
+      "limits": "Old dangerous attributes remain; candidate sanitizes."
+    },
+    {
+      "id": "interface_body-01",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "evidence": [
+        "body-final-results.json",
+        "batch16-new-results.json",
+        "batch21-final-results.json"
+      ],
+      "limits": "Old RAW/JSON5 mode defects; old full source inactive-body variant absent."
+    },
+    {
+      "id": "interface_body-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "evidence": [
+        "body-final-results.json",
+        "batch16-new-results.json",
+        "batch21-final-results.json"
+      ],
+      "limits": "Old RAW/JSON5 mode defects; old full source inactive-body variant absent."
+    },
+    {
+      "id": "interface_body-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "body-schema-final-results.json",
+        "body-final-results.json"
+      ],
+      "limits": "See exact report paths in batch15 evidence ledger."
+    },
+    {
+      "id": "interface_body-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "body-schema-final-results.json",
+        "body-final-results.json"
+      ],
+      "limits": "See exact report paths in batch15 evidence ledger."
+    },
+    {
+      "id": "schema_visual-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "batch17-new-results.json",
+        "schema-fields-results.json",
+        "legacy-deep-results.json"
+      ],
+      "limits": "Old tuple member edits use advanced source alternative, not absent visual tuple control."
+    },
+    {
+      "id": "schema_visual-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "batch17-new-results.json",
+        "schema-fields-results.json",
+        "legacy-deep-results.json"
+      ],
+      "limits": "Old tuple member edits use advanced source alternative, not absent visual tuple control."
+    },
+    {
+      "id": "schema_visual-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "batch17-new-results.json",
+        "schema-fields-results.json",
+        "legacy-deep-results.json"
+      ],
+      "limits": "Old tuple member edits use advanced source alternative, not absent visual tuple control."
+    },
+    {
+      "id": "schema_visual-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "evidence": [
+        "schema-fields-results.json"
+      ],
+      "limits": "Old invalid name remains displayed while stored name unchanged."
+    },
+    {
+      "id": "schema_json-01",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "passed",
+      "evidence": [
+        "schema-source-submit-results.json",
+        "batch21-final-results.json"
+      ],
+      "limits": "Legacy full JSON tab absent; root advanced alternative tested separately. Candidate formatting/invalid-save/noPOST/first-invalid dirty tested."
+    },
+    {
+      "id": "schema_json-02",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "passed",
+      "evidence": [
+        "schema-source-submit-results.json",
+        "batch21-final-results.json"
+      ],
+      "limits": "Legacy full JSON tab absent; root advanced alternative tested separately. Candidate formatting/invalid-save/noPOST/first-invalid dirty tested."
+    },
+    {
+      "id": "schema_json-03",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "passed",
+      "evidence": [
+        "schema-source-submit-results.json",
+        "batch21-final-results.json"
+      ],
+      "limits": "Legacy full JSON tab absent; root advanced alternative tested separately. Candidate formatting/invalid-save/noPOST/first-invalid dirty tested."
+    },
+    {
+      "id": "schema_json-04",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "passed",
+      "evidence": [
+        "../../task/parity-evidence/integration-owner-a1-browser.log",
+        "../../task/parity-evidence/search-bounds-browser-final.log"
+      ],
+      "limits": "Existing parent typedSchema baseline proof app.spec.cjs306 passed boolean roots and union schema; not counted as fresh A runtime. Legacy full source absent."
+    },
+    {
+      "id": "rich_editor-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "batch19-results.json",
+        "batch20-results.json",
+        "batch16-new-results.json"
+      ],
+      "limits": "Exact subcase failures/skip retained in ledger: legacy noncollapsed right-click collapse failed; formatting/save/root HTML and dirty-content tests passed."
+    },
+    {
+      "id": "rich_editor-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "batch19-results.json",
+        "batch20-results.json",
+        "batch16-new-results.json"
+      ],
+      "limits": "Exact subcase failures/skip retained in ledger: legacy noncollapsed right-click collapse failed; formatting/save/root HTML and dirty-content tests passed."
+    },
+    {
+      "id": "rich_editor-03",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "evidence": [
+        "batch19-results.json",
+        "batch20-results.json",
+        "batch16-new-results.json"
+      ],
+      "limits": "Legacy rich-text-only first edit can leave without a dirty prompt and lose the draft, retained from batch16 evidence. Title-edit/batch22 coverage does not prove this rich-text-only assertion. Candidate actual rich-text dirty/Cancel behavior passed; no new legacy fix or pass claimed."
+    },
+    {
+      "id": "rich_editor-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "clean-mount-final-results.json"
+      ],
+      "limits": ""
+    },
+    {
+      "id": "unsaved-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "single-back-results.json",
+        "unsaved-results.json"
+      ],
+      "limits": ""
+    },
+    {
+      "id": "unsaved-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "evidence": [
+        "single-back-results.json",
+        "unsaved-results.json"
+      ],
+      "limits": ""
+    },
+    {
+      "id": "unsaved-03",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "evidence": [
+        "unsaved-results.json"
+      ],
+      "limits": "Legacy repeated Back bypasses modal and native warning missing."
+    },
+    {
+      "id": "unsaved-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "evidence": [
+        "unsaved-results.json"
+      ],
+      "limits": "Legacy repeated Back bypasses modal and native warning missing."
+    }
+  ]
+}

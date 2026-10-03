@@ -1,0 +1,190 @@
+{
+  "format": "yapi.parity.original-assertion-increment.v1",
+  "owner": "B",
+  "completeForListedNewAssertions": true,
+  "primaryMatrixModified": false,
+  "idsExactly": [
+    "runner_response-03",
+    "runner_variables-04",
+    "collection_rules-03",
+    "collection_server-04",
+    "mock_advanced-02"
+  ],
+  "acceptedExecution": {
+    "head": "eecc6437dd08702a4b3636afd30db7839d7b6253",
+    "run": "https://github.com/kyan54/yapi/actions/runs/37121131974",
+    "jobId": 111197305636,
+    "jobConclusion": "success",
+    "dedicatedTests": {
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    "parentVerifiedOtherSuites": {
+      "legacyPassed": 33,
+      "isolationPassed": 24,
+      "modernizationMongoPassed": 572,
+      "defaultBrowserPassed": 44,
+      "skipped": 0
+    },
+    "verificationProvenance": [
+      "Parent reported completed exact-head per-test results and full tail assertions.",
+      "B independently read GitHub job status: regression completed/success, including runner verification step14.",
+      "B fetched exact accepted-head spec blob 0abd7c4a4da795be5c4b1786f91ab0e8408173f3 and compared it with B source; only additional disposable Mongo URI path/query/hash guard differs, assertion bodies match."
+    ],
+    "acceptedSpecBlob": "0abd7c4a4da795be5c4b1786f91ab0e8408173f3",
+    "acceptedSpecUrl": "https://github.com/kyan54/yapi/blob/eecc6437dd08702a4b3636afd30db7839d7b6253/test-browser/parity-collections-ci.spec.cjs"
+  },
+  "rows": [
+    {
+      "id": "runner_response-03",
+      "assertion": "test script toggle, editor and assertion results remain usable",
+      "test": "runner_response-03 collection_rules-03 Test and collection scripts preserve toggles and exact execution scope",
+      "checks": [
+        "Edit case Test script through UI; toggle on; save POST payload contains exact script and enable_script=true; reload editor/switch and direct Mongo readback match.",
+        "Actual collection assertion fails visibly with CI_CASE_ASSERTION; run_script payload binds exact case_id, col_id and interface_id.",
+        "Toggle off retains saved script, dispatches empty script and produces persisted visible passing report.",
+        "Re-enable a valid body.ok assertion and complete passing recovery, including report refresh and DB readback."
+      ],
+      "attachments": [
+        "case-enabled-failure",
+        "case-disabled-pass",
+        "case-enabled-recovery"
+      ],
+      "status": "passed",
+      "statusScope": "new runtime exact original assertion only",
+      "version_results": {
+        "new": "passed",
+        "old": "blocked"
+      },
+      "rolesTested": [
+        "synthetic admin user 9"
+      ],
+      "sourceSpec": "test-browser/parity-collections-ci.spec.cjs",
+      "oldEvidenceNote": "No old vm2 or enabled old script execution was performed. Preserve prior old UI evidence independently."
+    },
+    {
+      "id": "runner_variables-04",
+      "assertion": "run expression with missing prior-case output and show clear failure without leaking unrelated data",
+      "test": "runner_variables-04 missing previous output fails before echo and never leaks neighbor records",
+      "checks": [
+        "Persist a secret marker only in a neighboring collection prior report; choose an expression referencing that absent current-run output.",
+        "Open missing-expression preview, see not-yet-run warning; cancel/reopen/insert preserve expression and save succeeds.",
+        "Actual collection run makes zero additional echo requests and persists a nonzero report code; after reload UI shows MISSING_CASE_OUTPUT.",
+        "Persisted result contains neither neighboring CI_UNRELATED_MUST_NOT_LEAK value nor a false verification-success message."
+      ],
+      "attachments": [
+        "missing-variable-preview-cancel",
+        "missing-variable-preview-insert",
+        "missing-previous-variable",
+        "missing-previous-variable-db-report"
+      ],
+      "status": "passed",
+      "statusScope": "new runtime exact original assertion only",
+      "version_results": {
+        "new": "passed",
+        "old": "notrun"
+      },
+      "rolesTested": [
+        "synthetic admin user 9"
+      ],
+      "sourceSpec": "test-browser/parity-collections-ci.spec.cjs",
+      "oldEvidenceNote": "Ordinary missing-output assertion is not script-dependent. This final CI increment adds no old-runtime execution evidence; do not misclassify it as a runner blocker."
+    },
+    {
+      "id": "collection_rules-03",
+      "assertion": "edit/enable/save collection script and verify execution scope",
+      "test": "runner_response-03 collection_rules-03 Test and collection scripts preserve toggles and exact execution scope",
+      "checks": [
+        "Edit global collection assertion through general-rules UI, toggle enabled, save exact checkScript content/enable payload; reload/reopen and direct Mongo readback match.",
+        "Run target collection: visible persisted CI_COLLECTION_ASSERTION failure, without disabled case-script marker.",
+        "Navigate to neighboring collection using exact case-ID link plus displayed truncated name and Key; actually run it successfully and verify run_script col_id is the neighbor.",
+        "Disable target collection global script without losing content; actual target run passes. Subsequent enabled valid case assertion recovers."
+      ],
+      "attachments": [
+        "collection-enabled-failure",
+        "neighbor-unaffected-pass",
+        "collection-disabled-pass"
+      ],
+      "status": "passed",
+      "statusScope": "new runtime exact original assertion only",
+      "version_results": {
+        "new": "passed",
+        "old": "blocked"
+      },
+      "rolesTested": [
+        "synthetic admin user 9"
+      ],
+      "sourceSpec": "test-browser/parity-collections-ci.spec.cjs",
+      "oldEvidenceNote": "No old vm2 or enabled old script execution was performed. Preserve prior old UI evidence independently."
+    },
+    {
+      "id": "collection_server-04",
+      "assertion": "sandbox/network policy failures remain visible and do not look like empty successful tests",
+      "test": "collection_server-04 UI-generated automation shows nonempty sandbox and network failure reports",
+      "checks": [
+        "Save an enabled collection script that requests only the controlled forbidden echo path.",
+        "For configured-default-deny and missing-runner apps: rapid and animation-settled modal opening both expose full json option in popup>=120px, normal mouse click selects it, generated URL mode=json is asserted.",
+        "Follow the UI-generated synthetic automation URL. HTTP200 is insufficient: require numbs1, one expected case with nonzero code, failedNum1/successNum0 and expected SCRIPT_NETWORK_DISABLED or ISOLATED_RUNNER_REQUIRED in validRes.",
+        "No forbidden /must-not-send echo request occurs. Open generated result in browser and verify the same visible failure; masked screenshots and complete synthetic report attachments saved."
+      ],
+      "attachments": [
+        "automation-format-rapid-SCRIPT_NETWORK_DISABLED",
+        "automation-format-settled-SCRIPT_NETWORK_DISABLED",
+        "automation-format-rapid-ISOLATED_RUNNER_REQUIRED",
+        "automation-format-settled-ISOLATED_RUNNER_REQUIRED",
+        "automation-SCRIPT_NETWORK_DISABLED-report",
+        "automation-ISOLATED_RUNNER_REQUIRED-report",
+        "automation-SCRIPT_NETWORK_DISABLED-visible-result",
+        "automation-ISOLATED_RUNNER_REQUIRED-visible-result"
+      ],
+      "status": "passed",
+      "statusScope": "new runtime exact original assertion only",
+      "version_results": {
+        "new": "passed",
+        "old": "blocked"
+      },
+      "rolesTested": [
+        "synthetic admin user 9"
+      ],
+      "sourceSpec": "test-browser/parity-collections-ci.spec.cjs",
+      "oldEvidenceNote": "No old vm2 or enabled old script execution was performed. Preserve prior old UI evidence independently."
+    },
+    {
+      "id": "mock_advanced-02",
+      "assertion": "edit/save script with clear runner/syntax errors",
+      "test": "mock_advanced-02 advanced script syntax and runner errors are visible and recover through saved UI",
+      "checks": [
+        "Edit advanced per-interface Mock script and enable/save via UI; assert save payload, refresh editor/switch and direct adv_mock Mongo readback.",
+        "Invalid syntax actually executes through configured isolated runner; inspect nested Mock nonzero errcode and visible SyntaxError/Unexpected token, rather than counting HTTP200 as success.",
+        "Save valid script through UI and verify real Mock response plus visible CI_ADVANCED_RECOVERED marker.",
+        "Missing-runner app produces visible ISOLATED_RUNNER_REQUIRED and no marker; disabling saved advanced script restores ordinary {ok:true} response."
+      ],
+      "attachments": [
+        "advanced-syntax-error",
+        "advanced-recovered",
+        "advanced-missing-runner"
+      ],
+      "status": "passed",
+      "statusScope": "new runtime exact original assertion only",
+      "version_results": {
+        "new": "passed",
+        "old": "blocked"
+      },
+      "rolesTested": [
+        "synthetic admin user 9"
+      ],
+      "sourceSpec": "test-browser/parity-collections-ci.spec.cjs",
+      "oldEvidenceNote": "No old vm2 or enabled old script execution was performed. Preserve prior old UI evidence independently."
+    }
+  ],
+  "scopeLimits": [
+    "Exactly these five original IDs receive new-runtime pass evidence; no unrelated matrix, role, page, old-script or end-to-end claim is promoted.",
+    "The shared Test/global-script scenario contributes distinct assertions to two IDs; test count is not used as an ID-count shortcut.",
+    "Original seven runner scenarios remain separately evidenced by stages16 and the accepted full11 run; not duplicated as new five-ID closures.",
+    "Mac ran only ordinary UI/requests, pure/default tests and controlled synthetic Mongo checks; enabled scripts executed only in existing isolated GitHub CI.",
+    "Prior failures remain recorded in stage16/19 and local before evidence; no history or source matrix overwritten."
+  ],
+  "implementationBase": "9d88506355ecaebcc0fbe9e8bc0b40d0ae02ba28",
+  "delivery": "Evidence-only commit; no new product or test mutation."
+}

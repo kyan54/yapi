@@ -118,6 +118,11 @@
     }
 }
 
+.caseContainer .panel-view > .row > .colKey {
+  flex: 0 0 100px;
+  max-width: 100px;
+}
+
 .panel-view {
   .row {
     margin-bottom: .16rem;

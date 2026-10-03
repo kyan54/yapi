@@ -36,6 +36,6 @@ test('interface save rejects malformed JSON, non-schema roots and invalid type d
 test('both request and response save paths use the same schema normalizer', () => {
   const source = fs.readFileSync(path.join(__dirname, '../client/containers/Project/Interface/InterfaceList/InterfaceEditForm.js'), 'utf8');
   assert.match(source, /import checkIsJsonSchema from '\.\/normalizeSchema'/);
-  assert.match(source, /values\.req_body_other = checkIsJsonSchema\(values\.req_body_other\)/);
-  assert.match(source, /values\.res_body = checkIsJsonSchema\(values\.res_body\)/);
+  assert.match(source, /values\.req_body_other = checkIsJsonSchema\(values\.req_body_other, \{ preserveFormatting: true \}\)/);
+  assert.match(source, /values\.res_body = checkIsJsonSchema\(values\.res_body, \{ preserveFormatting: true \}\)/);
 });
