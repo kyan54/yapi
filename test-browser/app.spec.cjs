@@ -229,6 +229,7 @@ test('statistics real API, legacy typography, empty data and failed-request retr
       headingFont: parseFloat(getComputedStyle(heading).fontSize),
       headingHeight: heading.getBoundingClientRect().height,
       searchHeight: search.getBoundingClientRect().height,
+      searchCenterOffset: Math.abs((search.getBoundingClientRect().top + search.getBoundingClientRect().height / 2) - (document.querySelector('.user-toolbar').getBoundingClientRect().top + document.querySelector('.user-toolbar').getBoundingClientRect().height / 2)),
       pageWidth: document.documentElement.scrollWidth
     };
   });
@@ -240,6 +241,7 @@ test('statistics real API, legacy typography, empty data and failed-request retr
   expect(geometry.headingHeight).toBeLessThan(70);
   expect(geometry.searchHeight).toBeGreaterThanOrEqual(24);
   expect(geometry.searchHeight).toBeLessThanOrEqual(40);
+  expect(geometry.searchCenterOffset).toBeLessThanOrEqual(2);
   expect(geometry.pageWidth).toBeLessThanOrEqual(geometry.width);
   await testInfo.attach('statistics-geometry', { body: JSON.stringify(geometry, null, 2), contentType: 'application/json' });
   await page.screenshot({ path: testInfo.outputPath('statistics-1920x1080.png'), fullPage: true });
@@ -545,4 +547,15 @@ test('interface and category creation submit after visible validation errors',as
   const record=await connection.db.collection('interface').findOne({_id:created.data._id});expect(record).toMatchObject({project_id:11,title:'Browser created interface',path:'/browser-created'});
   await page.reload();await expect(page.getByRole('link',{name:'Browser created interface',exact:true}).first()).toBeVisible();
   await page.goto(baseURL+'/project/11/interface/api/'+created.data._id);await page.getByRole('tab',{name:'编辑',exact:true}).click();await page.getByPlaceholder('接口名称').fill('Browser renamed empty interface');await saveInterfaceSuccessfully(page);await page.reload();expect((await connection.db.collection('interface').findOne({_id:created.data._id})).title).toBe('Browser renamed empty interface');
+});
+
+test('Swagger file import resolves browser module and malformed file exits loading',async({page})=>{
+  await login(page);await page.goto(baseURL+'/project/11/data');
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.locator('.dataSync .ant-select').first().click();await page.locator('.ant-select-dropdown:visible').getByText('普通模式',{exact:true}).click();
+  const spec={swagger:'2.0',info:{title:'Synthetic browser import',version:'1'},paths:{'/browser-swagger-import':{get:{summary:'Browser imported Swagger',responses:{200:{description:'ok'}}}}}};
+  const pending=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/interface/add');
+  await page.locator('input[type=file]').setInputFiles({name:'synthetic-swagger.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(spec))});expect((await(await pending).json()).errcode).toBe(0);await expect(page.locator('.ant-spin-spinning')).toHaveCount(0);
+  expect(await connection.db.collection('interface').countDocuments({project_id:11,path:'/browser-swagger-import'})).toBe(1);
+  await page.locator('input[type=file]').setInputFiles({name:'malformed-synthetic.json',mimeType:'application/json',buffer:Buffer.from('{invalid')});await expect(page.getByText('解析失败',{exact:true})).toBeVisible();await expect(page.locator('.ant-spin-spinning')).toHaveCount(0);expect(errors).toEqual([]);
 });

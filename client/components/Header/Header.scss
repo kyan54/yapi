@@ -92,6 +92,11 @@
     height: .54rem;
     display: flex;
     align-items: center;
+    > ul {
+      display: flex;
+      align-items: center;
+      height: 100%;
+    }
     .item-search {
       width: 2rem;
     }

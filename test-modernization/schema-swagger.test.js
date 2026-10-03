@@ -24,3 +24,6 @@ test('Swagger v2 and v3 fixtures import independently and concurrently with stab
   assert.deepEqual(pair,[old,modern]);
   for(const result of pair)for(const api of result.apis){assert.equal(typeof api.path,'string');assert.ok(api.path.startsWith('/'));assert.equal(typeof api.method,'string');}
 });
+test('malformed Swagger JSON rejects without a false empty import result',async()=>{
+  await assert.rejects(importSwagger('{invalid'),SyntaxError);
+});

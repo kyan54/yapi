@@ -152,12 +152,18 @@ class ProjectData extends Component {
       this.setState({ showLoading: true });
       const reader = new FileReader();
       reader.readAsText(info.file);
-      reader.onload = async res => {
-        res = await importDataModule[this.state.curImportType].run(res.target.result);
-        if (this.state.dataSync === 'merge') {
-          this.showConfirm(res);
-        } else {
-          await this.handleAddInterface(res);
+      reader.onload = async event => {
+        try {
+          const result = await importDataModule[this.state.curImportType].run(event.target.result);
+          if (!result || !Array.isArray(result.apis)) {
+            this.setState({ showLoading: false });
+            return;
+          }
+          if (this.state.dataSync === 'merge') await this.showConfirm(result);
+          else await this.handleAddInterface(result);
+        } catch (error) {
+          message.error('数据导入失败，请检查文件格式');
+          this.setState({ showLoading: false });
         }
       };
     } else {
