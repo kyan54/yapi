@@ -123,6 +123,8 @@ export default class Run extends Component {
     super(props);
     this.state = {
       loading: false,
+      initializing: true,
+      initializationError: '',
       resStatusCode: null,
       test_valid_msg: null,
       resStatusText: null,
@@ -191,15 +193,26 @@ export default class Run extends Component {
     });
   };
 
+  requestIdentity = data => data && `${this.props.type}:${data.project_id}:${data.interface_id || data._id}:${data._id}`;
+
+  isRequestReady = () => !this.state.initializing && !this.state.initializationError &&
+    Number(this.props.interfaceId) === Number(this.props.data.interface_id || this.props.data._id) &&
+    Number(this.props.projectId) === Number(this.props.data.project_id) &&
+    this.initializedIdentity === this.requestIdentity(this.props.data) &&
+    this.requestIdentity(this.state) === this.requestIdentity(this.props.data);
+
   async initState(data) {
     this.activeRequest = null;
+    this.initializedIdentity = null;
     const initialization = {};
     this.activeInitialization = initialization;
     this.envModalContext = null;
-    this.setState({ envModalVisible: false, envDropdownOpen: false });
-    if (!this.checkInterfaceData(data)) {
-      return null;
-    }
+    this.setState({ envModalVisible: false, envDropdownOpen: false, initializing: true,
+      initializationError: '', loading: false, path: '', req_body_other: '',
+      req_query: [], req_headers: [], req_params: [], req_body_form: [], env: [],
+      test_res_header: null, test_res_body: null, resStatusCode: null, resStatusText: null, test_valid_msg: null });
+    try {
+    if (!this.checkInterfaceData(data)) throw new Error('接口数据无效');
 
     const { req_body_other, req_body_type, req_body_is_json_schema } = data;
     let body = req_body_other;
@@ -210,13 +223,7 @@ export default class Run extends Component {
       req_body_other &&
       req_body_is_json_schema
     ) {
-      let schema = {};
-      try {
-        schema = json5.parse(req_body_other);
-      } catch (e) {
-        console.log('e', e);
-        return;
-      }
+      const schema = json5.parse(req_body_other);
       let result = await axios.post('/api/interface/schema2json', {
         schema: schema,
         required: true
@@ -258,8 +265,17 @@ export default class Run extends Component {
         test_valid_msg: null,
         resStatusText: null
       },
-      () => this.props.type === 'inter' && this.initEnvState(data.case_env, data.env)
+      () => {
+        if (this.activeInitialization !== initialization) return;
+        if (this.props.type === 'inter') this.initEnvState(data.case_env, data.env);
+        this.initializedIdentity = this.requestIdentity(data);
+        this.setState({ initializing: false });
+      }
     );
+    } catch (_) {
+      if (this.activeInitialization !== initialization) return;
+      this.setState({ initializing: false, initializationError: '请求初始化失败，请重试', env: [], path: '', req_body_other: '' });
+    }
   }
 
   initEnvState(case_env, env) {
@@ -335,6 +351,7 @@ export default class Run extends Component {
   }
 
   reqRealInterface = async () => {
+    if (!this.isRequestReady()) return;
     if (this.activeRequest) {
       this.activeRequest = null;
       this.setState({
@@ -619,6 +636,9 @@ export default class Run extends Component {
     // console.log(env);
     return (
       <div className="interface-test postman">
+        {this.state.initializationError && <Alert type="error" message={this.state.initializationError}
+          action={<Button onClick={() => this.initState(this.props.data)}>重新初始化</Button>} />}
+
         {this.state.modalVisible && (
           <ModalPostman
             visible={this.state.modalVisible}
@@ -706,6 +726,7 @@ export default class Run extends Component {
           >
             <Button
               onClick={this.reqRealInterface}
+              disabled={!this.isRequestReady()}
               type="primary"
               style={{ marginLeft: 10 }}
               icon={loading ? 'loading' : ''}
@@ -720,7 +741,7 @@ export default class Run extends Component {
               return this.props.type === 'inter' ? '保存到测试集' : '更新该用例';
             }}
           >
-            <Button onClick={this.props.save} type="primary" style={{ marginLeft: 10 }}>
+            <Button onClick={this.props.save} disabled={!this.isRequestReady()} type="primary" style={{ marginLeft: 10 }}>
               {this.props.type === 'inter' ? '保存' : '更新'}
             </Button>
           </Tooltip>

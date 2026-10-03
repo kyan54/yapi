@@ -1,0 +1,36 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "base": "8849be545594584adddb6df94b7cd6ed4da10ba0",
+  "scope": "B stage6; original compound246 retained",
+  "complete": false,
+  "rows": [
+    {
+      "id": "runner-04",
+      "status": "passed",
+      "old": "notrun",
+      "new": "passed",
+      "detail": "Additional initialization-scope race: delayed Schema conversion blocks Send and Save, clears stale request/result, failed conversion is visible with retry, successful retry sends current interface URL/body. State identity must match data and explicit parent project/interface context."
+    },
+    {
+      "id": "case_editor-03",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Additional real late case response cannot overwrite next loaded case. Collection tree remains expanded and selected from route/list during case loading."
+    }
+  ],
+  "validation": {
+    "basicPassed": 32,
+    "modernizationPassed": 313,
+    "modernizationSkipped": 6,
+    "finalBrowser": "stage6-final.json new3pass: case race, cross-source environment regression, schema initialization",
+    "oldCaseRace": "case-race-stage5-hydrated.json: old late response overwrites current case name",
+    "narrowUnits": "postman init+context 6 cases; included in modernization run"
+  },
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "limitations": [
+    "AI stale restore confirmed separately and not fixed in this commit. Parent authorized next restore expectedVersion contract change.",
+    "Final browser image includes C ffecc5e ProjectEnv overlay; no C files committed.",
+    "Initial case-race harness lacked hydrated tree; final stage6 supersedes those harness failures."
+  ]
+}
