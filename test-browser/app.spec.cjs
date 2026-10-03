@@ -460,7 +460,7 @@ test('project settings Save retains the visible submitted value across repeat sa
 test('environment settings load, switch, edit and save actual nested values', async ({page}) => {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const env=[
-    {name:'local-synthetic',domain:'http://127.0.0.1:3000/mock/11',header:[{name:'X-Fixture',value:'synthetic'}],global:[{name:'sampleId',value:'42'}]},
+    {name:'local-synthetic',domain:'http://127.0.0.1:3000/mock/11',header:[{name:'X-Fixture',value:'synthetic'},{name:'X-Second',value:'second'},{name:'Cookie',value:'sample=a=b==;other=2'}],global:[{name:'sampleId',value:'42'},{name:'second',value:'2'}]},
     {name:'browser-synthetic',domain:'https://example.invalid/mock',header:[],global:[]}
   ];
   await connection.db.collection('project').updateOne({_id:11},{$set:{env}});
@@ -483,9 +483,41 @@ test('environment settings load, switch, edit and save actual nested values', as
   expect((await (await reply).json()).errcode).toBe(0);
   await expect(page.getByText('修改成功!',{exact:true})).toBeVisible();
   const saved=await connection.db.collection('project').findOne({_id:11});
-  expect(saved.env[0].global.map(({name,value})=>({name,value}))).toEqual([{name:'sampleId',value:'43'}]);
+  expect(saved.env[0].global.map(({name,value})=>({name,value}))).toEqual([{name:'sampleId',value:'43'},{name:'second',value:'2'}]);
   expect(saved.env[0].header.map(({name,value})=>({name,value}))).toEqual(env[0].header);expect(saved.env[1]).toMatchObject(env[1]);
   await page.reload();await page.getByRole('tab',{name:'环境配置',exact:true}).click();
   await expect(page.locator('#global_0_value')).toHaveValue('43');
   expect(errors).toEqual([]);
+});
+
+
+test('empty stored project environment loads the legacy default and persists its first environment', async ({page}) => {
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await connection.db.collection('project').updateOne({_id:11},{$set:{env:[]}});
+  await login(page);await page.goto(baseURL+'/project/11/setting');
+  await page.getByRole('tab',{name:'环境配置',exact:true}).click();
+  // The real API preserves its historical local fallback for an empty DB array.
+  await expect(page.getByPlaceholder('请输入环境名称')).toHaveValue('local');
+  await page.getByPlaceholder('请输入环境名称').fill('first-synthetic');
+  await page.getByPlaceholder('请输入环境域名').fill('127.0.0.1:3000/mock/11');
+  const reply=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/project/up_env');
+  await page.getByRole('button',{name:/保\s*存/}).click();
+  expect((await (await reply).json()).errcode).toBe(0);
+  const saved=await connection.db.collection('project').findOne({_id:11});
+  expect(saved.env).toHaveLength(1);expect(saved.env[0]).toMatchObject({name:'first-synthetic',domain:'http://127.0.0.1:3000/mock/11'});
+  await page.reload();await page.getByRole('tab',{name:'环境配置',exact:true}).click();
+  await expect(page.getByPlaceholder('请输入环境名称')).toHaveValue('first-synthetic');
+  expect(errors).toEqual([]);
+});
+
+test('runner environment configuration is actionable and discards closed drafts',async({page})=>{
+  await connection.db.collection('project').updateOne({_id:11},{$set:{env:[{name:'local-synthetic',domain:'http://127.0.0.1:3000/mock/11',header:[],global:[{name:'sampleId',value:'42'}]}]}});
+  await login(page);await page.goto(baseURL+'/project/11/interface/api/17');await page.getByRole('tab',{name:'运行',exact:true}).click();
+  async function open(){await page.locator('.url .ant-select').nth(1).click();const button=page.getByRole('button',{name:'环境配置',exact:true});await expect(button).toBeEnabled();await button.click();await expect(page.locator('.env-modal')).toBeVisible();}
+  await open();await expect(page.locator('#global_0_value')).toHaveValue('42');await page.locator('#global_0_value').fill('unsaved');await page.locator('.env-modal .ant-modal-close').click();
+  await open();await expect(page.locator('#global_0_value')).toHaveValue('42');await page.locator('#global_0_value').fill('43');
+  const response=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/project/up_env');
+  await page.locator('.env-modal').getByRole('button',{name:/保\s*存/}).click();expect((await (await response).json()).errcode).toBe(0);await expect(page.locator('.env-modal')).toHaveCount(0);
+  expect((await connection.db.collection('project').findOne({_id:11})).env[0].global[0].value).toBe('43');
+  await expect(page.locator('.url .ant-select').nth(1)).toContainText('local-synthetic');
 });

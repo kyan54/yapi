@@ -35,56 +35,23 @@ class ProjectEnvContent extends Component {
     handleEnvInput: PropTypes.func
   };
 
-  initState(curdata) {
-    let header = [
-      {
-        name: '',
-        value: ''
+  initState(curdata = {}) {
+    const header = [];
+    const cookie = [];
+    const global = [];
+    (curdata.header || []).forEach(item => {
+      if (item.name === 'Cookie') {
+        (item.value || '').split(';').forEach(part => {
+          const separator = part.indexOf('=');
+          if (separator < 0) return;
+          cookie.push({ name: part.slice(0, separator).trim(), value: part.slice(separator + 1).trim() });
+        });
+      } else {
+        header.push({ ...item });
       }
-    ];
-    let cookie = [
-      {
-        name: '',
-        value: ''
-      }
-    ];
-
-    let global = [
-      {
-        name: '',
-        value: ''
-      }
-    ];
-
-    const curheader = curdata.header;
-    const curGlobal = curdata.global;
-
-    if (curheader && curheader.length !== 0) {
-      curheader.forEach(item => {
-        if (item.name === 'Cookie') {
-          let cookieStr = item.value;
-          if (cookieStr) {
-            cookieStr = cookieStr.split(';').forEach(c => {
-              if (c) {
-                c = c.split('=');
-                cookie.unshift({
-                  name: c[0] ? c[0].trim() : '',
-                  value: c[1] ? c[1].trim() : ''
-                });
-              }
-            });
-          }
-        } else {
-          header.unshift(item);
-        }
-      });
-    }
-
-    if (curGlobal && curGlobal.length !== 0) {
-      curGlobal.forEach(item => {
-        global.unshift(item);
-      });
-    }
+    });
+    (curdata.global || []).forEach(item => global.push({ ...item }));
+    for (const rows of [header, cookie, global]) rows.push({ name: '', value: '' });
     return { header, cookie, global };
   }
 
@@ -263,7 +230,7 @@ class ProjectEnvContent extends Component {
       );
     };
 
-    const envTpl = data => {
+    const envTpl = (data = {}) => {
       return (
         <div>
           <h3 className="env-label">环境名称</h3>

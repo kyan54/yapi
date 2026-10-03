@@ -619,14 +619,14 @@ export default class Run extends Component {
             <Select
               value={case_env}
               style={{ flexBasis: 180, flexGrow: 1 }}
-              onSelect={this.selectDomain}
+              onSelect={value => value === '环境配置' ? this.showEnvModal() : this.selectDomain(value)}
             >
               {env.map((item, index) => (
                 <Option value={item.name} key={index}>
                   {item.name + '：' + item.domain}
                 </Option>
               ))}
-              <Option value="环境配置" disabled style={{ cursor: 'pointer', color: '#2395f1' }}>
+              <Option value="环境配置" style={{ cursor: 'pointer', color: '#2395f1' }}>
                 <Button type="primary" onClick={this.showEnvModal}>
                   环境配置
                 </Button>

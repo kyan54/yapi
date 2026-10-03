@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import './index.scss';
-import { Icon, Layout, Tooltip, message, Row, Popconfirm } from 'antd';
+import { Icon, Layout, Tooltip, message, Row, Popconfirm, Empty, Button } from 'antd';
 const { Content, Sider } = Layout;
 import ProjectEnvContent from './ProjectEnvContent.js';
 import { connect } from 'react-redux';
@@ -54,9 +54,10 @@ class ProjectEnv extends Component {
   async componentWillMount() {
     this._isMounted = true;
     await this.props.getProject(this.props.projectId);
-    const { env, _id } = this.props.projectMsg;
+    const { _id } = this.props.projectMsg;
+    const env = Array.isArray(this.props.projectMsg.env) ? this.props.projectMsg.env : [];
     this.initState(env, _id);
-    this.handleClick(0, env[0]);
+    this.handleClick(env.length ? 0 : -1, env[0] || {});
   }
 
   componentWillUnmount() {
@@ -93,7 +94,7 @@ class ProjectEnv extends Component {
       return index !== key;
     });
     this.setState(newValue);
-    this.handleClick(0, newValue[name][0]);
+    this.handleClick(newValue[name].length ? 0 : -1, newValue[name][0] || {});
     newValue['_id'] = this.state._id;
     return newValue;
   };
@@ -212,11 +213,15 @@ class ProjectEnv extends Component {
           </Sider>
           <Layout className="env-content">
             <Content style={{ background: '#fff', padding: 24, margin: 0, minHeight: 280 }}>
-              <ProjectEnvContent
+              {currentKey < 0 ? (
+                <Empty description="暂无环境配置">
+                  <Button type="primary" onClick={() => this.addParams('env')}>添加环境</Button>
+                </Empty>
+              ) : <ProjectEnvContent
                 projectMsg={this.state.currentEnvMsg}
                 onSubmit={e => this.onSubmit(e, currentKey)}
                 handleEnvInput={e => this.handleInputChange(e, currentKey)}
-              />
+              />}
             </Content>
           </Layout>
         </Layout>
