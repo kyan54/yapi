@@ -114,3 +114,25 @@
   padding-left: 48px;
 }
 
+
+// Explicit full-width columns are required by the modern flex-based grid.
+.interface-edit .interface-edit-item-content {
+  flex-wrap: nowrap;
+  .ant-select { width: 100%; }
+  .interface-edit-item-content-col { min-width: 0; }
+}
+.schema-editor-modern {
+  width: 100%;
+  .schema-tree-scroll { overflow-x: auto; }
+  .schema-node-row {
+    display: grid;
+    grid-template-columns: 28px minmax(130px, 2fr) 28px 110px minmax(100px, 1fr) minmax(150px, 1.5fr) 68px;
+    align-items: center;
+    gap: 8px;
+    min-width: 720px;
+    min-height: 44px;
+    box-sizing: border-box;
+    .ant-input, .ant-select { width: 100%; min-width: 0; }
+  }
+  .schema-node-actions { display: flex; }
+}

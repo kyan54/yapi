@@ -220,8 +220,18 @@ class InterfaceEditForm extends Component {
     this.state = this.initState(curdata);
   }
 
+  schemaValidity = { request: true, response: true };
+
+  onRequestValidity = valid => { this.schemaValidity.request = valid; if (!valid) this.props.changeEditStatus(true); };
+  onResponseValidity = valid => { this.schemaValidity.response = valid; if (!valid) this.props.changeEditStatus(true); };
+
   handleSubmit = e => {
     e.preventDefault();
+    const fields = this.props.form.getFieldsValue();
+    if ((fields.res_body_type === 'json' && fields.res_body_is_json_schema && !this.schemaValidity.response) ||
+        (fields.req_body_type === 'json' && fields.req_body_is_json_schema && !this.schemaValidity.request)) {
+      return message.error('Schema JSON 无效，请修正后再保存');
+    }
     this.setState({
       submitStatus: true
     });
@@ -883,7 +893,7 @@ class InterfaceEditForm extends Component {
                 </span>
               }
             >
-              <InputGroup compact>
+              <InputGroup compact style={{ width: '100%' }}>
                 <Select
                   value={this.state.method}
                   onChange={this.onChangeMethod}
@@ -1003,7 +1013,7 @@ class InterfaceEditForm extends Component {
             </FormItem>
 
             <Row className={'interface-edit-item ' + this.state.hideTabs.req.query}>
-              <Col>
+              <Col span={24}>
                 <EasyDragSort
                   data={() => this.props.form.getFieldValue('req_query')}
                   onChange={this.handleDragMove('req_query')}
@@ -1021,7 +1031,7 @@ class InterfaceEditForm extends Component {
             </FormItem>
 
             <Row className={'interface-edit-item ' + this.state.hideTabs.req.headers}>
-              <Col>
+              <Col span={24}>
                 <EasyDragSort
                   data={() => this.props.form.getFieldValue('req_headers')}
                   onChange={this.handleDragMove('req_headers')}
@@ -1054,7 +1064,7 @@ class InterfaceEditForm extends Component {
                       : 'hide')
                   }
                 >
-                  <Col style={{ minHeight: '50px' }}>
+                  <Col span={24} style={{ minHeight: '50px' }}>
                     <Row type="flex" justify="space-around">
                       <Col span="12" className="interface-edit-item">
                         <Button
@@ -1110,7 +1120,7 @@ class InterfaceEditForm extends Component {
                 />
               )}
 
-              <Col style={{ marginTop: '5px' }} className="interface-edit-json-info">
+              <Col span={24} style={{ marginTop: '5px' }} className="interface-edit-json-info">
                 {!this.props.form.getFieldValue('req_body_is_json_schema') ? (
                   <span>
                     基于 Json5, 参数描述信息用注释的方式实现{' '}
@@ -1121,21 +1131,20 @@ class InterfaceEditForm extends Component {
                   </span>
                 ) : (
                   <ReqBodySchema
+                    onValidityChange={this.onRequestValidity}
                     onChange={text => {
                       this.setState({
                         req_body_other: text
                       });
 
-                      if (new Date().getTime() - this.startTime > 1000) {
-                        EditFormContext.props.changeEditStatus(true);
-                      }
+                      this.props.changeEditStatus(true);
                     }}
                     isMock={true}
                     data={req_body_other_use_schema_editor}
                   />
                 )}
               </Col>
-              <Col>
+              <Col span={24}>
                 {!this.props.form.getFieldValue('req_body_is_json_schema') && (
                   <AceEditor
                     className="interface-editor"
@@ -1150,7 +1159,7 @@ class InterfaceEditForm extends Component {
             {this.props.form.getFieldValue('req_body_type') === 'file' &&
             this.state.hideTabs.req.body !== 'hide' ? (
               <Row className="interface-edit-item">
-                <Col className="interface-edit-item-other-body">
+                <Col span={24} className="interface-edit-item-other-body">
                   {getFieldDecorator('req_body_other', {
                     initialValue: this.state.req_body_other
                   })(<TextArea placeholder="" autosize={true} />)}
@@ -1160,7 +1169,7 @@ class InterfaceEditForm extends Component {
             {this.props.form.getFieldValue('req_body_type') === 'raw' &&
             this.state.hideTabs.req.body !== 'hide' ? (
               <Row>
-                <Col>
+                <Col span={24}>
                   {getFieldDecorator('req_body_other', {
                     initialValue: this.state.req_body_other
                   })(<TextArea placeholder="" autosize={{ minRows: 8 }} />)}
@@ -1207,7 +1216,7 @@ class InterfaceEditForm extends Component {
                   this.props.form.getFieldValue('res_body_type') === 'json' ? 'block' : 'none'
               }}
             >
-              <Col>
+              <Col span={24}>
                 <Tabs size="large" defaultActiveKey="tpl" onChange={this.handleJsonType}>
                   <TabPane tab="模板" key="tpl" />
                   <TabPane tab="预览" key="preview" />
@@ -1235,13 +1244,12 @@ class InterfaceEditForm extends Component {
                   ) : (
                     <div style={{ display: this.state.jsonType === 'tpl' ? 'block' : 'none' }}>
                       <ResBodySchema
+                        onValidityChange={this.onResponseValidity}
                         onChange={text => {
                           this.setState({
                             res_body: text
                           });
-                          if (new Date().getTime() - this.startTime > 1000) {
-                            EditFormContext.props.changeEditStatus(true);
-                          }
+                          this.props.changeEditStatus(true);
                         }}
                         isMock={true}
                         data={res_body_use_schema_editor}
@@ -1277,7 +1285,7 @@ class InterfaceEditForm extends Component {
                 display: this.props.form.getFieldValue('res_body_type') === 'raw' ? 'block' : 'none'
               }}
             >
-              <Col>
+              <Col span={24}>
                 {getFieldDecorator('res_body', {
                   initialValue: this.state.res_body
                 })(<TextArea style={{ minHeight: '150px' }} placeholder="" />)}

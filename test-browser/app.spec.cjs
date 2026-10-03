@@ -120,3 +120,63 @@ test('actual Mock route and authenticated collection assertions execute through 
     expect(checked.status()).toBe(200);const result=await checked.json();expect(result.errcode).toBe(0);expect(JSON.stringify(result.data.logs)).toContain('asserted');
   } finally {await connection.db.collection('project').updateOne({_id:11},{$set:{is_mock_open:false,project_mock_script:''}});}
 });
+
+test('editing preserves parameter rows, schema semantics and description through save and cancelled navigation', async ({page}, testInfo) => {
+  page.setDefaultTimeout(10000);
+  const errors=[]; page.on('pageerror', error=>errors.push(error.message));
+  const schema={type:'object',additionalProperties:false,properties:{id:{type:'integer',minimum:1},state:{type:'string',enum:['open','closed']}}};
+  await connection.db.collection('interface').insertOne({...fixture,_id:18,uid:9,title:'Editor compatibility fixture',method:'POST',path:'/editor-fixture',req_params:[],req_headers:[],req_body_type:'form',req_body_form:[{name:'caseNo',type:'text',required:'1',example:'S202005-001',desc:'Synthetic reference'}],res_body_is_json_schema:true,res_body:JSON.stringify(schema)});
+  await login(page); await page.goto(baseURL+'/project/11/interface/api/18');
+  await page.getByRole('tab',{name:'编辑',exact:true}).click();
+  await expect(page.locator('#req_body_form_0_name')).toBeVisible();
+  const geometry=await page.locator('#req_body_form_0_name').evaluate(el=>{const row=el.closest('.interface-edit-item-content');return {row:row.getBoundingClientRect().width,panel:row.closest('.panel-sub').getBoundingClientRect().width};});
+  expect(geometry.row/geometry.panel).toBeGreaterThan(.90);
+  await page.locator('#req_body_form_0_example').fill('S20261003-002');
+  await page.getByText('Query',{exact:true}).click();
+  await page.locator('#req_query_0_desc').fill('Edited query description');
+  await page.getByText('Headers',{exact:true}).click();
+  await page.getByRole('button',{name:'添加Header',exact:true}).click();
+  const headerNames=page.locator('input[id^="req_headers_"][id$="_name"]');await headerNames.last().fill('X-Synthetic');
+  await page.locator('input[id^="req_headers_"][id$="_value"]').last().fill('fixture');
+  const editor=page.locator('.schema-editor-modern').filter({visible:true});
+  await editor.getByLabel('id 描述',{exact:true}).fill('Preserved identifier');
+  await editor.getByLabel('id 必填',{exact:true}).check();
+  await editor.getByRole('button',{name:'添加字段 根节点',exact:true}).click();
+  await editor.getByLabel('字段 field1 名称',{exact:true}).fill('note');
+  await editor.getByLabel('字段 field1 名称',{exact:true}).press('Tab');
+  await editor.getByLabel('note 描述',{exact:true}).fill('Temporary field');
+  await editor.getByRole('button',{name:'删除字段 note',exact:true}).click();
+  await editor.getByRole('button',{name:'导入 JSON',exact:true}).click();
+  await page.getByLabel('导入 JSON 内容',{exact:true}).fill('{"discarded":true}');
+  await page.getByRole('button',{name:/^取\s*消$/}).click();
+  await expect(editor.getByLabel('id 描述',{exact:true})).toHaveValue('Preserved identifier');
+  await editor.getByRole('tab',{name:'JSON（完整 Schema）',exact:true}).click();
+  const edited=JSON.parse(await editor.getByLabel('JSON Schema',{exact:true}).inputValue());
+  expect(edited.properties.state.enum).toEqual(['open','closed']);expect(edited.properties.id.minimum).toBe(1);expect(edited.additionalProperties).toBe(false);
+  await editor.getByLabel('JSON Schema',{exact:true}).fill('{invalid');
+  await page.getByRole('button',{name:/^保\s*存$/}).click();
+  await expect(page.getByText('Schema JSON 无效，请修正后再保存',{exact:true})).toBeVisible();
+  expect(JSON.parse((await connection.db.collection('interface').findOne({_id:18})).res_body)).toEqual(schema);
+  await editor.getByLabel('JSON Schema',{exact:true}).fill(JSON.stringify(edited));
+  await editor.getByRole('tab',{name:'可视化 Schema',exact:true}).click();
+  await page.locator('#desc .toastui-editor-ww-container [contenteditable="true"]').fill('Synthetic edited description');
+  await page.getByRole('button',{name:/^保\s*存$/}).click();
+  await expect.poll(async()=> (await connection.db.collection('interface').findOne({_id:18})).markdown).toContain('Synthetic edited description');
+  const saved=await connection.db.collection('interface').findOne({_id:18});expect(saved.req_body_form[0].example).toBe('S20261003-002');expect(saved.req_query[0].desc).toBe('Edited query description');expect(saved.req_headers.some(h=>h.name==='X-Synthetic'&&h.value==='fixture')).toBe(true);expect(JSON.parse(saved.res_body)).toEqual(edited);
+  await page.getByRole('tab',{name:'预览',exact:true}).first().click();
+  await expect(page.getByText('Synthetic edited description',{exact:true})).toBeVisible();
+  for(let i=0;i<2;i++) {
+    await page.getByRole('tab',{name:'编辑',exact:true}).click();
+    await expect(page.getByLabel('id 描述',{exact:true})).toHaveValue('Preserved identifier');
+    await page.getByLabel('id 描述',{exact:true}).fill('Unsaved draft '+i);
+    await page.getByRole('tab',{name:'预览',exact:true}).first().click();
+    await page.getByRole('button',{name:/取\s*消/}).click();
+    await expect(page.getByLabel('id 描述',{exact:true})).toHaveValue('Unsaved draft '+i);
+    await page.getByRole('tab',{name:'预览',exact:true}).first().click();
+    await page.getByRole('button',{name:/确\s*定/}).click();
+  }
+  await page.getByRole('tab',{name:'编辑',exact:true}).click();
+  await page.getByLabel('id 描述',{exact:true}).scrollIntoViewIfNeeded();
+  await page.screenshot({path:testInfo.outputPath('editor-compatible.png'),fullPage:true});
+  expect(errors).toEqual([]);
+});

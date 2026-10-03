@@ -198,3 +198,31 @@ test('legacy empty button icon is absent and preserves request-runner accessible
   assert.ok(screen.getByRole('button', { name: /^发\s*送$/ }));
   assert.equal(screen.queryByRole('img'), null);
 });
+
+test('schema example import is explicit, cancel preserves edits, and arrays retain variant types', async () => {
+  const {default: Editor, schemaFromExample}=require('../client/components/SchemaEditor');
+  assert.deepEqual(schemaFromExample([1,'a']).items,{anyOf:[{type:'integer'},{type:'string'}]});
+  let latest;
+  render(h(Editor,{data:JSON.stringify({type:'object',properties:{id:{type:'integer',minimum:1}}}),onChange:value=>{latest=JSON.parse(value);}}));
+  await userEvent.click(screen.getByRole('button',{name:'导入 JSON'}));
+  fireEvent.change(screen.getByLabelText('导入 JSON 内容'),{target:{value:'{"newField":true}'}});
+  await userEvent.click(screen.getByRole('button',{name:/^取\s*消$/}));
+  assert.equal(latest,undefined);
+  await userEvent.click(screen.getByRole('button',{name:'导入 JSON'}));
+  const input=screen.getByLabelText('导入 JSON 内容');
+  fireEvent.change(input,{target:{value:JSON.stringify({rows:[{id:1}],enabled:true})}});
+  await userEvent.click(screen.getByRole('button',{name:'导入并替换'}));
+  assert.equal(latest.properties.rows.items.properties.id.type,'integer');
+  assert.equal(latest.properties.enabled.type,'boolean');
+});
+
+test('schema editor reports invalid draft without replacing the last valid value', async () => {
+  const Editor=require('../client/components/SchemaEditor').default;
+  let validity,latest;
+  render(h(Editor,{data:'{"type":"object"}',onChange:value=>{latest=value;},onValidityChange:value=>{validity=value;}}));
+  await userEvent.click(screen.getByRole('tab',{name:'JSON（完整 Schema）'}));
+  fireEvent.change(screen.getByLabelText('JSON Schema'),{target:{value:'{invalid'}});
+  await waitFor(()=>assert.equal(validity,false));assert.equal(latest,undefined);
+  fireEvent.change(screen.getByLabelText('JSON Schema'),{target:{value:'{"type":"string","minLength":2}'}});
+  await waitFor(()=>assert.equal(validity,true));assert.equal(JSON.parse(latest).minLength,2);
+});
