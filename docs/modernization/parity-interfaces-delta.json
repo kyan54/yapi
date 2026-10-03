@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-8",
+  "scope": "A/interfaces/batches-1-9",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -103,7 +103,7 @@
     }
   },
   "tests": {
-    "passed": 54,
+    "passed": 84,
     "failed": 0,
     "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
     "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs.",
@@ -114,9 +114,12 @@
       "parameters": 18,
       "list_filters_geometry_and_nonmember_boundaries": 10,
       "tag_modal_and_selection": 12,
-      "category_tree_and_sort_boundaries": 14
+      "category_tree_and_sort_boundaries": 14,
+      "schema_observations_and_candidate_gaps": 18,
+      "creation_boundaries": 6,
+      "candidate_drag_transport_retry": 6
     },
-    "interpretation": "54 passing observed-behavior tests do not mean all original compounds pass: explicit legacy defect expectations retain failed scenario/atomic statuses.",
+    "interpretation": "84 observed-behavior tests pass, 6 old transport cases skipped. Legacy defect expectations and legacy Schema capability-only observations do not make original compounds passed.",
     "default_suite": {
       "total": 301,
       "passed": 295,
@@ -124,11 +127,8 @@
       "skipped": 6,
       "skip_reason": "Existing optional Mongo integration tests; isolated paired browser/API/DB checks ran separately."
     },
-    "additional_candidate_transport_regression": {
-      "passed": 6,
-      "failed": 0,
-      "legacy": "notrun; candidate transport regression only"
-    }
+    "skipped": 6,
+    "skip_reason": "Old-version transport regression explicitly notrun; candidate6 transport tests execute."
   },
   "scenarios": [
     {
@@ -258,6 +258,13 @@
       "old": "passed",
       "new": "passed",
       "checks": "Category name and description creation/editing persist and are visibly rendered; guest changes denied."
+    },
+    {
+      "id": "interface_add-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Owner tree and developer table entry, guest boundary: cancel/close/Escape/reopen no writes; delayed in-flight double-click creates two legacy records but one candidate record/request. Candidate network+503 failures preserve form and allow retry."
     }
   ],
   "legacy_defects": [
@@ -275,11 +282,15 @@
     {
       "id": "interface_tree-04",
       "detail": "Legacy guest category sorting succeeds; mixed-project batches and revoked sessions also mutate sorting. Explicit failed behavior expectations, not counted as correct behavior."
+    },
+    {
+      "id": "interface_add-04",
+      "detail": "Native delayed-response double-click creates2 records and returns2 API0 responses in both old owner/dev; new form prevents second request."
     }
   ],
   "evidence": {
     "directory": "/Users/hujinwu/Documents/Codex/2026-10-03/task-4/interfaces",
-    "browser": "batch7-aggregate-results.json",
+    "browser": "batch9-aggregate-results.json",
     "baseline_tagged_save": "baseline-results.json",
     "legacy_empty": "legacy-empty-trace.zip",
     "direct_db_readback": [
@@ -320,9 +331,18 @@
       "drop-errors-results.json",
       "drop-errors-db.json",
       "drop-errors-source-sha256.json"
-    ]
+    ],
+    "batch9_source": "batch9-source-sha256.json",
+    "batch9_default_tests": "batch9-default-tests.log",
+    "batch9_database": [
+      "old-batch9-db.json",
+      "new-batch9-db.json"
+    ],
+    "create_before": "create-rapid-before-results.json",
+    "schema_advanced_before": "schema-advanced-before-results.json",
+    "batch9_visual": "1920x1080 legacy/candidate schema screenshots manually viewed: candidate exposes full-schema tab, union type and tuple semantics; legacy displays tuple as a single Items row and union as string. Deep candidate rows accessible through13 levels; layouts/scroll differ, no whole-page equivalence claimed."
   },
-  "remaining": "All unlisted original compounds remain notrun by this increment, including remaining tree navigation/cancel/back, creation validation/rapid submits, interface metadata/collaboration, Body/Schema/rich-editor gaps. Preserve main matrix and combine C Tag settings evidence.",
+  "remaining": "Unlisted original assertions remain notrun, including metadata/WS, Body/JSON5/preview/F9, notes, remaining tree navigation and additional Schema controls. Separately reproduced collaboration-lock release bug is being coordinated with parent; not part of90-test aggregate. Preserve original246 matrix.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -361,6 +381,12 @@
       "before": "Rejected network/HTTP promises escaped onDrop without user feedback in all three drag branches.",
       "after": "Catch transport failure with API errmsg or retry fallback; no success refresh after failure.",
       "validation": "Six native pointer tests: each branch network abort and HTTP503, visible message, unchanged API/menu, restored real API success and reload; exact six fixture DB readbacks passed."
+    },
+    {
+      "id": "interface_add-04-inflight-double-submit",
+      "before": "Both versions sent two add requests and created two identical method/path records on native double-click while responses were held. Owner/developer reproduced.",
+      "after": "AddInterfaceForm synchronous in-flight guard and loading state; both owned Menu/List handlers return submission promise; finally releases guard and transport error preserves retryable form.",
+      "validation": "Paired7-method creation and cancel/close/Escape, duplicate rejection, delayed double-click. Candidate tree/list paths network abort+HTTP503 then same-form successful retry. Frontend interaction protection only; concurrent direct API uniqueness is outside this fix."
     }
   ],
   "review_notes": [
@@ -376,6 +402,11 @@
       "id": "interface_list-01",
       "status": "notrun",
       "reason": "status/tag filters passed for owner/dev/guest/public nonmember; private nonmember denied. Both versions lack public/open-state filter control; original compound wording retained pending owner disposition, not promoted."
+    },
+    {
+      "id": "schema_json-full-tab",
+      "status": "notrun",
+      "reason": "Legacy lacks full-schema JSON tab; root advanced source is a separate paired path. Do not count legacy capability observations as completed JSON-tab tests."
     }
   ],
   "atomic_additions": [
@@ -437,6 +468,38 @@
       "old": "passed",
       "new": "passed",
       "checks": "Category add cancel/reopen and interface/category delete-confirm cancellation preserve records. Browser Back/Close/Escape portions still notrun."
+    },
+    {
+      "id": "interface_add-01-title-path-methods",
+      "scenario": "interface_add-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Required title/path,101-character rejection,7 method choices each saved to exact category with API0/visible result/reload; guest all denied. Category starts preselected; missing-category edge not covered."
+    },
+    {
+      "id": "schema_json-03-first-invalid",
+      "scenario": "schema_json-03",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "passed",
+      "checks": "Candidate owner/dev/guest: first invalid edit blocks save with zero POST, cancel leaving preserves draft, confirm drops draft, recover/save/reload exact JSON and guest denial. Legacy has no full-schema tab."
+    },
+    {
+      "id": "schema_visual-03-depth-tuple",
+      "scenario": "schema_visual-03",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "passed",
+      "checks": "Candidate depth13 accessible and edited; tuple middle delete/add preserves untouched boolean/string members, union/unknown keywords preserved, collapse/reopen/save/reload, guest denial. Legacy only initial UI/source observations; edits not complete."
+    },
+    {
+      "id": "schema_visual-02-advanced-source",
+      "scenario": "schema_visual-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Paired owner/dev/guest root advanced source edit/cancel/reopen/recover/save/API0/visible result/reload; unknown keywords retained and guest denied. Invalid legacy closes/discards draft; candidate remains open with error. Other visual02 controls remain incomplete."
     }
   ]
 }
