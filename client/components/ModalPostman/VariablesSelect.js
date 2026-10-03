@@ -69,7 +69,7 @@ class VariablesSelect extends Component {
       let isArrayParams = clickValue.lastIndexOf(']') === clickValue.length - 1;
       let key = isArrayParams ? deleteLastArr(clickValue) : deleteLastObject(clickValue);
       this.setState({
-        expandedKeys: [key],
+        expandedKeys: this.expansionPath(key),
         selectedKeys: [CanSelectPathPrefix + clickValue]
       });
       // this.props.click(clickValue);
@@ -82,6 +82,15 @@ class VariablesSelect extends Component {
     }
   }
 
+  expansionPath = key => {
+    const keys = [];
+    while (key && key !== '$') {
+      keys.unshift(key);
+      key = key.endsWith(']') ? key.replace(/\[[^\]]+\]$/, '') : deleteLastObject(key);
+    }
+    return keys;
+  };
+
   handleSelect = key => {
     this.setState({
       selectedKeys: [key]
@@ -91,7 +100,7 @@ class VariablesSelect extends Component {
       this.props.click(key);
     } else {
       this.setState({
-        expandedKeys: [key]
+        expandedKeys: Array.from(new Set([...this.state.expandedKeys, ...this.expansionPath(key)]))
       });
     }
   };

@@ -211,13 +211,14 @@
       "owner": "C",
       "bucket": "local_executable",
       "remaining": "",
-      "new": "notrun",
-      "old": "notrun",
+      "new": "passed",
+      "old": "passed",
       "evidence": [
         "swagger-paired-final-results.json",
-        "swagger-old-eventual-results.json"
+        "swagger-old-eventual-results.json",
+        "swagger-history-results.json"
       ],
-      "note": "Partial: all three mode persistence and success activity logs pass both versions. Exact revision snapshot history remains unverified; compound not passed. Legacy success can precede async persistence."
+      "note": "Three mode persistence and activity logs verified both versions. New exact revision before/after description snapshots match stored schema: normal preserves manual, good retains annotation, merge replaces; parent/version continuity verified. Old baseline has no documentation revision service, so revision subitem not applicable. Legacy response may precede persistence."
     },
     {
       "id": "swagger_sync-04",
@@ -236,9 +237,9 @@
     }
   ],
   "new_counts": {
-    "passed": 16,
+    "passed": 17,
     "failed": 1,
-    "notrun": 1
+    "notrun": 0
   },
   "validation": {
     "modernization": "337 passed, 6 skipped, 0 failed with exact existing integrator ec712ab fixture; shared frontend test not committed here",
