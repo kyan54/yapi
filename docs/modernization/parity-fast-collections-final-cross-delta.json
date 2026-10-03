@@ -1,0 +1,802 @@
+{
+  "format": "yapi.parity.final-cross-supplement.v1",
+  "owner": "B",
+  "baseEvidenceCommit": "feac2684b00118be3bad299ebafa78a0b5dce5c0",
+  "productChanges": false,
+  "primaryMatrixModified": false,
+  "runtime": {
+    "commit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031",
+    "tree": "2e9a60b91bc55aae51c75664514b39cdf88d352b",
+    "imageId": "sha256:c9e998510db095ef475cba3d2bd963c54b1894b8f00f63136bcf4a4870eb2f5d",
+    "attestation": "/Users/hujinwu/Documents/Codex/2026-10-03/task/parity-evidence/final-runtime-attestation.json",
+    "sha256": "7d87489c0bd5b3164da45646346fcc090c9d39a03b4fcf749d7392b344315c42",
+    "staticAssetsRechecked": 5
+  },
+  "started": "2026-10-03T12:45:36.530Z",
+  "finished": "2026-10-03T12:45:50.028Z",
+  "projectScope": {
+    "projectId": 930423,
+    "interfaceId": 940470,
+    "targetCollection": 901604,
+    "neighborCollection": 901609,
+    "neighborCase": 901209,
+    "neighborMock": 18,
+    "syntheticFixtureRun": "mac20261003b",
+    "syntheticFixtureSha256": "031fd6559b6bf12fedb27f33869beee07b6eaa3247956c415242db0908ffc2f6"
+  },
+  "rows": [
+    {
+      "id": "run-save-single-chain",
+      "status": "passed",
+      "endpoint": "/api/col/add_case",
+      "requests": [
+        {
+          "projectId": "930423",
+          "colId": 901604,
+          "interfaceId": 940470
+        }
+      ],
+      "responses": [
+        {
+          "http": 200,
+          "errcode": 0,
+          "returnedId": 901217,
+          "data": {
+            "_id": 901217,
+            "project_id": 930423,
+            "col_id": 901604,
+            "interface_id": 940470
+          }
+        }
+      ],
+      "count": 1,
+      "caseId": 901217,
+      "unique": 1,
+      "neighborUnchanged": true,
+      "visibleAfterReload": true,
+      "db": {
+        "_id": 901217,
+        "casename": "Final B single save 1791031456767-proof",
+        "uid": 910002,
+        "col_id": 901604,
+        "project_id": 930423,
+        "interface_id": 940470
+      },
+      "role": {
+        "uid": 910002,
+        "effectiveRole": "owner"
+      },
+      "scope": "This exact new runtime execution only; no old-version or all-role inference."
+    },
+    {
+      "id": "mock-delayed-double-retry-chain",
+      "status": "passed",
+      "endpoint": "/api/plugin/advmock/case/save",
+      "requests": [
+        {
+          "projectId": "930423",
+          "interfaceId": "940470"
+        },
+        {
+          "projectId": "930423",
+          "interfaceId": "940470"
+        }
+      ],
+      "responses": [
+        {
+          "http": 200,
+          "errcode": 408,
+          "data": null
+        },
+        {
+          "http": 200,
+          "errcode": 0,
+          "returnedId": 25,
+          "data": {
+            "_id": 25,
+            "project_id": 930423,
+            "interface_id": 940470
+          }
+        }
+      ],
+      "count": 2,
+      "mockId": 25,
+      "unique": 1,
+      "neighborUnchanged": true,
+      "firstFailureNoWrite": true,
+      "faultInjection": "First actual UI POST res_body changed to empty by route; real server returned408. Both confirmations normal delayed dblclick20ms. Retry unmodified.",
+      "db": {
+        "_id": 25,
+        "interface_id": 940470,
+        "project_id": 930423,
+        "name": "Final B rapid retry 1791031456767-proof",
+        "uid": "910002",
+        "case_enable": true
+      },
+      "role": {
+        "uid": 910002,
+        "effectiveRole": "owner"
+      },
+      "scope": "This exact new runtime execution only; no old-version or all-role inference."
+    },
+    {
+      "id": "ai-restore-rapid-chain",
+      "status": "passed",
+      "endpoint": "/api/documentation/restore",
+      "requests": [
+        {
+          "projectId": 930423,
+          "interfaceId": 940470,
+          "expectedVersion": 2,
+          "version": 0
+        }
+      ],
+      "responses": [
+        {
+          "http": 200,
+          "errcode": 0,
+          "data": {}
+        }
+      ],
+      "count": 1,
+      "beforeVersion": 2,
+      "afterVersion": 3,
+      "revisionCountDelta": 1,
+      "visibleAfterReload": true,
+      "externalLLMCalls": 0,
+      "db": {
+        "_id": 940470,
+        "project_id": 930423,
+        "docs_revision": 3,
+        "docs_revision_head": "dcee976b-6be2-457a-9d9a-94558aab54bb"
+      },
+      "role": {
+        "uid": 910002,
+        "effectiveRole": "owner"
+      },
+      "scope": "This exact new runtime execution only; no old-version or all-role inference."
+    }
+  ],
+  "roleChecks": [
+    {
+      "role": "guest",
+      "uid": 910003,
+      "deniedWrites": [
+        {
+          "endpoint": "/api/col/add_case",
+          "http": 200,
+          "errcode": 400,
+          "projectId": 930423,
+          "interfaceId": 940470,
+          "colId": 901604
+        },
+        {
+          "endpoint": "/api/plugin/advmock/case/save",
+          "http": 200,
+          "errcode": 40033,
+          "projectId": 930423,
+          "interfaceId": 940470
+        },
+        {
+          "endpoint": "/api/documentation/restore",
+          "http": 403,
+          "errcode": 403,
+          "projectId": 930423,
+          "interfaceId": 940470
+        }
+      ],
+      "dbUnchanged": true,
+      "ui": {
+        "url": "/project/930423/interface/api/940470",
+        "runTabVisible": true,
+        "mockTabVisible": true,
+        "aiButtonVisible": true,
+        "mockCreateDisabled": true
+      },
+      "status": "passed"
+    },
+    {
+      "role": "unrelated",
+      "uid": 910004,
+      "deniedWrites": [
+        {
+          "endpoint": "/api/col/add_case",
+          "http": 200,
+          "errcode": 400,
+          "projectId": 930423,
+          "interfaceId": 940470,
+          "colId": 901604
+        },
+        {
+          "endpoint": "/api/plugin/advmock/case/save",
+          "http": 200,
+          "errcode": 40033,
+          "projectId": 930423,
+          "interfaceId": 940470
+        },
+        {
+          "endpoint": "/api/documentation/restore",
+          "http": 403,
+          "errcode": 403,
+          "projectId": 930423,
+          "interfaceId": 940470
+        }
+      ],
+      "dbUnchanged": true,
+      "ui": {
+        "url": "/project/930423/interface/api/940470",
+        "runTabVisible": false,
+        "mockTabVisible": false,
+        "aiButtonVisible": false
+      },
+      "status": "passed"
+    }
+  ],
+  "guestRealUI": {
+    "project": 930423,
+    "interface": 940470,
+    "col": 901604,
+    "uid": 910003,
+    "effectiveRole": "guest",
+    "checks": [
+      {
+        "action": "Run save actual UI",
+        "http": 200,
+        "errcode": 400,
+        "errmsg": "没有权限",
+        "dialogRetained": true,
+        "confirmEnabled": true
+      },
+      {
+        "action": "AI restore actual UI",
+        "http": 403,
+        "errcode": 403,
+        "visibleForbidden": true,
+        "confirmationVisibleAfterSettling": true
+      }
+    ],
+    "runSave": {
+      "visible": true,
+      "disabled": false
+    },
+    "beforeDB": "3effc82643f1e03b87636ebe0369dc451407fa765103851b9629fb339ab066f8",
+    "afterDB": "3effc82643f1e03b87636ebe0369dc451407fa765103851b9629fb339ab066f8",
+    "dbUnchanged": true,
+    "status": "passed"
+  },
+  "visualReview": {
+    "status": "passed",
+    "scope": "Three requested owner modal paths at1920x1080 and1024x1080, plus selected role denial views; not all product layouts.",
+    "reviewed": [
+      "run-save-dialog-1920",
+      "run-save-dialog-1024",
+      "mock-create-dialog-1920",
+      "mock-create-dialog-1024",
+      "ai-restore-confirm-1920",
+      "ai-restore-confirm-1024",
+      "mock-body-scroll-1920",
+      "mock-body-scroll-1024",
+      "guest-run-save-denied-1920",
+      "guest-ai-restore-denied-1920",
+      "outsider-interface-boundary-1024"
+    ],
+    "observations": [
+      "Run save520px dialog remains centered with selected collection and footer visible at both widths.",
+      "Mock780px modal response body is below the initial viewport but its520px scroll body exposes all300px of the editor; footer remains separate and usable.",
+      "AI restore520px confirmation correctly layers above960px history dialog; unconfigured provider banner visible, no generation invoked.",
+      "Guest save denial retains modal and visible no-permission toast; AI denial shows FORBIDDEN behind retained confirmation.",
+      "True unrelated user sees no-permission page and retry, no Run/Mock/AI controls."
+    ]
+  },
+  "focus": {
+    "status": "failed",
+    "assertion": "Strict Tab wrap must stay inside the active document dialog on every wrap.",
+    "classification": "Unresolved headless Chrome/document-focus behavior; no product root cause claimed.",
+    "observations": [
+      "At1920 first Tab from final Run-confirm button produces activeElement BODY and document.hasFocus=false; next Tab returns to modal close button. Reproduced in independent read-only context.",
+      "At1024 subsequent wrap remains in modal.",
+      "Main capture saw analogous first1920 jumps on Mock and AI modals; no background page control was observed to receive focus.",
+      "No shared compat/style product change attempted; parent notified for coordination."
+    ],
+    "readOnlyProbe": [
+      {
+        "type": "run-last-button-tab",
+        "width": 1920,
+        "steps": [
+          {
+            "tag": "BUTTON",
+            "text": "确 定",
+            "role": null,
+            "tabIndex": 0,
+            "inDialog": true,
+            "inModalWrap": true,
+            "docHasFocus": true
+          },
+          {
+            "tag": "BODY",
+            "text": "IconCreated with Sketch.Synthetic parity grou",
+            "role": null,
+            "tabIndex": -1,
+            "inDialog": false,
+            "inModalWrap": false,
+            "docHasFocus": false
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "role": null,
+            "tabIndex": 0,
+            "inDialog": true,
+            "inModalWrap": true,
+            "docHasFocus": true
+          },
+          {
+            "tag": "INPUT",
+            "text": "",
+            "role": null,
+            "tabIndex": 0,
+            "inDialog": true,
+            "inModalWrap": true,
+            "docHasFocus": true
+          },
+          {
+            "tag": "DIV",
+            "text": "添加新集合",
+            "role": "button",
+            "tabIndex": 0,
+            "inDialog": true,
+            "inModalWrap": true,
+            "docHasFocus": true
+          }
+        ]
+      },
+      {
+        "type": "run-last-button-tab",
+        "width": 1024,
+        "steps": [
+          {
+            "tag": "BUTTON",
+            "text": "确 定",
+            "role": null,
+            "tabIndex": 0,
+            "inDialog": true,
+            "inModalWrap": true,
+            "docHasFocus": true
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "role": null,
+            "tabIndex": 0,
+            "inDialog": true,
+            "inModalWrap": true,
+            "docHasFocus": true
+          },
+          {
+            "tag": "INPUT",
+            "text": "",
+            "role": null,
+            "tabIndex": 0,
+            "inDialog": true,
+            "inModalWrap": true,
+            "docHasFocus": true
+          },
+          {
+            "tag": "DIV",
+            "text": "添加新集合",
+            "role": "button",
+            "tabIndex": 0,
+            "inDialog": true,
+            "inModalWrap": true,
+            "docHasFocus": true
+          },
+          {
+            "tag": "BUTTON",
+            "text": "取 消",
+            "role": null,
+            "tabIndex": 0,
+            "inDialog": true,
+            "inModalWrap": true,
+            "docHasFocus": true
+          }
+        ]
+      },
+      {
+        "type": "mock-body-scroll",
+        "width": 1920,
+        "before": {
+          "client": 520,
+          "scroll": 831,
+          "overflow": "scroll",
+          "top": 0
+        },
+        "after": {
+          "client": 520,
+          "scroll": 831,
+          "top": 311
+        },
+        "editorBox": {
+          "x": 746.5,
+          "y": 344.375,
+          "width": 518.5,
+          "height": 300
+        },
+        "footerBox": {
+          "x": 1262.40625,
+          "y": 682,
+          "width": 63.59375,
+          "height": 32
+        }
+      },
+      {
+        "type": "mock-body-scroll",
+        "width": 1024,
+        "before": {
+          "client": 520,
+          "scroll": 831,
+          "overflow": "scroll",
+          "top": 311
+        },
+        "after": {
+          "client": 520,
+          "scroll": 831,
+          "top": 311
+        },
+        "editorBox": {
+          "x": 298.5,
+          "y": 344.375,
+          "width": 518.5,
+          "height": 300
+        },
+        "footerBox": {
+          "x": 814.40625,
+          "y": 682,
+          "width": 63.59375,
+          "height": 32
+        }
+      }
+    ]
+  },
+  "screenshots": [
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/ai-restore-confirm-1024.png",
+      "sha256": "664bea82e611e6e03259fb8247fe09ebca8a3884c68ae7dee6469cc093f14461",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/ai-restore-confirm-1920.png",
+      "sha256": "76f8b76161c93fc8193d269fc4b000092d190761a2b8fc89a5230c2d402752ab",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/ai-restored-history-1024.png",
+      "sha256": "1f1b4580f24e149d1a44b4ced4b35c8cd452e7ae8dafa6a3b4f2d259adc1db18",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/ai-restored-history-1920.png",
+      "sha256": "a48da8fcb1eef2333fae554fbc2593e0346e8d9b7731aa1188aebf4cbc7dcb44",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/developer-interface-boundary-1024.png",
+      "sha256": "cc1358050e2044521b629dc67a8d34b1926a0db8f800d69f7d9e42ed6901e1a1",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/developer-interface-boundary-1920.png",
+      "sha256": "3d01189774e07b3332d62829e6f99dd2ca9b6a03166725ba58b5bc18d3291d06",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/developer-mock-boundary-1024.png",
+      "sha256": "a60806fdd74adcbc9c50dec313760a194157f9a17aef9bae4c0021334cd30691",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/developer-mock-boundary-1920.png",
+      "sha256": "d503716417b3c380f7e0e4387d0cc3974be42b35aac6ab92d19f21caa8d19c74",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/guest-ai-restore-denied-1920.png",
+      "sha256": "8317016a22d1665640eb0b3147d57deebcfff88f6610da82511cf5e5165e8ac2",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/guest-run-save-denied-1920.png",
+      "sha256": "c14a313957e955f89a70df0ceb8efb5a60ea4704cbec7e8cedd3c9cf84498dc7",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/mock-body-scroll-1024.png",
+      "sha256": "05aca0430774f82f1e2c80bd53d0ad6b4aead7e2b3e3deb35327ec9e0990c643",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/mock-body-scroll-1920.png",
+      "sha256": "1e3b0b5a874c809986d52b97174c651fa07c9bed369b9744b74136c241ab04c8",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/mock-create-dialog-1024.png",
+      "sha256": "297fcd6c6a39d0fbb0d5f3dc1d9b88a7d89a35ad3a4b63f703ce1816cbadffe5",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/mock-create-dialog-1920.png",
+      "sha256": "c31f8c4a3f865c2a6a9fb8e66830657bccba79d424a1e90f61ac170645d646ed",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/mock-failure-retained-1024.png",
+      "sha256": "ddfb3c87409645d65ee372b9420c7322ee42193071789ac25884b23d0c14c140",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/mock-failure-retained-1920.png",
+      "sha256": "c14dd1d70dca9a8b00658110e049bbd39edaa4263d377c89ead321629b942d2b",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/mock-persisted-1024.png",
+      "sha256": "251cc905acf487134c468f1a42fb9fb826bb291deecd0286c161ce450a09687c",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/mock-persisted-1920.png",
+      "sha256": "bddeb3f13b54ec8316519de8f6685ed225072125945fe01527be91fa8eaee055",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/outsider-interface-boundary-1024.png",
+      "sha256": "e6fcaa0f24c0bbd8ed0cba5e6358aaea83c6a6aef9ef0f2534f9c1ae8f2e8c77",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/outsider-interface-boundary-1920.png",
+      "sha256": "9e960bcab3ef68e3f236c29ad0cd355a61706142671321538c17f5d236db6498",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/run-save-dialog-1024.png",
+      "sha256": "dee01e48414dcb89b30c313b6d04b8bcbc0b5df11d03f40d6c41a37c6e0d68d4",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/run-save-dialog-1920.png",
+      "sha256": "537a33e8da79aa1c46e5bd45f892f589721c1a4e04d9197ebff099e99eddbd9d",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": true,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/run-save-persisted-1024.png",
+      "sha256": "fba452e7bbc06283783ee13f7d2b75e7781174acba7b01d4c459dae0a9f9e6fd",
+      "pixels": [
+        1024,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/run-save-persisted-1920.png",
+      "sha256": "355cde615c47b7410eb23448bde1a7c9035c03c4dd376ed0161454d606989039",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "visuallyReviewed": false,
+      "runtimeCommit": "ea05941a038b5b13b8302800a1f9ec31bb4a3031"
+    }
+  ],
+  "evidenceFiles": [
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/final-cross-results.json",
+      "sha256": "174e51a22c2af1a662aea1bf1d7f0b20c773f1ffb092d0410f0ea0206829f562"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/target-before.json",
+      "sha256": "bbe2c72a31db3ec4eea5cb8c8603365cb5ee64f425c9416e20372e033d2dede0"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/target-after-owner.json",
+      "sha256": "f2b9875322a81053976155ec453ac4b6be795043f1984b3940ab28cd47a754a4"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/fixture.json",
+      "sha256": "1f7ade4851a7e244e0123593cc324553ef3232a5f55c58cc3147d0f06edd0861"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/guest-ui.json",
+      "sha256": "2a097a68ff3690df1016007a6fef16ddd2b4cb57a42d3eda9be47ba239f1a9ea"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/focus-probe.json",
+      "sha256": "680e947a70ee1e121a32b04039c058330afc4110f8b58916cf454fd7678ba367"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/parity-final-cross-b.cjs",
+      "sha256": "441080ce071229a106e2ca0eb7ed4664f252c9f311125fc19e1e897b69e1a5d1"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/guest-ui.cjs",
+      "sha256": "b0c6eddf2791559eeb49f6723dd56dd0a0fe7b1428b654b19a1e9441c97a23d8"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/focus-probe.cjs",
+      "sha256": "95b38edffd5c4c25e463fc95410c9a2cc210b1d3f7e0aaf62b7a4ab419206060"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/attempt1-results.json",
+      "sha256": "2b42797f98892e3c40d5577e4629d3b53a5cc35f14e9105ddca49337de4af053"
+    },
+    {
+      "path": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections/final-cross/attempt2-results.json",
+      "sha256": "bf4fcd66a2b47c9b082975c697871443d06d775d867721ef7b1dbf00a078113d"
+    }
+  ],
+  "captureSourceNotes": [
+    "Standalone Mac capture scripts; private storage-state files are consumed by path only and never copied, printed or uploaded.",
+    "Request/response evidence exposes only synthetic IDs, counts and business codes; credential headers/storage state are absent.",
+    "Initial attempt stopped before Run POST at overstrict focus assertion.",
+    "Second attempt completed an earlier distinct Run case but stopped at test-only string-versus-number project-ID comparison. It is retained in attempt2 evidence and not counted as the passing same-execution chain.",
+    "Final passing Run uses distinct -proof name; earlier synthetic objects left intact, no cleanup.",
+    "Guest screenshots were recaptured after waiting for modal animation classes and disabling animations; initial transient capture is not final visual evidence."
+  ],
+  "crossRows": [
+    {
+      "id": "cross-repeat_actions",
+      "status": "notrun",
+      "coverage": "partial",
+      "reason": "Original all-controls/all-roles/all-plugins quantifier remains open."
+    },
+    {
+      "id": "cross-role_matrix",
+      "status": "notrun",
+      "coverage": "partial",
+      "reason": "Original all-controls/all-roles/all-plugins quantifier remains open."
+    },
+    {
+      "id": "cross-plugin_matrix",
+      "status": "notrun",
+      "coverage": "partial",
+      "reason": "Original all-controls/all-roles/all-plugins quantifier remains open."
+    }
+  ],
+  "narrowGapsClosed": [
+    "Run single actual UI save has same-execution count1→returned case901217→project930423/col901604/interface940470→errcode0→direct DB unique1→reload visible.",
+    "Mock delayed rapid confirmation has one real server408/no-write, retry rapid confirmation one server0/newID25, DB unique1 and neighbor18 unchanged.",
+    "AI rapid restore has exact POST count1, target interface940470, reviewed expectedVersion2, restored version0 as new version3, direct DB revision count+1 and reload/history visible.",
+    "Owner success and exact guest910003/true nonmember910004 denial for these three mutation endpoints; guest Run/AI real UI denial and Mock disabled create, outsider hidden page."
+  ],
+  "remainingLimits": [
+    "Run final supplement is single submission, as requested; earlier rapid count evidence remains separate and is not fabricated into this trace.",
+    "No actual dev-role or admin-role run on this final project; developer.json is guest. Anonymous/inherited/public-private combinations not retested.",
+    "No plugin lifecycle sweep.",
+    "Strict focus wrap limitation remains open.",
+    "No old vm2, Mac script runner, external LLM/SSO or non-synthetic services exercised.",
+    "AI proposal preview/diff creation was not run on final candidate because external generation is outside this authorization; historical controlled-fixture evidence remains version-specific."
+  ],
+  "validation": {
+    "ownerChainsPassed": 3,
+    "deniedDirectWrites": 6,
+    "guestUIDenials": 2,
+    "guestMockCreateDisabled": true,
+    "unrelatedUIControlsAbsent": true,
+    "dbUnchangedOnDeniedWrites": true,
+    "screenshots": 24,
+    "visualReviewed": 11,
+    "productFilesChanged": 0,
+    "staticAssetsRechecked": 5
+  }
+}
