@@ -10,7 +10,8 @@ const sha1 = require('sha1');
 const fixture = require('../test-modernization/fixtures/interface.json');
 let connection, child, directory, baseURL, log = '';
 const root = path.resolve(__dirname, '..');
-test.describe.configure({ mode: 'serial' });
+// Independent flows: a UI failure must not skip the Mock/assertion endpoint test.
+test.describe.configure({ mode: 'default' });
 test.skip(!process.env.YAPI_TEST_MONGO_URI, 'Requires a disposable MongoDB service; this is real app E2E with a deterministic local model response.');
 test.beforeAll(async () => {
   const dbName = 'yapi_browser_test_' + process.pid + '_' + Date.now();
@@ -85,7 +86,17 @@ test('legacy interface editing, request runner, Mock, collection, Swagger and co
       await expect.poll(async()=> (await connection.db.collection('interface').findOne({_id:17})).title).toBe('Browser verified manual edit');
     }
     if(name==='运行') await expect(page.getByRole('button',{name:/^发\s*送$/})).toBeVisible();
-    if(name==='高级Mock') await expect(page.getByRole('radio',{name:'期望',exact:true})).toBeVisible();
+    if(name==='高级Mock') {
+      // AntD styles the native radio input with zero dimensions; the label and
+      // controlled content are the visible UI, while checked state is semantic.
+      await expect(page.getByText('期望',{exact:true})).toBeVisible();
+      await expect(page.getByRole('radio',{name:'期望',exact:true})).toBeChecked();
+      await expect(page.getByRole('button',{name:'添加期望',exact:true})).toBeVisible();
+      await page.getByText('脚本',{exact:true}).click();
+      await expect(page.getByRole('radio',{name:'脚本',exact:true})).toBeChecked();
+      await expect(page.locator('#mock-script')).toBeVisible();
+      await expect(page.getByRole('button',{name:/^保\s*存$/})).toBeVisible();
+    }
   }
   await page.goto(baseURL + '/project/11/interface/col/21');
   await expect(page.getByRole('button', { name: '开始测试', exact: true })).toBeVisible();
