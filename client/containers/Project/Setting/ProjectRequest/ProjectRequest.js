@@ -35,6 +35,7 @@ export default class ProjectRequest extends Component {
   }
 
   handleSubmit = async () => {
+    this.setState({ saveReceipt: '' });
     let result;
     try {
       result = await this.props.updateProjectScript({
@@ -43,11 +44,11 @@ export default class ProjectRequest extends Component {
         after_script: this.state.after_script
       });
     } catch (error) {
-      message.error('保存失败，请检查网络后重试');
+      if (!error || error.errorMessageHandled !== true) message.error('保存失败，请检查网络后重试');
       return;
     }
     if (!result || result.error || !result.payload || !result.payload.data) {
-      message.error('保存失败，请检查网络后重试');
+      if (!result || result.errorMessageHandled !== true) message.error('保存失败，请检查网络后重试');
       return;
     }
     if (result.payload.data.errcode === 0) {
@@ -56,10 +57,12 @@ export default class ProjectRequest extends Component {
         const refreshed = await this.props.getProject(this.props.projectId);
         if (!refreshed || refreshed.error || !refreshed.payload || !refreshed.payload.data ||
           refreshed.payload.data.errcode !== 0 || !refreshed.payload.data.data) {
-          message.error('保存成功，但刷新项目失败，请刷新页面');
+          this.setState({ saveReceipt: '保存成功，但刷新项目失败，请刷新页面' });
+          if (!refreshed || refreshed.errorMessageHandled !== true) message.error('保存成功，但刷新项目失败，请刷新页面');
         }
       } catch (error) {
-        message.error('保存成功，但刷新项目失败，请刷新页面');
+        this.setState({ saveReceipt: '保存成功，但刷新项目失败，请刷新页面' });
+        if (!error || error.errorMessageHandled !== true) message.error('保存成功，但刷新项目失败，请刷新页面');
       }
     } else {
       message.error('保存失败, ' + result.payload.data.errmsg);
@@ -95,6 +98,7 @@ export default class ProjectRequest extends Component {
 
     return (
       <div className="project-request">
+        {this.state.saveReceipt && <div role="status">{this.state.saveReceipt}</div>}
         <Form onSubmit={this.handleSubmit}>
           <FormItem {...formItemLayout} label="Pre-request Script(请求参数处理脚本)">
             <AceEditor

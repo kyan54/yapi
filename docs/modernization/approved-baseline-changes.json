@@ -177,6 +177,10 @@
     "exts/yapi-plugin-swagger-auto-sync/swaggerAutoSync/swaggerAutoSync.js": {
       "baselineSha256": "e4bd147a72808687a8e28ba56c7244d0aae1b4a010886a92ba9ded2f27b08b63",
       "reason": "Restore saved Swagger form values using the route project ID; enforce source edit UI gates, validate business responses, guard duplicate saves, retain committed refresh receipts, and show failed local sync execution status from authorized activity history."
+    },
+    "server/controllers/user.js": {
+      "baselineSha256": "7414d8c3dda443bdad983a218b37d5c0c592b4e11c919b7ff131f9bb9aae1137",
+      "reason": "Explicit owner authorization: enforce the existing administrator-only user-management boundary at user/list before reading paginated records or total counts. Member selection remains on unchanged user/search; default real API regressions cover owner/dev/guest, anonymous/invalid sessions, admin pagination and member search. Explicit owner approval also covers avatar canonical-base64 validation and actual decoded-byte measurement at the unchanged inclusive 200000-byte PNG/JPEG limit; other user actions remain unchanged."
     }
   },
   "dependencies": {

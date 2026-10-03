@@ -557,9 +557,9 @@ function beforeUpload(file) {
   if (!isJPG && !isPNG) {
     message.error('图片的格式只能为 jpg、png！');
   }
-  const isLt2M = file.size / 1024 / 1024 < 0.2;
+  const isLt2M = file.size <= 200000;
   if (!isLt2M) {
-    message.error('图片必须小于 200kb!');
+    message.error('图片大小不能超过200kb');
   }
 
   return (isPNG || isJPG) && isLt2M;
