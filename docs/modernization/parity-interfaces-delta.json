@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-20",
+  "scope": "A/interfaces/batches-1-21",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -224,6 +224,13 @@
       "database": "120 immediate per-save synthetic readbacks",
       "default": "355total349passed6skipped",
       "runtime_source": "335 matched including B4 overlay"
+    },
+    "batch21": {
+      "paired_source": "12/12 passed;request/response ×3roles; old root-advanced alternative, new full-source tab",
+      "related_candidate": "Final49-case Body/Schema regression report in batch21-final-results.json",
+      "database": "12 immediate exact synthetic source readbacks; new owner/dev exact four-space text in request, DB and reopen",
+      "modernization": "358 total352 passed6 skipped; default33 total32 passed1 skipped",
+      "runtime_source": "335 matched including separately authorized B4 overlay"
     }
   },
   "scenarios": [
@@ -573,9 +580,17 @@
       "batch20-db-readbacks.json",
       "batch20-source-sha256.json",
       "batch20-default-tests.log"
+    ],
+    "batch21": [
+      "schema-source-before-results.json",
+      "schema-source-submit-results.json",
+      "batch21-final-results.json",
+      "batch21-final-source-sha256.json",
+      "batch21-modernization-final.log",
+      "batch21-final-default-tests.log"
     ]
   },
-  "remaining": "Full Schema source refs/combinators and formatting gap being finalized; absent legacy full-schema tab/list selection/sort/open-state filter retained as capability limits. Original246 matrix not replaced.",
+  "remaining": "View/rich-editor lifecycle and unsaved navigation closure in progress. Absent legacy full-schema tab/list selection/sort/open-state filter retained as capability limits. Original246 matrix not replaced.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -663,7 +678,8 @@
       "status": "notrun",
       "reason": "Legacy lacks full-schema JSON tab; root advanced source is a separate paired path. Do not count legacy capability observations as completed JSON-tab tests."
     },
-    "Batch15 runtime includes exact B commit 1b08f0701a743b75b1b6b1af6feeb7d071557744 documentation schema-mode/description-edits/outbound/semantic-change four-file overlay; 335 hashes match A source plus that overlay. B product files are not in A commit; integration must include B commit."
+    "Batch15 runtime includes exact B commit 1b08f0701a743b75b1b6b1af6feeb7d071557744 documentation schema-mode/description-edits/outbound/semantic-change four-file overlay; 335 hashes match A source plus that overlay. B product files are not in A commit; integration must include B commit.",
+    "Batch21 correction: source compaction was in client render and final submit normalize, not server canonicalization. Both client paths now preserve valid unchanged strict JSON text; implicit type/JSON5 normalization and invalid rejection retained."
   ],
   "atomic_additions": [
     {
@@ -892,6 +908,22 @@
       "old": "failed",
       "new": "passed",
       "checks": "Table insert/delete row+col, alignment left/center/right, delete table, list indent/outdent/reindent, local1px image file, direct right-click correct target, noncollapsed/keyboard context, owner/dev API0 and guest denial.120 immediate DB readbacks. Old noncollapsed selection collapses; candidate preserved. Candidate-only sanitizer case skipped old.1920 direct-target screenshot visually reviewed."
+    },
+    {
+      "id": "schema_json-01-batch21",
+      "scenario": "schema_json-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Request/response ×3roles actual root advanced source(old alternative) and full Schema tab(new); $defs/$ref, oneOf/allOf, nested extension, four-space formatting survives candidate visual switch/save payload/exact DB/reload; guest denied unchanged. Old has no dedicated full tab; not claiming same-control coverage."
+    },
+    {
+      "id": "schema_json-03-batch21",
+      "scenario": "schema_json-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Request/response ×3roles actual root advanced source(old alternative) and full Schema tab(new); $defs/$ref, oneOf/allOf, nested extension, four-space formatting survives candidate visual switch/save payload/exact DB/reload; guest denied unchanged. Old has no dedicated full tab; not claiming same-control coverage."
     }
   ]
 }
