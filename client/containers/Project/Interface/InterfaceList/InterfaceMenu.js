@@ -58,6 +58,7 @@ class InterfaceMenu extends Component {
     deleteInterfaceData: PropTypes.func,
     initInterface: PropTypes.func,
     history: PropTypes.object,
+    location: PropTypes.object,
     router: PropTypes.object,
     getProject: PropTypes.func,
     fetchInterfaceCatList: PropTypes.func,
@@ -67,18 +68,31 @@ class InterfaceMenu extends Component {
   /**
    * @param {String} key
    */
+  modalEpoch = 0;
+  modalPending = false;
+  disposed = false;
+
   changeModal = (key, status) => {
-    //visible add_cat_modal_visible change_cat_modal_visible del_cat_modal_visible
-    let newState = {};
-    newState[key] = status;
-    this.setState(newState);
+    if (!status && this.modalPending) return;
+    this.modalEpoch += 1;
+    this.modalPending = false;
+    this.setState({ [key]: status, modalPending: false });
   };
 
-  handleCancel = () => {
-    this.setState({
-      visible: false
-    });
+  setModalPending = pending => {
+    this.modalPending = pending;
+    this.setState({ modalPending: pending });
   };
+
+  handleCancel = () => this.changeModal('visible', false);
+
+  componentWillUnmount() {
+    this.disposed = true;
+    this.modalEpoch += 1;
+  }
+
+  currentSubmission = (projectId, epoch) =>
+    !this.disposed && this.modalEpoch === epoch && String(this.props.projectId) === String(projectId);
 
   constructor(props) {
     super(props);
@@ -113,6 +127,12 @@ class InterfaceMenu extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
+    if (String(nextProps.projectId) !== String(this.props.projectId) ||
+        nextProps.location.pathname !== this.props.location.pathname) {
+      this.modalEpoch += 1;
+      this.modalPending = false;
+      this.setState({ visible: false, add_cat_modal_visible: false, change_cat_modal_visible: false, modalPending: false });
+    }
     if (this.props.list !== nextProps.list) {
       // console.log('next', nextProps.list)
       this.setState({
@@ -146,14 +166,17 @@ class InterfaceMenu extends Component {
   };
 
   handleAddInterface = (data, cb) => {
-    data.project_id = this.props.projectId;
+    const projectId = this.props.projectId;
+    const epoch = this.modalEpoch;
+    data = { ...data, project_id: projectId };
     return axios.post('/api/interface/add', data).then(res => {
+      if (!this.currentSubmission(projectId, epoch)) return;
       if (res.data.errcode !== 0) {
         return message.error(res.data.errmsg);
       }
       message.success('接口添加成功');
       let interfaceId = res.data.data._id;
-      this.props.history.push('/project/' + this.props.projectId + '/interface/api/' + interfaceId);
+      this.props.history.push('/project/' + projectId + '/interface/api/' + interfaceId);
       this.getList();
       this.setState({
         visible: false
@@ -165,8 +188,11 @@ class InterfaceMenu extends Component {
   };
 
   handleAddInterfaceCat = data => {
-    data.project_id = this.props.projectId;
-    axios.post('/api/interface/add_cat', data).then(res => {
+    const projectId = this.props.projectId;
+    const epoch = this.modalEpoch;
+    data = { ...data, project_id: projectId };
+    return axios.post('/api/interface/add_cat', data).then(res => {
+      if (!this.currentSubmission(projectId, epoch)) return;
       if (res.data.errcode !== 0) {
         return message.error(res.data.errmsg);
       }
@@ -180,7 +206,9 @@ class InterfaceMenu extends Component {
   };
 
   handleChangeInterfaceCat = data => {
-    data.project_id = this.props.projectId;
+    const projectId = this.props.projectId;
+    const epoch = this.modalEpoch;
+    data = { ...data, project_id: projectId };
 
     let params = {
       catid: this.state.curCatdata._id,
@@ -188,7 +216,8 @@ class InterfaceMenu extends Component {
       desc: data.desc
     };
 
-    axios.post('/api/interface/up_cat', params).then(res => {
+    return axios.post('/api/interface/up_cat', params).then(res => {
+      if (!this.currentSubmission(projectId, epoch)) return;
       if (res.data.errcode !== 0) {
         return message.error(res.data.errmsg);
       }
@@ -386,6 +415,9 @@ class InterfaceMenu extends Component {
           <Modal
             title="添加接口"
             visible={this.state.visible}
+            closable={!this.state.modalPending}
+            keyboard={!this.state.modalPending}
+            maskClosable={!this.state.modalPending}
             onCancel={() => this.changeModal('visible', false)}
             footer={null}
             className="addcatmodal"
@@ -395,6 +427,7 @@ class InterfaceMenu extends Component {
               catid={this.state.curCatid}
               onCancel={() => this.changeModal('visible', false)}
               onSubmit={this.handleAddInterface}
+              onPendingChange={this.setModalPending}
             />
           </Modal>
         ) : (
@@ -405,6 +438,9 @@ class InterfaceMenu extends Component {
           <Modal
             title="添加分类"
             visible={this.state.add_cat_modal_visible}
+            closable={!this.state.modalPending}
+            keyboard={!this.state.modalPending}
+            maskClosable={!this.state.modalPending}
             onCancel={() => this.changeModal('add_cat_modal_visible', false)}
             footer={null}
             className="addcatmodal"
@@ -412,6 +448,7 @@ class InterfaceMenu extends Component {
             <AddInterfaceCatForm
               onCancel={() => this.changeModal('add_cat_modal_visible', false)}
               onSubmit={this.handleAddInterfaceCat}
+              onPendingChange={this.setModalPending}
             />
           </Modal>
         ) : (
@@ -422,6 +459,9 @@ class InterfaceMenu extends Component {
           <Modal
             title="修改分类"
             visible={this.state.change_cat_modal_visible}
+            closable={!this.state.modalPending}
+            keyboard={!this.state.modalPending}
+            maskClosable={!this.state.modalPending}
             onCancel={() => this.changeModal('change_cat_modal_visible', false)}
             footer={null}
             className="addcatmodal"
@@ -430,6 +470,7 @@ class InterfaceMenu extends Component {
               catdata={this.state.curCatdata}
               onCancel={() => this.changeModal('change_cat_modal_visible', false)}
               onSubmit={this.handleChangeInterfaceCat}
+              onPendingChange={this.setModalPending}
             />
           </Modal>
         ) : (

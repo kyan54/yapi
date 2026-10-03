@@ -19,11 +19,14 @@ class AddInterfaceForm extends Component {
     form: PropTypes.object,
     onSubmit: PropTypes.func,
     onCancel: PropTypes.func,
+    onPendingChange: PropTypes.func,
     catid: PropTypes.number,
     catdata: PropTypes.array
   }
   state = { submitting: false };
   submitting = false;
+  disposed = false;
+  componentWillUnmount() { this.disposed = true; }
 
   handleSubmit = (e) => {
     e.preventDefault();
@@ -35,14 +38,19 @@ class AddInterfaceForm extends Component {
         return;
       }
       this.setState({ submitting: true });
+      if (this.props.onPendingChange) this.props.onPendingChange(true);
       try {
         await this.props.onSubmit(values, () => this.props.form.resetFields());
       } catch (error) {
+        if (this.disposed) return;
         const response = error.response && error.response.data;
         message.error((response && response.errmsg) || '接口创建失败，请重试');
       } finally {
         this.submitting = false;
-        this.setState({ submitting: false });
+        if (!this.disposed) {
+          this.setState({ submitting: false });
+          if (this.props.onPendingChange) this.props.onPendingChange(false);
+        }
       }
     });
   }
@@ -79,6 +87,7 @@ class AddInterfaceForm extends Component {
     return (
 
       <Form onSubmit={this.handleSubmit}>
+        {this.state.submitting && <p role="status" style={{ textAlign: 'center' }}>正在提交，请稍候；完成后可关闭。</p>}
         <FormItem
           {...formItemLayout}
           label="接口分类"
@@ -123,7 +132,7 @@ class AddInterfaceForm extends Component {
           <span style={{ color: "#929292" }}>详细的接口数据可以在编辑页面中添加</span>
         </FormItem>
         <FormItem className="catModalfoot" wrapperCol={{ span: 24, offset: 8 }} >
-          <Button onClick={this.props.onCancel} style={{ marginRight: "10px" }}  >取消</Button>
+          <Button disabled={this.state.submitting} onClick={this.props.onCancel} style={{ marginRight: "10px" }}  >取消</Button>
           <Button
             type="primary"
             htmlType="submit"
