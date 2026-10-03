@@ -612,18 +612,18 @@ test('case endpoints use live collection scope and deny inaccessible source copi
   await connection.db.collection('project').updateOne({_id:11},{$set:{project_type:'private'},$push:{members:{uid:97,role:'dev',username:'Synthetic case editor',email}}});
   await connection.db.collection('project').insertOne({_id:12,uid:9,group_id:8,name:'Synthetic inaccessible project',project_type:'private',members:[],basepath:'',env:[]});
   await connection.db.collection('interface_col').insertOne({_id:24,uid:9,project_id:12,name:'Synthetic private collection'});
-  await connection.db.collection('interface').insertOne({...fixture,_id:19,project_id:12,uid:9,title:'Synthetic private source'});
-  await connection.db.collection('interface_case').insertMany([{_id:43,uid:9,col_id:24,project_id:12,interface_id:19,casename:'Private case'},{_id:44,uid:97,col_id:21,project_id:11,interface_id:17,casename:'Own case'}]);
+  await connection.db.collection('interface').insertOne({...fixture,_id:119,project_id:12,uid:9,title:'Synthetic private source'});
+  await connection.db.collection('interface_case').insertMany([{_id:43,uid:9,col_id:24,project_id:12,interface_id:119,casename:'Private case'},{_id:44,uid:97,col_id:21,project_id:11,interface_id:17,casename:'Own case'}]);
   expect((await(await page.request.post(baseURL+'/api/user/login',{data:{email,password}})).json()).errcode).toBe(0);
   const before=await connection.db.collection('interface_case').find({}).sort({_id:1}).toArray();
   for(const [endpoint,data]of[
     ['add_case',{project_id:11,col_id:24,interface_id:17,casename:'Forged'}],
     ['add_case_list',{project_id:11,col_id:24,interface_list:[17]}],
-    ['add_case_list',{project_id:11,col_id:21,interface_list:[17,19]}],
+    ['add_case_list',{project_id:11,col_id:21,interface_list:[17,119]}],
     ['clone_case_list',{project_id:11,col_id:21,new_col_id:24}],
     ['clone_case_list',{project_id:11,col_id:24,new_col_id:21}],
     ['up_case',{id:44,col_id:24}],
-    ['add_case',{project_id:11,col_id:21,interface_id:19,casename:'Private copy'}]
+    ['add_case',{project_id:11,col_id:21,interface_id:119,casename:'Private copy'}]
   ])expect((await(await page.request.post(baseURL+'/api/col/'+endpoint,{data})).json()).errcode,endpoint).not.toBe(0);
   for(const caseid of [43,99999999])expect((await(await page.request.get(baseURL+'/api/col/case?caseid='+caseid)).json()).errcode).not.toBe(0);
   expect(await connection.db.collection('interface_case').find({}).sort({_id:1}).toArray()).toEqual(before);
