@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-17",
+  "scope": "A/interfaces/batches-1-18",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -207,6 +207,11 @@
       "default": "355 total,349 passed,6 skipped",
       "database": "153 exact synthetic records: old78/new75",
       "runtime_source": "335 matched including separately authorized B4 overlay"
+    },
+    "batch18": {
+      "desktop_paired": "12/12 passed;1024 and1920 × owner/dev/guest",
+      "database": "12 exact synthetic records",
+      "runtime_source": "335 matched including B4 overlay"
     }
   },
   "scenarios": [
@@ -533,9 +538,17 @@
       "batch17-old-db.json",
       "batch17-new-db.json",
       "batch17-source-sha256.json"
+    ],
+    "batch18": [
+      "layout-before-results.json",
+      "layout-final-results.json",
+      "layout-metrics.json",
+      "layout-old-db.json",
+      "layout-new-db.json",
+      "layout-source-sha256.json"
     ]
   },
-  "remaining": "Original246 matrix retained. Continue A remark toolbar/button gaps and parent-reported1024 interface table overflow; no claim of complete compound coverage.",
+  "remaining": "Original246 matrix retained. Continue A remark toolbar/button gaps; full compound coverage not claimed.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -598,7 +611,8 @@
       "after": "Track each observed Markdown value; only real changes increment existing editRevision, including return to initial A. No initialization delay or revision reset.",
       "validation": "Four real UI before failures/four after passes; actual Form initialization/success/pending tests; exact A database readback."
     },
-    "Batch17: when moving the final row out of the last category page, clamp current page to the refreshed total and refetch. Owner/dev API0+visible20rows+DB+reload; guest denied remains same page. Five actual component tests."
+    "Batch17: when moving the final row out of the last category page, clamp current page to the refreshed total and refetch. Owner/dev API0+visible20rows+DB+reload; guest denied remains same page. Five actual component tests.",
+    "Batch18 parent1024 regression: modern Table inline auto layout overrides legacy fixed CSS. Set tableLayout=fixed only on InterfaceList Table. Long-path before: document1319/table scroll955 vs viewport1024/client612; after both versions document1024/scroll612 and identical column widths.1920 aligned; screenshots visually inspected."
   ],
   "review_notes": [
     {
@@ -824,6 +838,14 @@
       "old": "passed",
       "new": "passed",
       "checks": "Legacy three roles now exercise13-level description and tuple member advanced-source edits, preserve other tuple members/unknown keywords and exact DB. Legacy lacks individual visual tuple member control; candidate prior visual coverage retained."
+    },
+    {
+      "id": "interface-list-desktop-layout-batch18",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "1024/1920 ×3roles: status/tag combine-reset; status/category actual dropdown mutation API0 or guest denial, visible result, exact12 DB readbacks and reload. Long path does not hide tag. No global compat/styles changed."
     }
   ]
 }

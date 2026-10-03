@@ -427,6 +427,7 @@ class InterfaceList extends Component {
         </div>
         <Table
           className="table-interfacelist"
+          tableLayout="fixed"
           pagination={pageConfig}
           columns={columns}
           onChange={this.handleChange}
