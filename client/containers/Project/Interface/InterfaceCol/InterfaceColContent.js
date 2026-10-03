@@ -150,11 +150,12 @@ class InterfaceColContent extends Component {
     this.activeRun = null;
     this.commonSettingIdentity = null;
     this.loadedCollectionId = null;
+    this.savedCommonSetting = null;
     const load = {};
     this.activeCollectionLoad = load;
     this.reports = {};
     this.records = {};
-    this.setState({ running: false, rows: [], commonSettingModalVisible: false, visible: false, advVisible: false });
+    this.setState({ running: false, loadingCollection: true, commonSetting: this.ruleSettings({}), rows: [], commonSettingModalVisible: false, visible: false, advVisible: false });
     this.props.setColData({
       currColId: +newColId,
       collectionLoad: load,
@@ -164,20 +165,32 @@ class InterfaceColContent extends Component {
       isRander: false
     });
 
-    let result = await this.props.fetchCaseList(newColId, load);
-    if (this.activeCollectionLoad !== load) return;
-    if (result.payload.data.errcode === 0) {
-      this.reports = handleReport(result.payload.data.colData.test_report);
-      this.savedCommonSetting = this.ruleSettings(result.payload.data.colData);
+    try {
+      const result = await this.props.fetchCaseList(newColId, load);
+      if (this.activeCollectionLoad !== load) return;
+      const payload = result && !result.error && result.payload && result.payload.data;
+      if (!payload || payload.errcode !== 0 || !payload.colData || !Array.isArray(payload.data)) throw new Error('load failed');
+      const environments = await this.props.fetchCaseEnvList(newColId, load);
+      if (this.activeCollectionLoad !== load) return;
+      const envPayload = environments && !environments.error && environments.payload && environments.payload.data;
+      if (!envPayload || envPayload.errcode !== 0 || !Array.isArray(envPayload.data)) throw new Error('load failed');
+      this.reports = handleReport(payload.colData.test_report);
+      this.savedCommonSetting = this.ruleSettings(payload.colData);
+      this.loadedCollectionId = Number(newColId);
       this.setState({ commonSetting: this.ruleSettings(this.savedCommonSetting) });
+      this.changeCollapseClose();
+      this.handleColdata(payload.data);
+    } catch (_) {
+      if (this.activeCollectionLoad === load) message.error('加载测试集合失败，请刷新重试');
+    } finally {
+      if (this.activeCollectionLoad === load) this.setState({ loadingCollection: false });
     }
-
-    await this.props.fetchCaseEnvList(newColId, load);
-    if (this.activeCollectionLoad !== load) return;
-    this.loadedCollectionId = Number(newColId);
-    this.changeCollapseClose();
-    this.handleColdata(result.payload.data.data || []);
   }
+
+  isCurrentCollectionLoaded = () => Boolean(this.loadedCollectionId &&
+    !this.state.loadingCollection &&
+    this.loadedCollectionId === Number(this.props.currColId) &&
+    this.loadedCollectionId === Number(this.props.match.params.actionId || this.props.currColId));
 
   async componentWillMount() {
     const result = await this.props.fetchInterfaceColList(this.props.match.params.id);
@@ -255,7 +268,7 @@ class InterfaceColContent extends Component {
   }
 
   executeTests = async () => {
-    if (this.activeRun) return;
+    if (this.activeRun || !this.isCurrentCollectionLoaded()) return;
     const run = { colId: this.props.currColId };
     this.activeRun = run;
     this.reports = {};
@@ -710,7 +723,7 @@ class InterfaceColContent extends Component {
 
   openCommonSetting = () => {
     const colId = Number(this.props.currColId);
-    if (this.loadedCollectionId !== colId ||
+    if (!this.isCurrentCollectionLoaded() || this.loadedCollectionId !== colId ||
       Number(this.props.match.params.actionId || colId) !== colId) return;
     this.commonSettingIdentity = { colId };
     this.setState({ commonSettingModalVisible: true,
@@ -1140,11 +1153,11 @@ class InterfaceColContent extends Component {
                   </Button>
                 </Tooltip>
               )}
-              <Button onClick={this.openCommonSetting} style={{
+              <Button onClick={this.openCommonSetting} disabled={!this.isCurrentCollectionLoaded()} style={{
                       marginRight: '8px'
                     }} >通用规则配置</Button>
               &nbsp;
-              <Button type="primary" onClick={this.executeTests} loading={this.state.running} disabled={this.state.running}>
+              <Button type="primary" onClick={this.executeTests} loading={this.state.running} disabled={this.state.running || !this.isCurrentCollectionLoaded()}>
                 开始测试
               </Button>
             </div>
