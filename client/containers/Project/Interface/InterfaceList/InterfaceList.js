@@ -172,6 +172,16 @@ class InterfaceList extends Component {
         },
         () => this.handleRequest(nextProps)
       );
+    } else if (String(nextProps.match.params.id) === String(this.props.match.params.id)) {
+      const category = !!_actionId;
+      const rowsChanged = category
+        ? nextProps.catTableList !== this.props.catTableList
+        : nextProps.totalTableList !== this.props.totalTableList;
+      const total = category ? nextProps.count : nextProps.totalCount;
+      const lastPage = Math.max(1, Math.ceil(Number(total) / limit));
+      if (rowsChanged && Number.isFinite(lastPage) && this.state.current > lastPage) {
+        this.setState({ current: lastPage }, () => this.handleRequest(nextProps));
+      }
     }
   }
 
