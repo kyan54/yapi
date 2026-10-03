@@ -253,6 +253,7 @@ class InterfaceList extends Component {
             <Select
               value={item + ''}
               className="select path"
+              variant="borderless"
               onChange={catid => this.changeInterfaceCat(record._id, catid)}
             >
               {this.props.catList.map(cat => {
@@ -277,6 +278,7 @@ class InterfaceList extends Component {
             <Select
               value={key + '-' + text}
               className="select"
+              variant="borderless"
               onChange={this.changeInterfaceStatus}
             >
               <Option value={key + '-done'}>

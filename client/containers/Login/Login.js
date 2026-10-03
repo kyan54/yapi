@@ -34,7 +34,8 @@ class Login extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      loginType: 'ldap'
+      loginType: 'ldap',
+      submitting: false
     };
   }
 
@@ -49,23 +50,24 @@ class Login extends Component {
   handleSubmit = e => {
     e.preventDefault();
     const form = this.props.form;
-    form.validateFields((err, values) => {
-      if (!err) {
-        if (this.props.isLDAP && this.state.loginType === 'ldap') {
-          this.props.loginLdapActions(values).then(res => {
-            if (res.payload.data.errcode == 0) {
-              this.props.history.replace('/group');
-              message.success('登录成功! ');
-            }
-          });
-        } else {
-          this.props.loginActions(values).then(res => {
-            if (res.payload.data.errcode == 0) {
-              this.props.history.replace('/group');
-              message.success('登录成功! ');
-            }
-          });
+    if (this.submitting) return;
+    form.validateFields(async (err, values) => {
+      if (err || this.submitting) return;
+      this.submitting = true;
+      this.setState({ submitting: true });
+      try {
+        const action = this.props.isLDAP && this.state.loginType === 'ldap'
+          ? this.props.loginLdapActions : this.props.loginActions;
+        const res = await action(values);
+        if (res.payload.data.errcode === 0) {
+          this.props.history.replace('/group');
+          message.success('登录成功! ');
         }
+      } catch (error) {
+        message.error('登录失败，请重试');
+      } finally {
+        this.submitting = false;
+        this.setState({ submitting: false });
       }
     });
   };
@@ -84,8 +86,8 @@ class Login extends Component {
     const { isLDAP } = this.props;
 
     const emailRule =
-      this.state.loginType === 'ldap'
-        ? {}
+      isLDAP && this.state.loginType === 'ldap'
+        ? { required: true, message: '请输入用户名!' }
         : {
             required: true,
             message: '请输入正确的email!',
@@ -133,6 +135,7 @@ class Login extends Component {
             style={changeHeight}
             type="primary"
             htmlType="submit"
+            loading={this.state.submitting}
             className="login-form-button"
           >
             登录

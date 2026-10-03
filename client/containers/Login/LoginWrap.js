@@ -14,6 +14,7 @@ const TabPane = Tabs.TabPane;
 export default class LoginWrap extends Component {
   constructor(props) {
     super(props);
+    this.state = { activeKey: String(props.loginWrapActiveKey || "1") };
   }
 
   static propTypes = {
@@ -23,19 +24,20 @@ export default class LoginWrap extends Component {
   };
 
   render() {
-    const { loginWrapActiveKey, canRegister } = this.props;
+    const { canRegister } = this.props;
     {/** show only login when register is disabled */}
     return (
       <Tabs
-        defaultActiveKey={loginWrapActiveKey}
+        activeKey={this.state.activeKey}
+        onChange={activeKey => this.setState({ activeKey })}
         className="login-form"
         tabBarStyle={{ border: 'none' }}
       >
         <TabPane tab="登录" key="1">
-          <LoginForm />
+          {this.state.activeKey === "1" ? <LoginForm /> : null}
         </TabPane>
         <TabPane tab={"注册"} key="2">
-          {canRegister ? <RegForm /> : <div style={{minHeight: 200}}>管理员已禁止注册，请联系管理员</div>}
+          {canRegister ? (this.state.activeKey === "2" ? <RegForm /> : null) : <div style={{minHeight: 200}}>管理员已禁止注册，请联系管理员</div>}
         </TabPane>
       </Tabs>
     );

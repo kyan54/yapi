@@ -60,13 +60,30 @@ export default class ProjectMock extends Component {
       is_mock_open: this.state.is_mock_open
     };
 
-    let result = await this.props.updateProjectMock(params);
-
+    let result;
+    try {
+      result = await this.props.updateProjectMock(params);
+    } catch (error) {
+      message.error('保存失败，请检查网络后重试');
+      return;
+    }
+    if (!result || result.error || !result.payload || !result.payload.data) {
+      message.error('保存失败，请检查网络后重试');
+      return;
+    }
     if (result.payload.data.errcode === 0) {
       message.success('保存成功');
-      await this.props.getProject(this.props.projectId);
+      try {
+        const refreshed = await this.props.getProject(this.props.projectId);
+        if (!refreshed || refreshed.error || !refreshed.payload || !refreshed.payload.data ||
+          refreshed.payload.data.errcode !== 0 || !refreshed.payload.data.data) {
+          message.error('保存成功，但刷新项目失败，请刷新页面');
+        }
+      } catch (error) {
+        message.error('保存成功，但刷新项目失败，请刷新页面');
+      }
     } else {
-      message.success('保存失败, ' + result.payload.data.errmsg);
+      message.error('保存失败, ' + result.payload.data.errmsg);
     }
   };
 

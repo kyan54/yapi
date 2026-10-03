@@ -75,9 +75,12 @@ export default class MockCol extends Component {
   };
 
   handleOk = async caseData => {
-    if (!caseData) {
+    if (!caseData || this.savingCase) {
       return null;
     }
+    this.savingCase = true;
+    this.setState({ savingCase: true });
+    try {
     const { caseData: currcase } = this.state;
     const interface_id = this.props.match.params.actionId;
     const project_id = this.props.match.params.id;
@@ -98,6 +101,12 @@ export default class MockCol extends Component {
         message.error(res.data.errmsg);
       }
     });
+    } catch (_) {
+      message.error('保存期望失败，请重试');
+    } finally {
+      this.savingCase = false;
+      this.setState({ savingCase: false });
+    }
   };
 
   deleteCase = async id => {
@@ -257,9 +266,10 @@ export default class MockCol extends Component {
           <CaseDesModal
             visible={caseDesModalVisible}
             isAdd={isAdd}
+            saving={this.state.savingCase}
             caseData={caseData}
             onOk={this.handleOk}
-            onCancel={() => this.setState({ caseDesModalVisible: false })}
+            onCancel={() => !this.savingCase && this.setState({ caseDesModalVisible: false })}
             ref={this.saveFormRef}
           />
         )}

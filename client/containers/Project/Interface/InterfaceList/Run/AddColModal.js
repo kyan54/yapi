@@ -21,6 +21,7 @@ const Panel = Collapse.Panel;
 export default class AddColModal extends Component {
   static propTypes = {
     visible: PropTypes.bool,
+    saving: PropTypes.bool,
     interfaceColList: PropTypes.array,
     fetchInterfaceColList: PropTypes.func,
     match: PropTypes.object,
@@ -47,11 +48,18 @@ export default class AddColModal extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    this.setState({ id: nextProps.interfaceColList[0]._id });
-    this.setState({ caseName: nextProps.caseName });
+    if (!nextProps.interfaceColList.some(col => col._id === this.state.id)) this.setState({ id: nextProps.interfaceColList.length ? nextProps.interfaceColList[0]._id : 0 });
+    if ((!this.props.visible && nextProps.visible) || nextProps.caseName !== this.props.caseName) {
+      this.setState({ caseName: nextProps.caseName });
+    }
   }
 
   addCol = async () => {
+    if (this.addingCol) return;
+    if (!this.state.addColName.trim()) return message.error('请输入集合名称');
+    this.addingCol = true;
+    this.setState({ addingCol: true });
+    try {
     const { addColName: name, addColDesc: desc } = this.state;
     const project_id = this.props.match.params.id;
     const res = await axios.post('/api/col/add_col', { name, desc, project_id });
@@ -62,6 +70,12 @@ export default class AddColModal extends Component {
       this.setState({ id: res.data.data._id });
     } else {
       message.error(res.data.errmsg);
+    }
+    } catch (_) {
+      message.error('添加集合失败，请重试');
+    } finally {
+      this.addingCol = false;
+      this.setState({ addingCol: false });
     }
   };
 
@@ -77,6 +91,10 @@ export default class AddColModal extends Component {
         className="add-col-modal"
         title="添加到集合"
         visible={this.props.visible}
+        confirmLoading={this.props.saving}
+        closable={!this.props.saving}
+        keyboard={!this.props.saving}
+        maskClosable={false}
         onOk={() => this.props.onOk(id, this.state.caseName)}
         onCancel={this.props.onCancel}
       >
@@ -137,7 +155,7 @@ export default class AddColModal extends Component {
               </Col>
             </Row>
             <Row type="flex" justify="end">
-              <Button style={{ float: 'right' }} type="primary" onClick={this.addCol}>
+              <Button style={{ float: 'right' }} type="primary" loading={this.state.addingCol} onClick={this.addCol}>
                 添 加
               </Button>
             </Row>

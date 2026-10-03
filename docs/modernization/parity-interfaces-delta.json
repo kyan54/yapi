@@ -1,0 +1,269 @@
+{
+  "scope": "A/interfaces/batches-1-5",
+  "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
+  "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
+  "roles": [
+    "owner",
+    "developer",
+    "guest"
+  ],
+  "ports": {
+    "old": 4184,
+    "new": 4185
+  },
+  "databases": [
+    "parity_fast_interfaces_old",
+    "parity_fast_interfaces_new"
+  ],
+  "fixture": {
+    "generator": "scripts/modernization/ui-parity-fixture.cjs",
+    "date": "2026-10-03",
+    "interface_id": 901016,
+    "tag": [],
+    "note": "Dedicated synthetic DBs only. Baseline tag save errors retained separately; tag cleared equally to isolate bulk behavior.",
+    "seed_method": "makeFixture({date}) is an offline object generator. Its generated collections were inserted directly into task-created parity_fast_interfaces_* DBs (per-record legacy insert to avoid shell line limits), not via bindFixture/renderMongoScript whose ui_parity_* naming differs from the explicitly assigned prefix. No shared fixture or DB was reset. Missing legacy group records from the same initial shell truncation were subsequently inserted only if absent, under the existing task marker. All 14 parameter flows reran successfully with complete core group/project/interface fixtures.",
+    "identity_guard": "parity-interfaces.preflight.cjs verifies internal application/Mongo network, no socket mount, read-only config actual DB hostname/name, disabled mail, exact loopback proxy port, and _ui_parity_fixture marker synthetic/run/database/state/hash before suite mutations. Also verifies core fixture relations, exact six internal network participants/network ID, deployed proxy script SHA and read-only mount/start command, exact app working directory/start command, and rejects extra db keys (including connectString) or YAPI/Mongo/DB/NODE_OPTIONS/NODE_PATH environment overrides.",
+    "run": "interfaces_20261003",
+    "fixtureSha256": "df5dd7dea9fd9b4eba357a38fc29af43cce9bdbe31c8a90d7d3bfb96e82e2a2a",
+    "final_ids": {
+      "old": {
+        "rows": [
+          940633,
+          940640
+        ],
+        "paths": [
+          940647,
+          940654
+        ],
+        "typed": [
+          940661,
+          940668
+        ],
+        "projects": [
+          930085,
+          930088,
+          930091,
+          930094
+        ]
+      },
+      "new": {
+        "rows": [
+          940317,
+          940321
+        ],
+        "paths": [
+          940325,
+          940329
+        ],
+        "typed": [
+          940333,
+          940337
+        ],
+        "projects": [
+          930059,
+          930061,
+          930063,
+          930065
+        ]
+      }
+    },
+    "reviewable_proxy_sources": {
+      "old": "test-browser/fixtures/parity-interfaces/proxy-old.cjs",
+      "new": "test-browser/fixtures/parity-interfaces/proxy-new.cjs"
+    }
+  },
+  "tests": {
+    "passed": 28,
+    "failed": 0,
+    "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
+    "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs.",
+    "unit_passed": 17,
+    "unit_command": "node --test test-modernization/interface-bulk-parameters.test.js test-modernization/interface-path-parameters.test.js test-modernization/interface-parity-preflight.test.js",
+    "default_ci": "The three new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched.",
+    "breakdown": {
+      "parameters": 18,
+      "list_filters_geometry_and_nonmember_boundaries": 10
+    }
+  },
+  "scenarios": [
+    {
+      "id": "interface_bulk-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_bulk-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_bulk-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_bulk-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_params-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Query/header/form rows add, edit, middle deletion, exact surviving order and values, errcode 0, visible success, API readback, refresh; guest writes denied and all original fields retained."
+    },
+    {
+      "id": "interface_params-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Rename before to after, save/reload exact metadata; remove placeholder, save/reload empty metadata; guest path/metadata mutation denied."
+    },
+    {
+      "id": "interface_params-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Form file/text and required/optional toggles, automatic multipart/urlencoded Content-Type, save errcode0, visible success, API readback and reload; guest type write rejected with original fields retained."
+    },
+    {
+      "id": "interface_params-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Real drag reorder and rapid double-add/middle-delete for Query/Header/form rows; exact surviving values/order after successful save and reload; guest reordered query write rejected."
+    }
+  ],
+  "legacy_defects": [
+    {
+      "id": "interface_bulk-02",
+      "detail": "Malformed nonempty lines silently discarded. Empty-only import then reopen throws value.forEach is not a function (owner and developer). New version does not reproduce crash; malformed line rejection added."
+    },
+    {
+      "detail": "Legacy tagged /api/interface/up returns errcode 40011 after autoAddTag attempts project lookup; DB can still change. Not counted as save success. This tagged-save observation preceded missing-group repair; tagged save was not revalidated afterward and is not used to establish any passed assertion."
+    }
+  ],
+  "evidence": {
+    "directory": "/Users/hujinwu/Documents/Codex/2026-10-03/task-4/interfaces",
+    "browser": "final-suite-results.json",
+    "baseline_tagged_save": "baseline-results.json",
+    "legacy_empty": "legacy-empty-trace.zip",
+    "direct_db_readback": [
+      "old-db-final.json",
+      "new-db-final.json"
+    ],
+    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed. Stable parameter screenshots normalized to scrollY=0 were captured separately; no whole-page equivalence claimed. List old/new owner screenshots manually reviewed: no row-selection/sort controls; category select layout differs and is pending local alignment. Final list layout restored single-line centered category arrow and borderless selectors; table row height aligned closely. Shared project navigation difference reported separately to integration owner. Final 1920x1080 typed/reordered Header screenshots manually viewed old/new: three rows readable without clipping; row alignment differs and scroll offsets differ, so no whole-page visual equivalence claimed.",
+    "candidate_source": "image-source-sha256.txt matches baseline client/server/common/exts before local fix",
+    "list_filters": "list-results.json",
+    "core_fixture_rerun": "final-suite-results.json: formal guarded suite 28/28 passed",
+    "list_db_readback": [
+      "old-list-db.json",
+      "new-list-db.json"
+    ],
+    "final_source": "final-image-source-sha256.txt: running candidate source matches worktree product bytes"
+  },
+  "remaining": "All assigned scenario IDs other than the eight listed here remain notrun by this increment. Keep existing main-matrix evidence; no main matrix overwrite.",
+  "fixed_regressions": [
+    {
+      "id": "interface_params-02",
+      "before": "New form kept before after changing path to {after}; old UI updated correctly. Reproduced owner/developer.",
+      "after": "Synchronize path and req_params into form; reconcile against live unsaved metadata.",
+      "evidence": [
+        "path-before-results.json",
+        "path-before-trace.zip",
+        "path-before.png"
+      ]
+    },
+    {
+      "id": "interface_list-layout",
+      "before": "Legacy .path display:inline-block overrode AntD6 Select flex layout, wrapping category suffix arrow and increasing row height; old selection styling no longer applied.",
+      "after": "Owned .ant-select.path uses inline-flex and no extra right padding; category/status selects explicitly borderless.",
+      "validation": "All4 readable roles in both versions assert select height<=34px and arrow vertical center difference<8px; 1920x1080 owner screenshots manually compared."
+    }
+  ],
+  "review_notes": [
+    {
+      "id": "interface_list-03",
+      "status": "notrun",
+      "classification": "not-applicable pending integration-owner review",
+      "reason": "Both baseline and candidate InterfaceList Table have no rowSelection or bulk-action configuration. Preserve original assertion; do not invent a new product feature or count as pass.",
+      "source": "client/containers/Project/Interface/InterfaceList/InterfaceList.js Table configuration",
+      "evidence": "list-results/*/list-filter-cleared.png; no tbody checkboxes and no sorter in owner/dev/guest screenshots/DOM on old/new. Filter-menu checkboxes are not row-selection controls."
+    },
+    {
+      "id": "interface_list-01",
+      "status": "notrun",
+      "reason": "status/tag filters passed for owner/dev/guest/public nonmember; private nonmember denied. Both versions lack public/open-state filter control; original compound wording retained pending owner disposition, not promoted."
+    }
+  ],
+  "atomic_additions": [
+    {
+      "id": "interface_list-01-status-tag-owner",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "role": "owner",
+      "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
+    },
+    {
+      "id": "interface_list-01-status-tag-developer",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "role": "developer",
+      "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
+    },
+    {
+      "id": "interface_list-01-status-tag-guest",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "role": "guest",
+      "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
+    },
+    {
+      "id": "interface_list-01-status-tag-public-nonmember",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "public nonmember status/tag combine-reset with API success and 3 visible records"
+    },
+    {
+      "id": "interface_list-private-nonmember-boundary",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "private nonmember project/list APIs reject and UI shows no table or add controls"
+    }
+  ]
+}

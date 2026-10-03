@@ -714,3 +714,41 @@ test('avatar menu Escape closes restores focus and never navigates',async({page}
   await trigger.press('Enter');await expect(page.locator('.user-menu:visible')).toHaveCount(1);await page.locator('body').click({position:{x:1000,y:60}});await expect(page.locator('.user-menu:visible')).toHaveCount(0);
   await trigger.focus();await trigger.press('Space');await expect(page.locator('.user-menu:visible')).toHaveCount(1);await page.getByRole('link',{name:/个人中心/}).click();await expect(page).toHaveURL(/\/user\/profile\/9$/);await expect(page.locator('.user-menu:visible')).toHaveCount(0);
 });
+test('normal login validates email and serializes retries while a response is pending',async({page})=>{
+ let requests=0;await page.route('**/api/user/login',async route=>{requests++;await new Promise(resolve=>setTimeout(resolve,1000));await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({errcode:405,errmsg:'Synthetic rejected login'})})});await page.goto(baseURL+'/login');const form=page.locator('form').first(),button=form.locator('button.login-form-button');await button.click();await expect(page.getByText('请输入正确的email!',{exact:true})).toBeVisible();await expect(page.getByText('请输入密码!',{exact:true})).toBeVisible();expect(requests).toBe(0);await form.getByPlaceholder('Email',{exact:true}).fill('invalid email');await form.getByPlaceholder('Password',{exact:true}).fill('synthetic-invalid-only');await button.click();expect(requests).toBe(0);await form.getByPlaceholder('Email',{exact:true}).fill('browser@example.invalid');await form.getByPlaceholder('Password',{exact:true}).press('Enter');await page.keyboard.press('Enter');await expect(page.getByText('Synthetic rejected login',{exact:true}).first()).toBeVisible();expect(requests).toBe(1);await expect(button).not.toHaveClass(/ant-btn-loading/);await button.click();await expect.poll(()=>requests).toBe(2);await expect(button).not.toHaveClass(/ant-btn-loading/);await expect(page).toHaveURL(/\/login$/);
+});
+test('disabled registration rejects direct submission and switching clears cancelled drafts',async({page})=>{
+ await page.goto(baseURL+'/login');for(let i=0;i<2;i++){await page.getByRole('tab',{name:'注册',exact:true}).click();await expect(page.getByText('管理员已禁止注册，请联系管理员',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:/^注\s*册$/})).toHaveCount(0);await page.getByRole('tab',{name:'登录',exact:true}).click();}expect((await(await page.request.post(baseURL+'/api/user/reg',{data:{}})).json()).errcode).not.toBe(0);
+ await page.route('**/api/user/status',async route=>{const response=await route.fetch();const body=await response.json();body.canRegister=true;await route.fulfill({response,json:body})});let registrations=0;page.on('request',r=>{if(new URL(r.url()).pathname==='/api/user/reg')registrations++});await page.reload();await page.getByRole('tab',{name:'注册',exact:true}).click();await page.getByRole('button',{name:/^注\s*册$/}).click();await expect(page.getByText('请输入用户名!',{exact:true})).toBeVisible();await page.getByPlaceholder('Username',{exact:true}).fill('Cancelled only');await page.getByRole('tab',{name:'登录',exact:true}).click();await page.getByRole('tab',{name:'注册',exact:true}).click();await expect(page.getByPlaceholder('Username',{exact:true})).toHaveValue('');await expect(page.getByText('请输入email!',{exact:true})).toHaveCount(0);expect(registrations).toBe(0);
+});
+test('project navigation remains visible after status and tag filters for owner developer and guest',async({page})=>{
+ const db=connection.db,group=790800;await db.collection('group').insertOne({_id:group,uid:97,group_name:'Synthetic navigation visibility',type:'public',members:[]});await db.collection('user').updateOne({_id:9},{$set:{role:'member'}});
+ try{for(const[k,role]of['owner','dev','guest'].entries()){
+  const project=790810+k,cat=790820+k;await db.collection('project').insertOne({_id:project,uid:role==='owner'?9:97,group_id:group,name:'Synthetic navigation '+role,project_type:'private',members:role==='owner'?[]:[{uid:9,role}],env:[],tag:[{name:'review',desc:''},{name:'synthetic',desc:''}],basepath:''});await db.collection('interface_cat').insertOne({_id:cat,uid:97,project_id:project,name:'Navigation category'});await db.collection('interface').insertMany([['Done review','done','review'],['Undone review','undone','review'],['Done synthetic','done','synthetic']].map(([title,status,tag],i)=>({...fixture,_id:790830+k*10+i,project_id:project,catid:cat,uid:97,title,status,tag:[tag],path:'/nav-'+i})));
+  await login(page);await page.goto(baseURL+'/project/'+project+'/interface/api');const nav=page.locator('.m-subnav'),table=page.locator('.table-interfacelist');await expect(table.locator('tbody tr')).toHaveCount(3);
+  const visibleNavigation=async()=>{for(const[label,path]of[['接口','interface/api'],['动态','activity'],['数据管理','data'],['成员管理','members'],['设置','setting'],['Wiki','wiki']]){const link=nav.locator('a[href="/project/'+project+'/'+path+'"]');await expect(link).toBeInViewport();await expect(link.locator('xpath=ancestor::li[1]')).toHaveCSS('opacity','1');await expect(link).toContainText(new RegExp(label.split('').join('\\s*')));}};
+  await visibleNavigation();for(const[column,value,reset,count]of[['状态','未完成',false,1],['tag','review',false,1],['状态','',true,2],['tag','',true,3]]){const reply=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/interface/list');await table.locator('th').filter({hasText:column}).locator('.anticon-filter').click();const popup=page.locator('.ant-table-filter-dropdown:visible');await expect(popup).toBeVisible();if(reset)await popup.getByText('重置',{exact:true}).click();else await popup.getByText(value,{exact:true}).click();const ok=popup.getByText(/^确\s*定$/);if(await ok.isVisible())await ok.click();await expect(popup).toBeHidden();expect((await(await reply).json()).errcode).toBe(0);await expect(table.locator('tbody tr')).toHaveCount(count);await visibleNavigation();}
+ }}finally{await db.collection('user').updateOne({_id:9},{$set:{role:'admin'}});}
+});
+
+
+test('saving a request twice while pending creates exactly one collection case', async ({page}) => {
+  await login(page);
+  await page.goto(baseURL+'/project/11/interface/api/17');
+  await page.getByText('运行',{exact:true}).click();
+  await page.getByRole('button',{name:/保\s*存/}).click();
+  const dialog=page.getByRole('dialog',{name:'添加到集合'});
+  await dialog.locator('.col-item').first().click();
+  const caseName='Synthetic default CI duplicate submission';
+  await dialog.getByPlaceholder('请输入接口用例名称').fill(caseName);
+  let requests=0;
+  await page.route('**/api/col/add_case',async route=>{
+    requests++;
+    await new Promise(resolve=>setTimeout(resolve,300));
+    await route.continue();
+  });
+  await dialog.getByRole('button',{name:/确\s*定/}).dblclick({delay:20});
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(()=>connection.db.collection('interface_case').countDocuments({casename:caseName})).toBe(1);
+  expect(requests).toBe(1);
+});
