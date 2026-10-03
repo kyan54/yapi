@@ -675,3 +675,32 @@ test('profile email saves and reloads while avatar validation rejects invalid fi
   const input=page.locator('input[type=file]');await input.setInputFiles({name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('synthetic')});await expect(page.getByText('图片的格式只能为 jpg、png！',{exact:true})).toBeVisible();await input.setInputFiles({name:'too-big.png',mimeType:'image/png',buffer:Buffer.alloc(220000)});await expect(page.getByText('图片必须小于 200kb!',{exact:true})).toBeVisible();expect(uploads).toBe(0);
   const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jT1sAAAAASUVORK5CYII=','base64');const upload=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/user/upload_avatar'&&r.request().headers()['content-type']?.includes('application/json'));await input.setInputFiles({name:'synthetic-pixel.png',mimeType:'image/png',buffer:image});expect((await(await upload).json()).errcode).toBe(0);await page.reload();const avatar=await page.request.get(baseURL+'/api/user/avatar?uid=740011');expect(avatar.headers()['content-type']).toContain('image/png');expect(await avatar.body()).toEqual(image);
 });
+
+test('search authorizes before ten-result limit and hides other personal groups',async({page})=>{
+  const db=connection.db,prefix='BoundedSearchFixture';
+  await db.collection('group').insertMany([
+    ...Array.from({length:12},(_,i)=>({_id:753000+i,uid:799999,group_name:prefix+' hidden '+i,type:'private',members:[]})),
+    {_id:753020,uid:9,group_name:prefix+' own personal',type:'private',members:[]},
+    {_id:753021,uid:799999,group_name:prefix+' public',type:'public',members:[]},
+    {_id:753022,uid:799999,group_name:'Inherited fixture group',type:'public',members:[{uid:9,role:'dev'}]},
+    {_id:753023,uid:799999,group_name:'SharedPrivateNavigation',type:'private',members:[]}
+  ]);
+  await db.collection('project').insertMany([
+    ...Array.from({length:12},(_,i)=>({_id:754000+i,uid:799999,group_id:753000,name:prefix+' hidden '+i,project_type:'private',members:[],env:[]})),
+    ...Array.from({length:12},(_,i)=>({_id:754020+i,uid:799999,group_id:753021,name:prefix+' public '+i,project_type:'public',members:[],env:[]})),
+    {_id:754050,uid:799999,group_id:753022,name:'BoundedInheritedFixture',project_type:'private',members:[],env:[]},
+    {_id:754051,uid:799999,group_id:753023,name:'SharedPrivateNavigationProject',project_type:'private',members:[{uid:9,role:'guest'}],env:[]}
+  ]);
+  await db.collection('interface').insertMany([...Array.from({length:12},(_,i)=>({_id:755000+i,uid:799999,project_id:754000+i,title:prefix+' hidden '+i,path:'/bound-hidden-'+i,method:'GET'})),...Array.from({length:12},(_,i)=>({_id:755020+i,uid:799999,project_id:754020+i,title:prefix+' public '+i,path:'/bound-public-'+i,method:'GET'})),{_id:755050,uid:799999,project_id:754050,title:'BoundedInheritedFixture',path:'/inherited',method:'GET'}]);
+  // Reuse the already-authorized synthetic account; never change credentials.
+  await db.collection('user').updateOne({_id:9},{$set:{role:'member'}});
+  try {
+    await login(page);await page.goto(baseURL+'/group');const pending=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/project/search');await page.getByPlaceholder('搜索分组/项目/接口').fill(prefix);const data=(await(await pending).json()).data;
+    expect(data.project.map(p=>p._id)).toEqual(Array.from({length:10},(_,i)=>754020+i));expect(data.interface.map(p=>p._id)).toEqual(Array.from({length:10},(_,i)=>755020+i));expect(data.group.map(g=>g._id)).toEqual([753020,753021]);await expect(page.getByText('分组: '+prefix+' own personal',{exact:true})).toBeVisible();await expect(page.getByText('分组: '+prefix+' hidden 0',{exact:true})).toHaveCount(0);
+    const inherited=(await(await page.request.get(baseURL+'/api/project/search?q=BoundedInheritedFixture')).json()).data;expect(inherited.project.map(p=>p._id)).toEqual([754050]);expect(inherited.interface.map(p=>p._id)).toEqual([755050]);
+    await db.collection('group').updateOne({_id:753022},{$set:{members:[]}});const revoked=(await(await page.request.get(baseURL+'/api/project/search?q=BoundedInheritedFixture')).json()).data;expect(revoked.project).toEqual([]);expect(revoked.interface).toEqual([]);
+    const shared=(await(await page.request.get(baseURL+'/api/project/search?q=SharedPrivateNavigation')).json()).data;expect(shared.group.map(g=>g._id)).toEqual([753023]);expect(shared.project.map(p=>p._id)).toEqual([754051]);
+    await db.collection('project').updateOne({_id:754051},{$set:{members:[]}});const unshared=(await(await page.request.get(baseURL+'/api/project/search?q=SharedPrivateNavigation')).json()).data;expect(unshared.group).toEqual([]);expect(unshared.project).toEqual([]);
+  }finally{await db.collection('user').updateOne({_id:9},{$set:{role:'admin'}});}
+  const admin=(await(await page.request.get(baseURL+'/api/project/search?q='+prefix)).json()).data;expect(admin.project).toHaveLength(10);expect(admin.project[0]._id).toBe(754000);expect(admin.group).toHaveLength(10);
+});

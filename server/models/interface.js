@@ -333,15 +333,8 @@ class interfaceModel extends baseModel {
     );
   }
 
-  search(keyword) {
-    return this.model
-      .find({
-        $or: [
-          { 'title': new RegExp(keyword, 'ig') },
-          { 'path': new RegExp(keyword, 'ig') }
-        ]
-      })
-      .limit(10);
+  search(keyword, options) {
+    return this.model.aggregate(require('../utils/search-visibility').interfacePipeline(keyword, options)).exec();
   }
 }
 

@@ -199,12 +199,8 @@ class groupModel extends baseModel {
       .exec();
   }
 
-  search(keyword) {
-    return this.model
-      .find({
-        group_name: new RegExp(keyword, 'i')
-      })
-      .limit(10);
+  search(keyword, options) {
+    return this.model.aggregate(require('../utils/search-visibility').groupPipeline(keyword, options)).exec();
   }
 }
 

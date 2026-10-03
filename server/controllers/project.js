@@ -1077,9 +1077,10 @@ class projectController extends baseController {
       return (ctx.body = yapi.commons.resReturn(void 0, 400, 'Bad query.'));
     }
 
-    let projectList = await this.Model.search(q);
-    let groupList = await this.groupModel.search(q);
-    let interfaceList = await this.interfaceModel.search(q);
+    const scope = { uid: this.getUid(), isAdmin: this.getRole() === 'admin' };
+    let projectList = await this.Model.search(q, scope);
+    let groupList = await this.groupModel.search(q, scope);
+    let interfaceList = await this.interfaceModel.search(q, scope);
 
     // Search is a read boundary, not an unrestricted model serialization.
     const visibility = new Map();

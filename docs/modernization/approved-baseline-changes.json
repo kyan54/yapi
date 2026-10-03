@@ -16,11 +16,11 @@
     },
     "server/models/group.js": {
       "baselineSha256": "f8f7fc48598e9b7021b058c4a3929bc888dac56dbcd77df863f8e5c8cbd745f5",
-      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts. Search now applies database-side personal-group and project visibility before a bounded ten-result navigation projection; verified against more than ten hidden hits, inherited rights and revocation."
     },
     "server/models/interface.js": {
       "baselineSha256": "b2e7676c92f8d8567b3b2962466715ea0c6c3f757d303452a7691029cfb21b26",
-      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts. Search now applies database-side personal-group and project visibility before a bounded ten-result navigation projection; verified against more than ten hidden hits, inherited rights and revocation."
     },
     "server/models/interfaceCase.js": {
       "baselineSha256": "5ca43416c9414d93aa2383a7d2aaf9dfb19ced5241bc96071843ee2119844c7b",
@@ -40,7 +40,7 @@
     },
     "server/models/project.js": {
       "baselineSha256": "1710d7e1d48c5f98c75414fc0be08637f66291d1b8cacc45ecd74702c16c6c94",
-      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts. Search now applies database-side personal-group and project visibility before a bounded ten-result navigation projection; verified against more than ten hidden hits, inherited rights and revocation."
     },
     "server/models/storage.js": {
       "baselineSha256": "4045c0a1d20872efeda4189d2a07a7c00ca5305e9e45733b9d734a76757c707a",

@@ -295,12 +295,8 @@ class projectModel extends baseModel {
     );
   }
 
-  search(keyword) {
-    return this.model
-      .find({
-        name: new RegExp(keyword, 'ig')
-      })
-      .limit(10);
+  search(keyword, options) {
+    return this.model.aggregate(require('../utils/search-visibility').projectPipeline(keyword, options)).exec();
   }
 }
 
