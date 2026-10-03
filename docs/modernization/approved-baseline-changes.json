@@ -88,7 +88,7 @@
     },
     "server/controllers/interfaceCol.js": {
       "baselineSha256": "b53557299e3c31e90060320496c27e042a401e854040e9088f3a40e173b8db70",
-      "reason": "Verify authenticated collection and interface project access before minting isolated HTTP broker scope; never trust client-supplied scope."
+      "reason": "Verify authenticated collection and interface project access before minting isolated HTTP broker scope; never trust client-supplied scope. Collection writes now authorize live destination ownership and preflight source visibility; direct case reads validate collection and source project access. Synthetic cross-project browser probes document intentional legacy security differences."
     },
     "server/middleware/mockServer.js": {
       "baselineSha256": "1c9145c82518e3570e21c90d584b3b40495e3ba33f1f32cf6271911aa6b001c8",
