@@ -81,6 +81,11 @@
     vertical-align: middle;
   }
 
+  .ant-select.path {
+    display: inline-flex;
+    padding-right: 0;
+  }
+
   .opened {
     color: #00a854;
     padding-right: 6px;

@@ -30,3 +30,11 @@ test('parity preflight accepts exact isolated synthetic identity',async()=>{awai
 for(const [name,change] of [['external network',{internal:false}],['public binding',{host:'0.0.0.0'}],['unrelated database',{database:'other_database'}],['wrong run',{run:'other_run'}],['missing core fixture',{core:false}],['wrong deployed upstream',{upstream:true}],['connectString override',{connectString:true}],['YAPI_CONFIG override',{env:['YAPI_CONFIG=/other/config.json']}],['NODE_OPTIONS preload',{env:['NODE_OPTIONS=--require=/other.js']}]] ) {
  test('parity preflight refuses '+name,async()=>{await assert.rejects(fixture(change)());});
 }
+for (const version of ['old','new']) {
+ test('guard proxy hash matches reviewable '+version+' upstream fixture',()=>{
+  const proxy=fs.readFileSync(require.resolve('../test-browser/fixtures/parity-interfaces/proxy-'+version+'.cjs'),'utf8');
+  const hash=require('node:crypto').createHash('sha256').update(proxy).digest('hex');
+  assert.equal(hash,hashes[version]);assert(source.includes(hash));
+  assert(proxy.includes("const host='parity-fast-interfaces-"+version+"';const port=3000;"));
+ });
+}

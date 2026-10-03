@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-3",
+  "scope": "A/interfaces/batches-1-4",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -56,19 +56,37 @@
           930037
         ]
       }
+    },
+    "final_list_projects": {
+      "old": [
+        930070,
+        930073,
+        930076,
+        930079
+      ],
+      "new": [
+        930049,
+        930051,
+        930053,
+        930055
+      ]
+    },
+    "reviewable_proxy_sources": {
+      "old": "test-browser/fixtures/parity-interfaces/proxy-old.cjs",
+      "new": "test-browser/fixtures/parity-interfaces/proxy-new.cjs"
     }
   },
   "tests": {
-    "passed": 20,
+    "passed": 24,
     "failed": 0,
     "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
     "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs.",
-    "unit_passed": 15,
+    "unit_passed": 17,
     "unit_command": "node --test test-modernization/interface-bulk-parameters.test.js test-modernization/interface-path-parameters.test.js test-modernization/interface-parity-preflight.test.js",
     "default_ci": "The three new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched.",
     "breakdown": {
       "parameters": 14,
-      "list_filters": 6
+      "list_filters_geometry_and_nonmember_boundaries": 10
     }
   },
   "scenarios": [
@@ -127,7 +145,7 @@
       "detail": "Malformed nonempty lines silently discarded. Empty-only import then reopen throws value.forEach is not a function (owner and developer). New version does not reproduce crash; malformed line rejection added."
     },
     {
-      "detail": "Legacy tagged /api/interface/up returns errcode 40011 after autoAddTag attempts project lookup; DB can still change. Not counted as save success."
+      "detail": "Legacy tagged /api/interface/up returns errcode 40011 after autoAddTag attempts project lookup; DB can still change. Not counted as save success. This tagged-save observation preceded missing-group repair; tagged save was not revalidated afterward and is not used to establish any passed assertion."
     }
   ],
   "evidence": {
@@ -139,10 +157,14 @@
       "old-db-final.json",
       "new-db-final.json"
     ],
-    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed. Stable parameter screenshots normalized to scrollY=0 were captured separately; no whole-page equivalence claimed. List old/new owner screenshots manually reviewed: no row-selection/sort controls; category select layout differs and is pending local alignment.",
+    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed. Stable parameter screenshots normalized to scrollY=0 were captured separately; no whole-page equivalence claimed. List old/new owner screenshots manually reviewed: no row-selection/sort controls; category select layout differs and is pending local alignment. Final list layout restored single-line centered category arrow and borderless selectors; table row height aligned closely. Shared project navigation difference reported separately to integration owner.",
     "candidate_source": "image-source-sha256.txt matches baseline client/server/common/exts before local fix",
     "list_filters": "list-results.json",
-    "core_fixture_rerun": "results.json, all14 passed after missing-group repair and final proxy guard"
+    "core_fixture_rerun": "results.json, all14 passed after missing-group repair and final proxy guard",
+    "list_db_readback": [
+      "old-list-db.json",
+      "new-list-db.json"
+    ]
   },
   "remaining": "All assigned scenario IDs other than the six listed here remain notrun by this increment. Keep existing main-matrix evidence; no main matrix overwrite.",
   "fixed_regressions": [
@@ -155,6 +177,12 @@
         "path-before-trace.zip",
         "path-before.png"
       ]
+    },
+    {
+      "id": "interface_list-layout",
+      "before": "Legacy .path display:inline-block overrode AntD6 Select flex layout, wrapping category suffix arrow and increasing row height; old selection styling no longer applied.",
+      "after": "Owned .ant-select.path uses inline-flex and no extra right padding; category/status selects explicitly borderless.",
+      "validation": "All4 readable roles in both versions assert select height<=34px and arrow vertical center difference<8px; 1920x1080 owner screenshots manually compared."
     }
   ],
   "review_notes": [
@@ -169,7 +197,7 @@
     {
       "id": "interface_list-01",
       "status": "notrun",
-      "reason": "status/tag subset passed; public/open-state filtering and public/private nonmember roles still require closure. Full compound assertion not promoted."
+      "reason": "status/tag filters passed for owner/dev/guest/public nonmember; private nonmember denied. Both versions lack public/open-state filter control; original compound wording retained pending owner disposition, not promoted."
     }
   ],
   "atomic_additions": [
@@ -199,6 +227,22 @@
       "new": "passed",
       "role": "guest",
       "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
+    },
+    {
+      "id": "interface_list-01-status-tag-public-nonmember",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "public nonmember status/tag combine-reset with API success and 3 visible records"
+    },
+    {
+      "id": "interface_list-private-nonmember-boundary",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "private nonmember project/list APIs reject and UI shows no table or add controls"
     }
   ]
 }
