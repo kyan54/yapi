@@ -420,29 +420,29 @@ test('schema array edits retain boolean and tuple items, complex keywords, colla
   const original = { type: 'array', items: [{ type: 'object', properties: { id: { type: 'integer' } }, unevaluatedProperties: false }, false, { $ref: '#/$defs/tail' }], $defs: { tail: { type: ['string', 'null'] } }, prefixItems: [true, false], 'x-unknown': { keep: true } };
   let latest;
   render(h(Editor, { data: JSON.stringify(original), onChange: value => { latest = JSON.parse(value); } }));
-  await userEvent.click(screen.getByLabelText('折叠 数组元素'));
+  await userEvent.click(screen.getByLabelText('折叠 数组元素 1'));
   assert.equal(screen.queryByLabelText('字段 id 名称'), null);
-  await userEvent.click(screen.getByLabelText('添加字段 数组元素'));
+  await userEvent.click(screen.getByLabelText('添加字段 数组元素 1'));
   assert.ok(screen.getByLabelText('字段 id 名称'));
   assert.ok(screen.getByLabelText('字段 field1 名称'));
-  await userEvent.click(screen.getByLabelText('添加字段 数组元素'));
+  await userEvent.click(screen.getByLabelText('添加字段 数组元素 1'));
   assert.ok(screen.getByLabelText('字段 field2 名称'));
   await userEvent.click(screen.getByLabelText('删除字段 field1'));
-  await userEvent.click(screen.getByLabelText('添加字段 数组元素'));
+  await userEvent.click(screen.getByLabelText('添加字段 数组元素 1'));
   assert.ok(screen.getByLabelText('字段 field1 名称'));
   assert.equal(latest.items[0].unevaluatedProperties, false);
   assert.deepEqual(latest.items.slice(1), original.items.slice(1));
   assert.deepEqual(latest.$defs, original.$defs);
   assert.deepEqual(latest.prefixItems, original.prefixItems);
   assert.deepEqual(latest['x-unknown'], original['x-unknown']);
-  await userEvent.click(screen.getByLabelText('高级设置 数组元素'));
-  fireEvent.change(screen.getByLabelText('数组元素 高级设置内容'), { target: { value: 'false' } });
+  await userEvent.click(screen.getByLabelText('高级设置 数组元素 1'));
+  fireEvent.change(screen.getByLabelText('数组元素 1 高级设置内容'), { target: { value: 'false' } });
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^应\s*用$/ }));
   assert.equal(latest.items[0], false);
   assert.deepEqual(latest.items.slice(1), original.items.slice(1));
-  assert.ok(screen.getByText('数组元素: false'));
-  await userEvent.click(screen.getByLabelText('高级设置 数组元素'));
-  assert.equal(screen.getByLabelText('数组元素 高级设置内容').value, 'false');
+  assert.ok(screen.getByText('数组元素 1: false'));
+  await userEvent.click(screen.getByLabelText('高级设置 数组元素 1'));
+  assert.equal(screen.getByLabelText('数组元素 1 高级设置内容').value, 'false');
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^取\s*消$/ }));
 });
 
@@ -486,7 +486,11 @@ test('schema deep content and special property names survive edits without rewri
   const original = { type: 'object', required: ['old'], properties: { old: { type: 'string' }, deep }, $defs: { other: false }, allOf: [{ 'x-keyword': { required: ['leave'] } }] };
   let latest;
   render(h(Editor, { data: JSON.stringify(original), onChange: value => { latest = JSON.parse(value); } }));
-  assert.ok(screen.getByText('更深层级请使用高级设置或 JSON 编辑，内容将完整保留。'));
+  for (let index = 3; index <= 14; index++) {
+    const expand = screen.queryByRole('button', { name: '展开 depth' + index });
+    if (expand) fireEvent.click(expand);
+  }
+  assert.ok(screen.getByRole('button', { name: '高级设置 depth14' }));
   fireEvent.change(screen.getByLabelText('字段 old 名称'), { target: { value: '__proto__' } });
   fireEvent.blur(screen.getByLabelText('字段 old 名称'));
   assert.ok(Object.prototype.hasOwnProperty.call(latest.properties, '__proto__'));
@@ -543,4 +547,34 @@ test('schema table explicitly describes boolean roots instead of hiding false or
   view.rerender(h(SchemaTable, { dataSource: '{"type":"object","properties":{"id":{"type":"integer"}}}' }));
   assert.ok(screen.getByRole('table'));
   assert.equal(screen.queryByTestId('boolean-schema-preview'), null);
+});
+
+test('legacy schema title, Mock choices, typed advanced drafts and tuple siblings remain independently editable', async () => {
+  const Editor = require('../client/components/SchemaEditor').default;
+  let latest;
+  render(h(Editor, { data: JSON.stringify({type:'object',properties:{amount:{type:'integer',enum:[0], 'x-retained':7}, tuple:{type:'array',items:[{type:'string'},{type:'integer'}]}}}), onChange:value => {latest=JSON.parse(value);} }));
+  fireEvent.change(screen.getByLabelText('amount 标题'), {target:{value:'金额'}});
+  assert.equal(latest.properties.amount.title,'金额');
+  await userEvent.type(screen.getByLabelText('amount Mock'), '@inte');
+  const choices = await screen.findAllByText('@integer');
+  await userEvent.click(choices[choices.length - 1]);
+  assert.deepEqual(latest.properties.amount.mock,{mock:'@integer'});
+  await userEvent.click(screen.getByRole('button',{name:'高级设置 amount'}));
+  fireEvent.change(screen.getByRole('spinbutton',{name:'最小值'}),{target:{value:'2'}});
+  fireEvent.blur(screen.getByRole('spinbutton',{name:'最小值'}));
+  await userEvent.click(screen.getByRole('button',{name:'取 消'}));
+  assert.equal(latest.properties.amount.minimum,undefined);
+  await userEvent.click(screen.getByRole('button',{name:'高级设置 amount'}));
+  fireEvent.change(screen.getByRole('spinbutton',{name:'最小值'}),{target:{value:'2'}});
+  fireEvent.blur(screen.getByRole('spinbutton',{name:'最小值'}));
+  fireEvent.change(screen.getByLabelText('枚举值（每行一个）'),{target:{value:'oops'}});
+  assert.ok(screen.getByRole('button',{name:'应 用'}).disabled);
+  fireEvent.change(screen.getByLabelText('枚举值（每行一个）'),{target:{value:'2\n3'}});
+  await userEvent.click(screen.getByRole('button',{name:'应 用'}));
+  assert.equal(latest.properties.amount.minimum,2);
+  assert.deepEqual(latest.properties.amount.enum,[2,3]);
+  assert.equal(latest.properties.amount['x-retained'],7);
+  fireEvent.change(screen.getByLabelText('数组元素 2 标题'),{target:{value:'second'}});
+  assert.equal(latest.properties.tuple.items[1].title,'second');
+  assert.equal(latest.properties.tuple.items[0].type,'string');
 });

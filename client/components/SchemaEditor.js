@@ -1,6 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Alert, Button, Checkbox, Input, Modal, Radio, Select, Tabs } from 'antd-modern';
+import { Alert, AutoComplete, Button, Checkbox, Input, InputNumber, Modal, Radio, Select, Tabs } from 'antd-modern';
+
+const mockOptions = 'string natural float character boolean url domain ip id guid now timestamp date time datetime image imageData color hex rgba rgb hsl integer email paragraph sentence word cparagraph ctitle title name cname cfirst clast first last csentence cword region province city county upper lower pick shuffle protocol'.split(' ').map(name => ({ value: '@' + name }));
 
 const types = ['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'];
 const isObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -69,8 +71,56 @@ function mockValue(schema, value) {
   return value ? { mock: value } : '';
 }
 
+function EnumField({ schema, onChange, onError }) {
+  const formatted = Array.isArray(schema.enum) ? schema.enum.map(value => typeof value === 'string' ? value : JSON.stringify(value)).join('\n') : '';
+  const [draft, setDraft] = React.useState(formatted);
+  React.useEffect(() => { setDraft(formatted); }, [formatted]);
+  return <React.Fragment><Checkbox checked={Array.isArray(schema.enum)} onChange={event => { onError(''); onChange(event.target.checked ? [] : undefined); }}>枚举</Checkbox>
+    {Array.isArray(schema.enum) && <Input.TextArea aria-label="枚举值（每行一个）" value={draft} onChange={event => {
+      const value = event.target.value; setDraft(value);
+      try {
+        const values = value === '' ? [] : value.split('\n').map(line => {
+          if (hasType(schema, 'string')) return line;
+          const parsed = JSON.parse(line);
+          if (hasType(schema, 'integer') ? !Number.isInteger(parsed) : hasType(schema, 'number') ? typeof parsed !== 'number' : hasType(schema, 'boolean') ? typeof parsed !== 'boolean' : false) throw new Error('枚举值必须匹配字段类型');
+          return parsed;
+        });
+        onChange(values); onError('');
+      } catch (_) { onError('枚举值必须匹配字段类型；每行一个有效值。'); }
+    }} />}</React.Fragment>;
+}
+EnumField.propTypes = { schema: PropTypes.object.isRequired, onChange: PropTypes.func.isRequired, onError: PropTypes.func.isRequired };
+
+function AdvancedFields({ text, onChange, onError }) {
+  let schema;
+  try { schema = parseSchema(text); } catch (_) { return null; }
+  if (!isObject(schema)) return null;
+  const change = (key, value) => {
+    const next = { ...schema };
+    if (value === undefined || value === null) delete next[key]; else next[key] = value;
+    onChange(JSON.stringify(next, null, 2));
+  };
+  const number = (key, label, nonnegative = false) => <label key={key}>{label}<InputNumber aria-label={label} min={nonnegative ? 0 : undefined} value={schema[key]} onChange={value => change(key, value)} /></label>;
+  const numeric = hasType(schema, 'integer') || hasType(schema, 'number');
+  const string = hasType(schema, 'string');
+  const array = hasType(schema, 'array');
+  const object = hasType(schema, 'object');
+  return <div className="schema-advanced-fields">
+    <h4>基础设置</h4>
+    {(numeric || string || hasType(schema, 'boolean')) && <label>默认值{numeric ? <InputNumber aria-label="默认值" value={schema.default} onChange={value => change('default', value)} /> : hasType(schema, 'boolean') ? <Select aria-label="默认值" allowClear value={schema.default} options={[{value:true,label:'true'},{value:false,label:'false'}]} onChange={value => change('default', value)} /> : <Input aria-label="默认值" value={schema.default === undefined ? '' : schema.default} onChange={event => change('default', event.target.value)} />}</label>}
+    {numeric && <React.Fragment>{number('minimum', '最小值')}{number('maximum', '最大值')}<Checkbox checked={schema.exclusiveMinimum === true} onChange={event => change('exclusiveMinimum', event.target.checked)}>exclusiveMinimum</Checkbox><Checkbox checked={schema.exclusiveMaximum === true} onChange={event => change('exclusiveMaximum', event.target.checked)}>exclusiveMaximum</Checkbox>{number('multipleOf', 'multipleOf')}</React.Fragment>}
+    {string && <React.Fragment>{number('minLength', '最小长度', true)}{number('maxLength', '最大长度', true)}<label>Pattern<Input aria-label="Pattern" value={schema.pattern || ''} onChange={event => change('pattern', event.target.value)} /></label><label>format<Select aria-label="format" allowClear value={schema.format} options={['date-time','date','time','email','hostname','ipv4','ipv6','uri','uuid','regex'].map(value => ({value}))} onChange={value => change('format', value)} /></label></React.Fragment>}
+    {array && <React.Fragment>{number('minItems', '最小元素个数', true)}{number('maxItems', '最大元素个数', true)}<Checkbox checked={schema.uniqueItems === true} onChange={event => change('uniqueItems', event.target.checked)}>uniqueItems</Checkbox></React.Fragment>}
+    {object && <React.Fragment>{number('minProperties', '最小属性个数', true)}{number('maxProperties', '最大属性个数', true)}<Checkbox checked={schema.additionalProperties !== false} onChange={event => change('additionalProperties', event.target.checked)}>additionalProperties</Checkbox></React.Fragment>}
+    {(numeric || string || hasType(schema, 'boolean')) && <EnumField schema={schema} onChange={value => change('enum', value)} onError={onError} />}
+    <label>备注<Input.TextArea aria-label="枚举备注" value={schema.enumDesc || ''} onChange={event => change('enumDesc', event.target.value)} /></label>
+    <h4>编辑源码</h4>
+  </div>;
+}
+AdvancedFields.propTypes = { text: PropTypes.string.isRequired, onChange: PropTypes.func.isRequired, onError: PropTypes.func.isRequired };
+
 function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, onRename, required, onRequired, onDelete }) {
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(depth > 4);
   const [nameDraft, setNameDraft] = React.useState(name || '');
   const [nameError, setNameError] = React.useState('');
   const [editor, setEditor] = React.useState(null);
@@ -102,8 +152,9 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
     patch({ properties: { ...properties, [`field${index}`]: { type: 'string', description: '' } } });
     setCollapsed(false);
   };
-  const openEditor = kind => setEditor({ kind, text: kind === 'advanced' ? JSON.stringify(schema, null, 2) : kind === 'mock' ? mockText(schema) : schema.description || '', error: '' });
+  const openEditor = kind => setEditor({ kind, text: kind === 'advanced' ? JSON.stringify(schema, null, 2) : kind === 'mock' ? mockText(schema) : schema[kind] || '', error: '' });
   const saveEditor = () => {
+    if (editor.error) return;
     try {
       if (editor.kind === 'advanced') onChange(parseSchema(editor.text));
       else patch({ [editor.kind]: editor.kind === 'mock' ? mockValue(schema, editor.text) : editor.text });
@@ -114,7 +165,7 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
   const customType = object ? Array.isArray(schema.type) ? schema.type.join(' | ') : '未指定' : `Schema ${String(schema)}`;
   const mockDisabled = !object || expandable;
   const allRequired = depth === 0 ? allRequiredState(schema) : null;
-  const modalLabel = editor && (editor.kind === 'advanced' ? '高级设置' : editor.kind === 'mock' ? 'Mock' : '描述');
+  const modalLabel = editor && (editor.kind === 'advanced' ? '高级设置' : editor.kind === 'mock' ? 'Mock' : editor.kind === 'title' ? '标题' : '描述');
   return <div className="schema-node">
     <div className="schema-node-row" style={{ paddingLeft: depth * 18 }}>
       {expandable ? <Button type="text" aria-label={`${collapsed ? '展开' : '折叠'} ${label}`} onClick={() => setCollapsed(!collapsed)}>{collapsed ? '▸' : '▾'}</Button> : <span />}
@@ -122,8 +173,12 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
       {depth === 0 ? <Checkbox aria-label="全部字段必填" title="全部字段必填" {...allRequired} disabled={!expandable} onChange={event => onChange(setAllRequired(schema, event.target.checked))} /> : <Checkbox aria-label={`${label} 必填`} checked={!!required} disabled={!onRequired} onChange={event => onRequired(event.target.checked)} />}
       <Select aria-label={`${label} 类型`} value={type} disabled={!object} options={[...(type === '__custom__' ? [{ value: '__custom__', label: customType, disabled: true }] : []), ...types.map(value => ({ value }))]} onChange={value => patch({ type: value })} />
       <div className="schema-node-input-editor">
-        <Input aria-label={`${label} Mock`} placeholder="mock" disabled={mockDisabled} value={object ? mockText(schema) : ''} onChange={event => patch({ mock: mockValue(schema, event.target.value) })} />
+        <AutoComplete disabled={mockDisabled} value={object ? mockText(schema) : ''} options={mockOptions} filterOption={(input, option) => option.value.toLowerCase().includes(input.toLowerCase())} onChange={value => patch({ mock: mockValue(schema, value) })}><Input aria-label={`${label} Mock`} placeholder="mock" /></AutoComplete>
         <Button type="text" disabled={mockDisabled} aria-label={`编辑 ${label} Mock`} onClick={() => openEditor('mock')}>✎</Button>
+      </div>
+      <div className="schema-node-input-editor">
+        <Input aria-label={`${label} 标题`} placeholder="Title" disabled={!object} value={object ? schema.title || '' : ''} onChange={event => patch({ title: event.target.value })} />
+        <Button type="text" disabled={!object} aria-label={`编辑 ${label} 标题`} onClick={() => openEditor('title')}>✎</Button>
       </div>
       <div className="schema-node-input-editor">
         <Input aria-label={`${label} 描述`} placeholder="description" disabled={!object} value={object ? schema.description || '' : ''} onChange={event => patch({ description: event.target.value })} />
@@ -137,13 +192,19 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
     </div>
     {nameError && <Alert type="error" title={nameError} />}
     {!object && <Alert type="info" title={`${label}: ${String(schema)}`} description="此 Schema 值可在高级设置或 JSON 模式编辑，原始语义完整保留。" />}
-    {!collapsed && objectType && Object.entries(properties).map(([childName, child]) => depth < 12 ? <NodeEditor key={childName} label={childName} name={childName} depth={depth + 1} schema={child}
+    {!collapsed && objectType && Object.entries(properties).map(([childName, child]) => <NodeEditor key={childName} label={childName} name={childName} depth={depth + 1} schema={child}
       required={requiredNames(schema).includes(childName)} onRequired={checked => patch({ required: checked ? [...new Set([...requiredNames(schema), childName])] : requiredNames(schema).filter(key => key !== childName) })}
       onRename={value => rename(childName, value)} onDelete={() => { const next = { ...properties }; delete next[childName]; patch({ properties: next, ...(Array.isArray(schema.required) ? { required: schema.required.filter(key => key !== childName) } : {}) }); }}
-      onChange={next => patch({ properties: { ...properties, [childName]: next } })} /> : <Alert key={childName} title="更深层级请使用高级设置或 JSON 编辑，内容将完整保留。" />)}
-    {!collapsed && arrayType && depth < 12 && <NodeEditor label="数组元素" depth={depth + 1} schema={Array.isArray(schema.items) ? schema.items[0] === undefined ? {} : schema.items[0] : schema.items === undefined ? { type: 'string' } : schema.items} onChange={items => patch({ items: Array.isArray(schema.items) ? [items, ...schema.items.slice(1)] : items })} />}
-    {editor && <Modal title={`${label} ${modalLabel}`} open mask={{ closable: false }} width={editor.kind === 'advanced' ? 780 : 520} okText="应用" cancelText="取消" onCancel={() => setEditor(null)} onOk={saveEditor}>
+      onChange={next => patch({ properties: { ...properties, [childName]: next } })} />)}
+    {!collapsed && arrayType && (Array.isArray(schema.items) ? <React.Fragment>
+      {schema.items.map((item, index) => <NodeEditor key={index} label={`数组元素 ${index + 1}`} depth={depth + 1} schema={item}
+        onDelete={() => patch({ items: schema.items.filter((_, position) => position !== index) })}
+        onChange={next => patch({ items: schema.items.map((value, position) => position === index ? next : value) })} />)}
+      <Button onClick={() => patch({ items: [...schema.items, { type: 'string' }] })}>添加数组元素</Button>
+    </React.Fragment> : <NodeEditor label="数组元素" depth={depth + 1} schema={schema.items === undefined ? { type: 'string' } : schema.items} onChange={items => patch({ items })} />)}
+    {editor && <Modal title={`${label} ${modalLabel}`} open mask={{ closable: false }} width={editor.kind === 'advanced' ? 780 : 520} okText="应用" okButtonProps={{ disabled: !!editor.error }} cancelText="取消" onCancel={() => setEditor(null)} onOk={saveEditor}>
       <p>应用后更新当前节点；保存接口后生效。</p>
+      {editor.kind === 'advanced' && <AdvancedFields onError={error => setEditor(current => ({ ...current, error }))} text={editor.text} onChange={text => setEditor({ ...editor, text, error: '' })} />}
       <Input.TextArea aria-label={`${label} ${modalLabel}内容`} rows={editor.kind === 'advanced' ? 14 : 6} value={editor.text} onChange={event => setEditor({ ...editor, text: event.target.value, error: '' })} />
       {editor.error && <Alert type="error" title={editor.error} />}
     </Modal>}
