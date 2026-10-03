@@ -213,7 +213,7 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点', name, on
 }
 
 export default function SchemaEditor({ data, onChange, onValidityChange }) {
-  const input = typeof data === 'string' ? data : JSON.stringify(data == null ? { type: 'object', properties: {} } : data, null, 2);
+  const input = data === '' || data == null ? JSON.stringify({ type: 'object', properties: {} }, null, 2) : typeof data === 'string' ? data : JSON.stringify(data, null, 2);
   const [text, setText] = React.useState(input);
   const [error, setError] = React.useState('');
   const [importOpen, setImportOpen] = React.useState(false);

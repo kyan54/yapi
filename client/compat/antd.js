@@ -15,7 +15,7 @@ const FormContext = React.createContext(null);
 const fieldPath = value => Array.isArray(value) ? value : String(value).replace(/\[(\d+)\]/g, '.$1').split('.').map(part => /^\d+$/.test(part) ? Number(part) : part);
 export function Form({ onSubmit, form, children, ...props }) {
   const context = React.useContext(FormContext);
-  return <Ant.Form {...props} form={form || (context && context.instance)} onSubmitCapture={onSubmit ? event => { event.preventDefault(); event.stopPropagation(); onSubmit(event); } : undefined} onValuesChange={context && context.onValuesChange}>{children}</Ant.Form>;
+  return <Ant.Form {...props} form={form || (context && context.instance)} onSubmitCapture={onSubmit ? event => { event.preventDefault(); event.stopPropagation(); onSubmit(event); } : undefined} onValuesChange={context && context.onValuesChange} onFieldsChange={context && context.onFieldsChange}>{children}</Ant.Form>;
 }
 Form.Item = Ant.Form.Item;
 Form.useForm = Ant.Form.useForm;
@@ -40,7 +40,7 @@ Form.create = (options = {}) => Wrapped => {
       getFieldValue: name => { const value = instance.getFieldValue(fieldPath(name)); return value === undefined ? initial.current[JSON.stringify(fieldPath(name))] : value; },
       getFieldsValue: names => instance.getFieldsValue(names ? names.map(fieldPath) : true),
       getFieldError: name => instance.getFieldError(fieldPath(name)),
-      getFieldsError: names => instance.getFieldsError(names && names.map(fieldPath)),
+      getFieldsError: names => Object.fromEntries(instance.getFieldsError(names && names.map(fieldPath)).map(({ name, errors }) => [name.join('.'), errors.length ? errors : undefined])),
       isFieldTouched: name => instance.isFieldTouched(fieldPath(name)),
       isFieldsTouched: names => instance.isFieldsTouched(names && names.map(fieldPath)),
       isFieldValidating: name => instance.isFieldValidating(fieldPath(name)),
@@ -59,7 +59,7 @@ Form.create = (options = {}) => Wrapped => {
     const onValuesChange = (changed, values) => { redraw(); if (options.onValuesChange) options.onValuesChange(props, changed, values); };
     React.useEffect(() => { if (props.ref) { if (typeof props.ref === 'function') props.ref({ ...facade, props: { ...props, form: facade }, form: facade }); else props.ref.current = { ...facade, form: facade }; } }, [props.ref, facade]);
     React.useEffect(() => { redraw(); }, []);
-    return <FormContext.Provider value={{ instance, onValuesChange }}><Wrapped {...props} ref={props.wrappedComponentRef} form={{ ...facade }} /></FormContext.Provider>;
+    return <FormContext.Provider value={{ instance, onValuesChange, onFieldsChange: () => redraw() }}><Wrapped {...props} ref={props.wrappedComponentRef} form={{ ...facade }} /></FormContext.Provider>;
   }
   CompatibleForm.displayName = `Form(${Wrapped.displayName || Wrapped.name || 'Component'})`;
   return CompatibleForm;

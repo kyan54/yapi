@@ -619,18 +619,21 @@ export default class Run extends Component {
             <Select
               value={case_env}
               style={{ flexBasis: 180, flexGrow: 1 }}
-              onSelect={value => value === '环境配置' ? this.showEnvModal() : this.selectDomain(value)}
+              onSelect={this.selectDomain}
+              popupRender={menu => (
+                <div>
+                  {menu}
+                  <Button type="primary" onClick={this.showEnvModal} style={{ margin: 8 }}>
+                    环境配置
+                  </Button>
+                </div>
+              )}
             >
               {env.map((item, index) => (
                 <Option value={item.name} key={index}>
                   {item.name + '：' + item.domain}
                 </Option>
               ))}
-              <Option value="环境配置" style={{ cursor: 'pointer', color: '#2395f1' }}>
-                <Button type="primary" onClick={this.showEnvModal}>
-                  环境配置
-                </Button>
-              </Option>
             </Select>
 
             <Input

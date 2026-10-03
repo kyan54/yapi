@@ -97,6 +97,9 @@ function inventory(document) {
   for(const field of SCHEMA_FIELDS) {
     const flag=field==='res_body'?'res_body_is_json_schema':'req_body_is_json_schema';
     if(document[flag]!==true)continue;
+    // Newly created legacy interfaces enable Schema mode before any body exists.
+    // An absent/empty body has no annotations; keep its stored bytes unchanged.
+    if(document[field]===undefined || document[field]==='')continue;
     if(typeof document[field]!=='string'||Buffer.byteLength(document[field])>1024*1024)fail();
     assertExactNumbers(document[field]);
     try{schemas[field]=JSON.parse(document[field]);}catch{fail();}

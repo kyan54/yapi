@@ -637,3 +637,34 @@ test('empty environment component exposes add and safely saves its first record'
   fireEvent.click(screen.getByRole('button',{name:/保.*存/}));
   await waitFor(()=>assert.ok(saved));assert.equal(saved._id,91);assert.equal(saved.env.length,1);assert.equal(saved.env[0].name,'first');assert.equal(saved.env[0].domain,'http://example.invalid');
 });
+
+
+test('legacy interface and category submit buttons recover after validation errors', async () => {
+  const AddInterface = require('../client/containers/Project/Interface/InterfaceList/AddInterfaceForm').default;
+  const AddCategory = require('../client/containers/Project/Interface/InterfaceList/AddInterfaceCatForm').default;
+  let submitted;
+  const view=render(h(AddInterface,{catdata:[{_id:13,name:'Synthetic category'}],onSubmit:value=>{submitted=value;},onCancel(){}}));
+  const submit=screen.getByRole('button',{name:/提.*交/});
+  assert.equal(submit.disabled,false);fireEvent.click(submit);
+  await screen.findByText('请输入接口路径!');
+  await userEvent.type(screen.getByPlaceholderText('接口名称'),'Synthetic new interface');
+  await userEvent.type(screen.getByPlaceholderText('/path'),'/synthetic');
+  await waitFor(()=>assert.equal(submit.disabled,false));fireEvent.click(submit);
+  await waitFor(()=>assert.ok(submitted));assert.equal(submitted.title,'Synthetic new interface');assert.equal(submitted.path,'/synthetic');
+  view.unmount();submitted=null;
+  render(h(AddCategory,{onSubmit:value=>{submitted=value;},onCancel(){}}));
+  const categorySubmit=screen.getByRole('button',{name:/提.*交/});assert.equal(categorySubmit.disabled,false);
+  await userEvent.type(document.querySelector('#name'),'Synthetic new category');
+  fireEvent.click(categorySubmit);await waitFor(()=>assert.ok(submitted));assert.equal(submitted.name,'Synthetic new category');
+});
+
+test('new interface empty schema initializes valid but a cleared JSON draft remains invalid', async () => {
+  const Editor=require('../client/components/SchemaEditor').default;
+  let validity,latest;
+  render(h(Editor,{data:'',onChange:value=>{latest=value;},onValidityChange:value=>{validity=value;}}));
+  await waitFor(()=>assert.equal(validity,true));assert.equal(latest,undefined);
+  await userEvent.click(screen.getByRole('tab',{name:'JSON（完整 Schema）'}));
+  assert.equal(JSON.parse(screen.getByLabelText('JSON Schema').value).type,'object');
+  fireEvent.change(screen.getByLabelText('JSON Schema'),{target:{value:''}});
+  await waitFor(()=>assert.equal(validity,false));assert.equal(latest,undefined);
+});

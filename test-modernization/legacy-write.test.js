@@ -194,3 +194,13 @@ test('no-op detection never rounds distinct high-precision numeric schema bounds
  const {meaningfulChange}=require('../server/services/documentation/semantic-change');
  assert.equal(meaningfulChange({res_body_is_json_schema:true,res_body:'{"maximum":9007199254740992}'},{res_body:'{"maximum":9007199254740993}'}),true);
 });
+
+test('new interface with empty enabled schema bodies supports ordinary edits and revisions', async () => {
+  const seed={...initial(),res_body:'',res_body_is_json_schema:true,req_body_is_json_schema:true};
+  const {model,get,history}=setup(seed);
+  await writeLegacyInterface(model,17,{title:'renamed new interface'},options);
+  assert.equal(get().title,'renamed new interface');assert.equal(get().res_body,'');assert.equal(get().req_body_other,undefined);
+  assert.equal(get().docs_revision,1);assert.deepEqual((await history()).revisions[0].before.descriptionSnapshot,[]);
+  await assert.rejects(writeLegacyInterface(model,17,{res_body:'{invalid'},options),{code:'INVALID_INPUT'});
+  assert.equal(get().res_body,'');assert.equal(get().docs_revision,1);
+});

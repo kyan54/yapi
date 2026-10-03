@@ -511,8 +511,14 @@ test('empty stored project environment loads the legacy default and persists its
 });
 
 test('runner environment configuration is actionable and discards closed drafts',async({page})=>{
-  await connection.db.collection('project').updateOne({_id:11},{$set:{env:[{name:'local-synthetic',domain:'http://127.0.0.1:3000/mock/11',header:[],global:[{name:'sampleId',value:'42'}]}]}});
+  await connection.db.collection('project').updateOne({_id:11},{$set:{env:[{name:'local-synthetic',domain:'http://127.0.0.1:3000/mock/11',header:[],global:[{name:'sampleId',value:'42'}]},{name:'环境配置',domain:'http://127.0.0.1:3000/mock/11',header:[],global:[]}]}});
   await login(page);await page.goto(baseURL+'/project/11/interface/api/17');await page.getByRole('tab',{name:'运行',exact:true}).click();
+  const environmentSelect=page.locator('.url .ant-select').nth(1);
+  await environmentSelect.click();
+  await environmentSelect.getByRole('combobox').press('ArrowDown');
+  await environmentSelect.getByRole('combobox').press('Enter');
+  await expect(environmentSelect).toContainText('环境配置');
+  await expect(page.locator('.env-modal')).toHaveCount(0);
   async function open(){await page.locator('.url .ant-select').nth(1).click();const button=page.getByRole('button',{name:'环境配置',exact:true});await expect(button).toBeEnabled();await button.click();await expect(page.locator('.env-modal')).toBeVisible();}
   await open();await expect(page.locator('#global_0_value')).toHaveValue('42');await page.locator('#global_0_value').fill('unsaved');await page.locator('.env-modal .ant-modal-close').click();
   await open();await expect(page.locator('#global_0_value')).toHaveValue('42');await page.locator('#global_0_value').fill('43');
@@ -520,4 +526,23 @@ test('runner environment configuration is actionable and discards closed drafts'
   await page.locator('.env-modal').getByRole('button',{name:/保\s*存/}).click();expect((await (await response).json()).errcode).toBe(0);await expect(page.locator('.env-modal')).toHaveCount(0);
   expect((await connection.db.collection('project').findOne({_id:11})).env[0].global[0].value).toBe('43');
   await expect(page.locator('.url .ant-select').nth(1)).toContainText('local-synthetic');
+});
+
+test('interface and category creation submit after visible validation errors',async({page})=>{
+  await login(page);await page.goto(baseURL+'/project/11/interface/api');
+  await page.getByRole('button',{name:'添加分类',exact:true}).click();
+  await page.getByRole('button',{name:/提\s*交/}).click();await expect(page.getByText('请输入分类名称!',{exact:true})).toBeVisible();
+  await page.getByPlaceholder('分类名称',{exact:true}).fill('Browser created category');
+  await expect(page.getByRole('button',{name:/提\s*交/})).toBeEnabled();
+  const categoryReply=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/interface/add_cat');
+  await page.getByRole('button',{name:/提\s*交/}).click();expect((await(await categoryReply).json()).errcode).toBe(0);
+  await page.getByRole('button',{name:'添加接口',exact:true}).click();
+  await page.getByRole('button',{name:/提\s*交/}).click();await expect(page.getByText('请输入接口路径!',{exact:true})).toBeVisible();
+  await page.getByPlaceholder('接口名称',{exact:true}).fill('Browser created interface');await page.getByPlaceholder('/path',{exact:true}).fill('/browser-created');
+  await expect(page.getByRole('button',{name:/提\s*交/})).toBeEnabled();
+  const interfaceReply=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/interface/add');
+  await page.getByRole('button',{name:/提\s*交/}).click();const created=await(await interfaceReply).json();expect(created.errcode).toBe(0);
+  const record=await connection.db.collection('interface').findOne({_id:created.data._id});expect(record).toMatchObject({project_id:11,title:'Browser created interface',path:'/browser-created'});
+  await page.reload();await expect(page.getByRole('link',{name:'Browser created interface',exact:true}).first()).toBeVisible();
+  await page.goto(baseURL+'/project/11/interface/api/'+created.data._id);await page.getByRole('tab',{name:'编辑',exact:true}).click();await page.getByPlaceholder('接口名称').fill('Browser renamed empty interface');await saveInterfaceSuccessfully(page);await page.reload();expect((await connection.db.collection('interface').findOne({_id:created.data._id})).title).toBe('Browser renamed empty interface');
 });
