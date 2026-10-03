@@ -121,14 +121,15 @@ test('legacy interface editing, request runner, Mock, collection, Swagger and co
 
 test('actual Mock route and authenticated collection assertions execute through isolated runner',async({page})=>{
   await login(page);
+  await connection.db.collection('interface_case').insertOne({_id:29,uid:9,col_id:21,project_id:11,interface_id:17,casename:'Synthetic persisted runner case',index:0,enable_script:true});
   await connection.db.collection('project').updateOne({_id:11},{$set:{is_mock_open:true,project_mock_script:'mockJson.isolated = true; delay = 0;'}});
   try {
     const response=await page.request.get(baseURL+'/mock/11/orders/123');
     expect(response.status(), 'Mock response: '+await response.text()+'\nApplication log:\n'+log.slice(-6000)).toBe(200);
     const body=await response.json();expect(body.isolated).toBe(true);expect(typeof body.id).toBe('number');
-    const checked=await page.request.post(baseURL+'/api/col/run_script',{data:{col_id:21,interface_id:17,response:{status:200,body:{id:123},header:{}},records:[],params:{},script:'assert.equal(status,200); assert.equal(body.id,123); log("asserted");'}});
+    const checked=await page.request.post(baseURL+'/api/col/run_script',{data:{col_id:21,case_id:29,interface_id:17,response:{status:200,body:{id:123},header:{}},records:[],params:{},script:'assert.equal(status,200); assert.equal(body.id,123); log("asserted");'}});
     expect(checked.status()).toBe(200);const result=await checked.json();expect(result.errcode).toBe(0);expect(JSON.stringify(result.data.logs)).toContain('asserted');
-  } finally {await connection.db.collection('project').updateOne({_id:11},{$set:{is_mock_open:false,project_mock_script:''}});}
+  } finally {await connection.db.collection('project').updateOne({_id:11},{$set:{is_mock_open:false,project_mock_script:''}});await connection.db.collection('interface_case').deleteOne({_id:29});}
 });
 
 test('editing preserves parameter rows, schema semantics and description through save and cancelled navigation', async ({page}, testInfo) => {
@@ -751,4 +752,72 @@ test('saving a request twice while pending creates exactly one collection case',
   await expect(dialog).toHaveCount(0);
   await expect.poll(()=>connection.db.collection('interface_case').countDocuments({casename:caseName})).toBe(1);
   expect(requests).toBe(1);
+});
+
+
+test('header search ignores stale responses and clear invalidates an in-flight search', async ({page}) => {
+  await login(page);await page.goto(baseURL+'/group');
+  let release,seen=false;
+  let gate=new Promise(resolve=>release=resolve);
+  const queries=[];
+  await page.route('**/api/project/search?*',async route=>{
+    const q=new URL(route.request().url()).searchParams.get('q');queries.push(q);
+    if(q==='older'||q==='clear me'){seen=true;await gate;}
+    await route.fulfill({contentType:'application/json',body:JSON.stringify({errcode:0,data:{group:[],project:[{_id:11,groupId:8,name:q+' synthetic result'}],interface:[]}})});
+  });
+  const input=page.getByPlaceholder('搜索分组/项目/接口');
+  await input.fill('older');await expect.poll(()=>seen).toBe(true);
+  await input.fill('new & #');await expect(page.getByText('项目: new & # synthetic result',{exact:true})).toBeVisible();
+  release();await page.waitForTimeout(100);
+  await expect(page.getByText('项目: older synthetic result',{exact:true})).toHaveCount(0);
+  expect(queries).toContain('new & #');
+  seen=false;gate=new Promise(resolve=>release=resolve);
+  await input.fill('clear me');await expect.poll(()=>seen).toBe(true);await input.fill('');release();
+  await page.waitForTimeout(100);await expect(page.getByText('项目: clear me synthetic result',{exact:true})).toHaveCount(0);
+});
+
+test('authenticated home resolves personal group and browser history stays usable', async ({page}) => {
+  await login(page);
+  const personal=(await (await page.request.get(baseURL+'/api/group/get_mygroup')).json()).data._id;
+  await page.goto(baseURL+'/');await expect(page).toHaveURL(baseURL+'/group/'+personal);
+  await page.goto(baseURL+'/project/11/interface/api');await expect(page.getByPlaceholder('搜索接口',{exact:true})).toBeVisible();
+  await page.goBack();await expect(page).toHaveURL(baseURL+'/group/'+personal);
+  await page.goForward();await expect(page).toHaveURL(baseURL+'/project/11/interface/api');
+});
+
+
+for (const cancellation of ['registration tab', 'browser Back']) test('late successful login cannot navigate after '+cancellation, async ({page}) => {
+  let release,started=false;const gate=new Promise(resolve=>release=resolve);
+  await page.route('**/api/user/login',async route=>{
+    started=true;await gate;
+    await route.fulfill({contentType:'application/json',body:JSON.stringify({errcode:0,data:{uid:9,username:'Synthetic cancelled login',email:'browser@example.invalid',role:'admin',type:'site'}})});
+  });
+  await page.goto(baseURL+'/');
+  await page.getByRole('button',{name:'登录 / 注册',exact:true}).first().click();
+  await expect(page).toHaveURL(baseURL+'/login');
+  await page.getByPlaceholder('Email',{exact:true}).fill('browser@example.invalid');
+  await page.getByPlaceholder('Password',{exact:true}).fill('synthetic-not-submitted-to-server');
+  await page.locator('button.login-form-button').click();await expect.poll(()=>started).toBe(true);
+  if(cancellation==='registration tab')await page.getByRole('tab',{name:'注册',exact:true}).click();else await page.goBack();
+  const expected=page.url();const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/user/login');release();await response;
+  await page.waitForTimeout(200);await expect(page).toHaveURL(expected);
+  await expect(page.getByText('登录成功!',{exact:false})).toHaveCount(0);
+  if(cancellation==='registration tab')await expect(page.getByRole('tab',{name:'注册',exact:true})).toHaveAttribute('aria-selected','true');
+});
+
+
+test('normal login accepts an existing synthetic plus-address email', async ({page}) => {
+  const email='synthetic+legacy@example.invalid';
+  await connection.db.collection('user').updateOne({_id:9},{$set:{email}});
+  try {
+    await page.goto(baseURL+'/login');
+    await page.getByPlaceholder('Email',{exact:true}).fill(email);
+    await page.getByPlaceholder('Password',{exact:true}).fill('synthetic-browser-password');
+    const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/user/login');
+    await page.locator('button.login-form-button').click();
+    expect((await (await response).json()).errcode).toBe(0);
+    await expect(page).toHaveURL(/\/group/);
+  } finally {
+    await connection.db.collection('user').updateOne({_id:9},{$set:{email:'browser@example.invalid'}});
+  }
 });

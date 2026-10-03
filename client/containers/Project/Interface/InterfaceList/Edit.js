@@ -142,9 +142,10 @@ class InterfaceEdit extends Component {
   }
 
   onTagClick = () => {
-    this.setState({
-      visible: true
-    });
+    this.setState(state => ({
+      visible: true,
+      tagSession: (state.tagSession || 0) + 1
+    }));
   };
 
   handleOk = async () => {
@@ -163,13 +164,10 @@ class InterfaceEdit extends Component {
     if (result.data.errcode === 0) {
       await this.props.getProject(id);
       message.success('保存成功');
+      this.setState({ visible: false });
     } else {
       message.error(result.data.errmsg);
     }
-
-    this.setState({
-      visible: false
-    });
   };
 
   handleCancel = () => {
@@ -218,7 +216,9 @@ class InterfaceEdit extends Component {
           okText="保存"
         >
           <div className="tag-modal-center">
-            <ProjectTag tagMsg={tag} ref={this.tagSubmit} />
+            {this.state.visible ? (
+              <ProjectTag key={this.state.tagSession} tagMsg={(tag || []).map(item => ({ ...item }))} ref={this.tagSubmit} />
+            ) : null}
           </div>
         </Modal>
       </div>

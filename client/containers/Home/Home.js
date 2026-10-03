@@ -337,13 +337,9 @@ class Home extends Component {
     super(props);
   }
 
-  componentWillMount() {
-    if (this.props.login) {
-      this.props.history.push('/group/261');
-    }
+  componentDidMount() {
+    if (this.props.login) this.props.history.replace('/group');
   }
-
-  componentDidMount() {}
   static propTypes = {
     introList: PropTypes.array,
     login: PropTypes.bool,

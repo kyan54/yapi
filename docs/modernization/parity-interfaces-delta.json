@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-5",
+  "scope": "A/interfaces/batches-1-6",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -70,10 +70,40 @@
     "reviewable_proxy_sources": {
       "old": "test-browser/fixtures/parity-interfaces/proxy-old.cjs",
       "new": "test-browser/fixtures/parity-interfaces/proxy-new.cjs"
+    },
+    "tag_final_ids": {
+      "old": [
+        {
+          "project": 930190,
+          "id": 940934
+        },
+        {
+          "project": 930193,
+          "id": 940941
+        },
+        {
+          "project": 930196,
+          "id": 940948
+        }
+      ],
+      "new": [
+        {
+          "project": 930186,
+          "id": 940505
+        },
+        {
+          "project": 930190,
+          "id": 940510
+        },
+        {
+          "project": 930194,
+          "id": 940515
+        }
+      ]
     }
   },
   "tests": {
-    "passed": 28,
+    "passed": 34,
     "failed": 0,
     "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
     "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs.",
@@ -82,8 +112,10 @@
     "default_ci": "The three new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched.",
     "breakdown": {
       "parameters": 18,
-      "list_filters_geometry_and_nonmember_boundaries": 10
-    }
+      "list_filters_geometry_and_nonmember_boundaries": 10,
+      "tag_modal_and_selection": 6
+    },
+    "interpretation": "34 passing observed-behavior tests do not mean all original compounds pass: explicit legacy defect expectations retain failed scenario/atomic statuses."
   },
   "scenarios": [
     {
@@ -157,6 +189,20 @@
         "guest"
       ],
       "checks": "Real drag reorder and rapid double-add/middle-delete for Query/Header/form rows; exact surviving values/order after successful save and reload; guest reordered query write rejected."
+    },
+    {
+      "id": "project_tags-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Cancel/X/Escape immediately do not write either version. Legacy retains discarded drafts and later saves them; candidate rebuilds from a cloned persisted snapshot on every open. Failed save keeps draft for retry on candidate; guest retry remains denied. Interface unsaved title/query preserved."
+    },
+    {
+      "id": "project_tags-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Owner/dev Tag modal save returns errcode0 and visible success, options refresh, interface unsaved title/query survive; guest failure denied and persisted tags unchanged."
     }
   ],
   "legacy_defects": [
@@ -165,12 +211,16 @@
       "detail": "Malformed nonempty lines silently discarded. Empty-only import then reopen throws value.forEach is not a function (owner and developer). New version does not reproduce crash; malformed line rejection added."
     },
     {
-      "detail": "Legacy tagged /api/interface/up returns errcode 40011 after autoAddTag attempts project lookup; DB can still change. Not counted as save success. This tagged-save observation preceded missing-group repair; tagged save was not revalidated afterward and is not used to establish any passed assertion."
+      "detail": "Legacy tagged interface/up still returns40011 after core fixture repair on exact dedicated Tag projects; DB can change, but not counted as save success. Candidate valid-schema fixture succeeds. Initial raw-response synthetic fixture had inconsistent schema flag and was replaced with valid schema for final Tag coverage; no server change."
+    },
+    {
+      "id": "project_tags-02",
+      "detail": "Cancelled/closed/Escape drafts persist locally in legacy and are included by later explicit save. Candidate discards them."
     }
   ],
   "evidence": {
     "directory": "/Users/hujinwu/Documents/Codex/2026-10-03/task-4/interfaces",
-    "browser": "final-suite-results.json",
+    "browser": "batch6-aggregate-results.json",
     "baseline_tagged_save": "baseline-results.json",
     "legacy_empty": "legacy-empty-trace.zip",
     "direct_db_readback": [
@@ -185,9 +235,22 @@
       "old-list-db.json",
       "new-list-db.json"
     ],
-    "final_source": "final-image-source-sha256.txt: running candidate source matches worktree product bytes"
+    "final_source": "final-image-source-sha256.txt: running candidate source matches worktree product bytes",
+    "tag_targeted": "tag-targeted-results.json (6/6 observed-behavior assertions; legacy defects remain failed matrix assertions)",
+    "tag_database": [
+      "old-tag-db-final.json",
+      "new-tag-db-final.json"
+    ],
+    "tag_before": [
+      "tag-overlay-before.png",
+      "tag-overlay-before-trace.zip",
+      "tag-legacy-save-failure.json",
+      "tag-legacy-save-failure-trace.zip"
+    ],
+    "tag_visual": "Final 1920x1080 owner Tag modal screenshots old/new manually viewed: same680px width, candidate shorter header/footer spacing; fields/buttons legible, popup overlay gone. Background scroll differs; no whole-page visual equivalence claimed.",
+    "tag_final_source": "tag-final-image-source-sha256.txt: all333 tracked client/server/common/exts product files match running candidate"
   },
-  "remaining": "All assigned scenario IDs other than the eight listed here remain notrun by this increment. Keep existing main-matrix evidence; no main matrix overwrite.",
+  "remaining": "All unlisted original compound IDs remain notrun by this increment. project_tags-01 add/edit/delete and project_tags-04 duplicates/empty/removed-selected remain incomplete; combine C evidence without promoting missing assertions. Preserve main matrix.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -204,6 +267,16 @@
       "before": "Legacy .path display:inline-block overrode AntD6 Select flex layout, wrapping category suffix arrow and increasing row height; old selection styling no longer applied.",
       "after": "Owned .ant-select.path uses inline-flex and no extra right padding; category/status selects explicitly borderless.",
       "validation": "All4 readable roles in both versions assert select height<=34px and arrow vertical center difference<8px; 1920x1080 owner screenshots manually compared."
+    },
+    {
+      "id": "project_tags-modal-overlay",
+      "before": "Candidate Tag option popup remained above opened modal and intercepted Cancel; old pointer workflow worked.",
+      "after": "Owned InterfaceEditForm controls Tag popup open and closes it when opening settings."
+    },
+    {
+      "id": "project_tags-02",
+      "before": "Both versions reused cancelled modal draft on reopen; future save could commit discarded names.",
+      "after": "Owned Edit remounts a fresh cloned persisted Tag snapshot on explicit open, while failure retains modal draft for retry. No ProjectTag/settings/shared component edits."
     }
   ],
   "review_notes": [
@@ -264,6 +337,14 @@
       "old": "passed",
       "new": "passed",
       "checks": "private nonmember project/list APIs reject and UI shows no table or add controls"
+    },
+    {
+      "id": "project_tags-01-interface-selection",
+      "scenario": "project_tags-01",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Real alpha-to-beta selection change and interface save. Legacy returns40011/error even though tag persists; candidate errcode0/visible success/API read/reload all pass. Guest write denied and alpha retained. Full add/edit/delete compound remains notrun pending C evidence and remaining edit/delete coverage."
     }
   ]
 }

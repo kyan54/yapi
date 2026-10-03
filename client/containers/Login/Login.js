@@ -50,29 +50,34 @@ class Login extends Component {
   handleSubmit = e => {
     e.preventDefault();
     const form = this.props.form;
-    if (this.submitting) return;
+    if (!this.mounted || this.submitting) return;
     form.validateFields(async (err, values) => {
-      if (err || this.submitting) return;
+      if (err || !this.mounted || this.submitting) return;
       this.submitting = true;
       this.setState({ submitting: true });
       try {
         const action = this.props.isLDAP && this.state.loginType === 'ldap'
           ? this.props.loginLdapActions : this.props.loginActions;
         const res = await action(values);
-        if (res.payload.data.errcode === 0) {
+        if (this.mounted && res.payload.data.errcode === 0) {
           this.props.history.replace('/group');
           message.success('登录成功! ');
         }
       } catch (error) {
-        message.error('登录失败，请重试');
+        if (this.mounted) message.error('登录失败，请重试');
       } finally {
         this.submitting = false;
-        this.setState({ submitting: false });
+        if (this.mounted) this.setState({ submitting: false });
       }
     });
   };
 
+  componentWillUnmount() {
+    this.mounted = false;
+  }
+
   componentDidMount() {
+    this.mounted = true;
     //Qsso.attach('qsso-login','/api/user/login_by_token')
     console.log('isLDAP', this.props.isLDAP);
   }
@@ -91,7 +96,7 @@ class Login extends Component {
         : {
             required: true,
             message: '请输入正确的email!',
-            pattern: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{1,})+$/
+            type: 'email'
           };
     return (
       <Form onSubmit={this.handleSubmit}>

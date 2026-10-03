@@ -60,10 +60,18 @@ export default class Srch extends Component {
     }
   };
 
+  componentWillUnmount() {
+    this.searchSequence = (this.searchSequence || 0) + 1;
+  }
+
   handleSearch = value => {
+    const sequence = this.searchSequence = (this.searchSequence || 0) + 1;
+    this.setState({ dataSource: [] });
+    if (!value.trim()) return;
     axios
-      .get('/api/project/search?q=' + value)
+      .get('/api/project/search?q=' + encodeURIComponent(value))
       .then(res => {
+        if (sequence !== this.searchSequence) return;
         if (res.data && res.data.errcode === 0) {
           const dataSource = [];
           for (let title in res.data.data) {
