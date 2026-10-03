@@ -5,7 +5,6 @@ import _ from 'underscore';
 import constants from '../../../../constants/variable.js';
 import { handlePath, nameLengthLimit } from '../../../../common.js';
 import { changeEditStatus } from '../../../../reducer/modules/interface.js';
-import json5 from 'json5';
 import { message, Affix, Tabs, Modal } from 'antd';
 import EasyDragSort from '../../../../components/EasyDragSort/EasyDragSort.js';
 import mockEditor from 'client/components/AceEditor/mockEditor';
@@ -18,6 +17,7 @@ import SchemaEditor from 'client/components/SchemaEditor';
 import checkIsJsonSchema from './normalizeSchema';
 import parseBulkParameters from './parseBulkParameters';
 import reconcilePathParameters from './reconcilePathParameters';
+import { initialSchemaMode, parseBodyJson, clearInactiveBodies } from './bodyModes';
 const ResBodySchema = SchemaEditor;
 const ReqBodySchema = SchemaEditor;
 const TabPane = Tabs.TabPane;
@@ -29,9 +29,9 @@ require('./editor.css');
 
 
 let EditFormContext;
-const validJson = json => {
+const validJson = (json, allowJson5) => {
   try {
-    json5.parse(json);
+    parseBodyJson(json, allowJson5);
     return true;
   } catch (e) {
     return false;
@@ -199,6 +199,7 @@ class InterfaceEditForm extends Component {
     const { curdata } = this.props;
     // console.log('custom_field1', this.props.custom_field);
     this.state = this.initState(curdata);
+    this.bodyTypes = { request: this.state.req_body_type, response: this.state.res_body_type };
   }
 
   schemaValidity = { request: true, response: true };
@@ -232,7 +233,7 @@ class InterfaceEditForm extends Component {
       values.desc = this.editor.getHTML();
       values.markdown = this.editor.getMarkdown();
       if (values.res_body_type === 'json') {
-        if (this.state.res_body && validJson(this.state.res_body) === false) {
+        if (this.state.res_body && validJson(this.state.res_body, this.props.projectMsg.is_json5 && !values.res_body_is_json_schema) === false) {
           return message.error('返回body json格式有问题，请检查！');
         }
         try {
@@ -242,8 +243,8 @@ class InterfaceEditForm extends Component {
         }
       }
       if (values.req_body_type === 'json') {
-        if (this.state.req_body_other && validJson(this.state.req_body_other) === false) {
-          return message.error('响应Body json格式有问题，请检查！');
+        if (this.state.req_body_other && validJson(this.state.req_body_other, this.props.projectMsg.is_json5 && !values.req_body_is_json_schema) === false) {
+          return message.error('请求Body json格式有问题，请检查！');
         }
         try {
           values.req_body_other = JSON.stringify(
@@ -312,9 +313,7 @@ class InterfaceEditForm extends Component {
         ? values.req_query.filter(item => item.name !== '')
         : [];
 
-      if (HTTP_METHOD[values.method].request_body !== true) {
-        values.req_body_form = [];
-      }
+      clearInactiveBodies(values, HTTP_METHOD[values.method].request_body === true);
 
       if (
         values.req_body_is_json_schema &&
@@ -350,6 +349,30 @@ class InterfaceEditForm extends Component {
       this.submitting = false;
       if (this._isMounted) this.setState({ submitStatus: false });
     }
+  };
+
+  schemaPreferences = {};
+  changeBodyType = (kind, event) => {
+    const type = event.target.value;
+    const request = kind === 'request';
+    const flag = request ? 'req_body_is_json_schema' : 'res_body_is_json_schema';
+    const body = request ? 'req_body_other' : 'res_body';
+    if (this.bodyTypes[kind] === 'json') {
+      this.schemaPreferences[kind] = this.props.form.getFieldValue(flag);
+    }
+    this.bodyTypes[kind] = type;
+    const mode = Object.prototype.hasOwnProperty.call(this.schemaPreferences, kind)
+      ? this.schemaPreferences[kind]
+      : initialSchemaMode('json', this.state[flag], this.props.projectMsg.is_json5);
+    const next = { [flag]: type === 'json' ? mode : false };
+    if (type === 'raw' || type === 'file') next[body] = this.state[body];
+    this.props.form.setFieldsValue(next);
+    this.markDirty();
+  };
+
+  handleBodyText = (kind, text) => {
+    this.setState({ [kind === 'request' ? 'req_body_other' : 'res_body']: text });
+    this.markDirty();
   };
 
   onChangeMethod = val => {
@@ -422,8 +445,15 @@ class InterfaceEditForm extends Component {
     let str = '';
 
     try {
+      if (this.props.form.getFieldValue('res_body_is_json_schema') && !this.schemaValidity.response) {
+        return this.mockPreview.setValue('解析出错: Schema JSON 无效');
+      }
+      if (!this.props.form.getFieldValue('res_body_is_json_schema') &&
+          !validJson(this.state.res_body, this.props.projectMsg.is_json5)) {
+        return this.mockPreview.setValue('解析出错: JSON 格式有误');
+      }
       if (this.props.form.getFieldValue('res_body_is_json_schema')) {
-        let schema = json5.parse(this.props.form.getFieldValue('res_body'));
+        let schema = JSON.parse(this.state.res_body);
         let result = await axios.post('/api/interface/schema2json', {
           schema: schema
         });
@@ -1006,7 +1036,7 @@ class InterfaceEditForm extends Component {
                   {getFieldDecorator('req_body_type', {
                     initialValue: this.state.req_body_type
                   })(
-                    <RadioGroup>
+                    <RadioGroup onChange={event => this.changeBodyType('request', event)}>
                       <Radio value="form">form</Radio>
                       <Radio value="json">json</Radio>
                       <Radio value="file">file</Radio>
@@ -1070,7 +1100,7 @@ class InterfaceEditForm extends Component {
               </span>
               {getFieldDecorator('req_body_is_json_schema', {
                 valuePropName: 'checked',
-                initialValue: this.state.req_body_is_json_schema || !projectMsg.is_json5
+                initialValue: initialSchemaMode(this.state.req_body_type, this.state.req_body_is_json_schema, projectMsg.is_json5)
               })(
                 <Switch
                   checkedChildren="开"
@@ -1121,7 +1151,7 @@ class InterfaceEditForm extends Component {
                 <Col span={24} className="interface-edit-item-other-body">
                   {getFieldDecorator('req_body_other', {
                     initialValue: this.state.req_body_other
-                  })(<TextArea placeholder="" autosize={true} />)}
+                  })(<TextArea placeholder="" autosize={true} onChange={event => this.handleBodyText('request', event.target.value)} />)}
                 </Col>
               </Row>
             ) : null}
@@ -1131,7 +1161,7 @@ class InterfaceEditForm extends Component {
                 <Col span={24}>
                   {getFieldDecorator('req_body_other', {
                     initialValue: this.state.req_body_other
-                  })(<TextArea placeholder="" autosize={{ minRows: 8 }} />)}
+                  })(<TextArea placeholder="" autosize={{ minRows: 8 }} onChange={event => this.handleBodyText('request', event.target.value)} />)}
                 </Col>
               </Row>
             ) : null}
@@ -1148,12 +1178,12 @@ class InterfaceEditForm extends Component {
             )}
             {getFieldDecorator('res_body_is_json_schema', {
               valuePropName: 'checked',
-              initialValue: this.state.res_body_is_json_schema || !projectMsg.is_json5
+              initialValue: initialSchemaMode(this.state.res_body_type, this.state.res_body_is_json_schema, projectMsg.is_json5)
             })(
               <Switch
                 checkedChildren="json-schema"
                 unCheckedChildren="json"
-                disabled={!projectMsg.is_json5}
+                disabled={!projectMsg.is_json5 || this.props.form.getFieldValue('res_body_type') !== 'json'}
               />
             )}
           </h2>
@@ -1161,7 +1191,7 @@ class InterfaceEditForm extends Component {
             {getFieldDecorator('res_body_type', {
               initialValue: this.state.res_body_type
             })(
-              <RadioGroup size="large" className="radioGroup">
+              <RadioGroup size="large" className="radioGroup" onChange={event => this.changeBodyType('response', event)}>
                 <RadioButton value="json">JSON</RadioButton>
                 <RadioButton value="raw">RAW</RadioButton>
               </RadioGroup>
@@ -1247,7 +1277,7 @@ class InterfaceEditForm extends Component {
               <Col span={24}>
                 {getFieldDecorator('res_body', {
                   initialValue: this.state.res_body
-                })(<TextArea style={{ minHeight: '150px' }} placeholder="" />)}
+                })(<TextArea style={{ minHeight: '150px' }} placeholder="" onChange={event => this.handleBodyText('response', event.target.value)} />)}
               </Col>
             </Row>
           </div>

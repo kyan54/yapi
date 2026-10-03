@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-14",
+  "scope": "A/interfaces/batches-1-15",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -176,6 +176,18 @@
       "default_skipped": 6,
       "default_failed": 0,
       "note": "Final current product full74 plus targeted notification3 new/3 old and guest1. Historical paired metadata report includes observed old failures, not parity success. No claim of one full78 run."
+    },
+    "batch15_current_candidate": {
+      "body_new_passed": 19,
+      "schema_preview_paired_passed": 6,
+      "default_total": 345,
+      "default_passed": 339,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "unit_passed": 14,
+      "note": "Body paired38 report has three real legacy JSON/RAW draft-loss failures and two random optional Mock-field test failures; required-field corrected paired6 passes. Explicit legacy defect observation tests do not imply parity passed. Full97 current candidate regression passed with B fixed four-file overlay.",
+      "new_full_regression_passed": 97,
+      "new_full_regression_failed": 0
     }
   },
   "scenarios": [
@@ -463,9 +475,23 @@
       "before": "interfaces/save-failure-before-results.json",
       "default": "interfaces/save-default-tests.log",
       "source_sha256": "interfaces/save-source-sha256.json"
+    },
+    "batch15": {
+      "paired": "interfaces/body-final-results.json",
+      "preview": "interfaces/body-schema-final-results.json",
+      "before": "interfaces/body-schema-before-results.json",
+      "database": [
+        "interfaces/body-old-db.json",
+        "interfaces/body-new-db.json"
+      ],
+      "source_sha256": "interfaces/body-source-sha256.json",
+      "default": "interfaces/body-default-tests.log",
+      "overlay": "interfaces/docs-active-overlay-provenance.json",
+      "visual": "1920x1080 old/new RAW-reopen screenshots manually inspected. New RAW text stays intact; old request source becomes empty object schema. Rows fit without overlap. Different scroll positions recorded; no pixel-identical page claim.",
+      "full": "interfaces/batch15-new-results.json"
     }
   },
-  "remaining": "Body/JSON5/preview/F9, notes, remaining tree navigation and additional Schema controls remain pending. Raw false overwrite and hidden Schema resetting reopened raw text reproduced; B active-type Docs overlay authorized for next isolated image. Preserve original246 matrix.",
+  "remaining": "Invalid request Schema then switch to GET (ordinary invalid JSON already permits GET), notes, remaining tree navigation and additional Schema controls remain pending. Body core/JSON5/preview/F9 batch15 evidence added. Preserve original246 matrix.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
@@ -510,6 +536,12 @@
       "before": "Both versions sent two add requests and created two identical method/path records on native double-click while responses were held. Owner/developer reproduced.",
       "after": "AddInterfaceForm synchronous in-flight guard and loading state; both owned Menu/List handlers return submission promise; finally releases guard and transport error preserves retryable form.",
       "validation": "Paired7-method creation and cancel/close/Escape, duplicate rejection, delayed double-click. Candidate tree/list paths network abort+HTTP503 then same-form successful retry. Frontend interaction protection only; concurrent direct API uniqueness is outside this fix."
+    },
+    {
+      "id": "interface-body-modes-and-current-preview",
+      "before": "Explicit false was overwritten by project defaults; inactive schema editors could replace RAW text, RAW↔JSON source was stale, inactive fields leaked, Schema preview sent old hidden RAW source.",
+      "after": "Default only undefined and only active JSON; preserve mode preference and source on switches; clear inactive payload fields; strict project parser policy; preview uses current valid schema draft.",
+      "validation": "14 unit cases,19 new browser Body cases,6 corrected paired Schema preview cases,25 exact DB readbacks; overlay provenance recorded."
     }
   ],
   "review_notes": [
@@ -530,7 +562,8 @@
       "id": "schema_json-full-tab",
       "status": "notrun",
       "reason": "Legacy lacks full-schema JSON tab; root advanced source is a separate paired path. Do not count legacy capability observations as completed JSON-tab tests."
-    }
+    },
+    "Batch15 runtime includes exact B commit 1b08f0701a743b75b1b6b1af6feeb7d071557744 documentation schema-mode/description-edits/outbound/semantic-change four-file overlay; 335 hashes match A source plus that overlay. B product files are not in A commit; integration must include B commit."
   ],
   "atomic_additions": [
     {
@@ -623,6 +656,38 @@
       "old": "passed",
       "new": "passed",
       "checks": "Paired owner/dev/guest root advanced source edit/cancel/reopen/recover/save/API0/visible result/reload; unknown keywords retained and guest denied. Invalid legacy closes/discards draft; candidate remains open with error. Other visual02 controls remain incomplete."
+    },
+    {
+      "id": "interface_body-01-batch15",
+      "scenario": "interface_body-01",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Owner/dev/guest RAW/file/form and JSON→RAW→JSON roundtrip; historical RAW true flags normalized; active text and hidden rows/flags verified, save errcode0/visible result/API read/reload/DB. Old RAW reopen mutates visible request source and RAW-phase edits disappear on return to JSON. Invalid request body then switch to GET is still a pending edge."
+    },
+    {
+      "id": "interface_body-02-batch15",
+      "scenario": "interface_body-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "JSON5 on/off × roles; explicitfalse preserved even with JSON5 disabled, malformed save sends zero POST, strict JSON rejects JSON5 comments when disabled, correction/save/reload/guest deny. Old disabled setting overwrites explicitfalse with schema mode."
+    },
+    {
+      "id": "interface_body-03-batch15",
+      "scenario": "interface_body-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Current unsaved advanced Schema preview payload exact and deterministic required field visible, 6 paired cases pass. Candidate invalid full-schema source prevents preview request with explicit error; raw JSON parser error and correction tested. Legacy no full-schema source control."
+    },
+    {
+      "id": "interface_body-04-batch15",
+      "scenario": "interface_body-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "F9 on request/response, blur/refocus, browser Back cleanup and reopen focus tested paired; all roles F9 and owner navigation. Screenshots1920x1080."
     }
   ]
 }
