@@ -66,7 +66,7 @@ const MenuUser = props => (
 const tipFollow = (
   <div className="title-container">
     <h3 className="title">
-      <Icon type="star" /> 关注
+      <Icon type="star" theme="filled" /> 关注
     </h3>
     <p>这里是你的专属收藏夹，便于你找到自己的项目</p>
   </div>
@@ -74,7 +74,7 @@ const tipFollow = (
 const tipAdd = (
   <div className="title-container">
     <h3 className="title">
-      <Icon type="plus-circle" /> 新建项目
+      <Icon type="plus-circle" theme="filled" /> 新建项目
     </h3>
     <p>在任何页面都可以快速新建项目</p>
   </div>
@@ -121,7 +121,7 @@ const ToolUser = props => {
         <Tooltip placement="bottom" title={'我的关注'}>
           <li className="toolbar-li">
             <Link to="/follow">
-              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="star" />
+              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="star" theme="filled" />
             </Link>
           </li>
         </Tooltip>
@@ -137,7 +137,7 @@ const ToolUser = props => {
         <Tooltip placement="bottom" title={'新建项目'}>
           <li className="toolbar-li">
             <Link to="/add-project">
-              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="plus-circle" />
+              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="plus-circle" theme="filled" />
             </Link>
           </li>
         </Tooltip>
@@ -153,7 +153,7 @@ const ToolUser = props => {
         <Tooltip placement="bottom" title={'使用文档'}>
           <li className="toolbar-li">
             <a target="_blank" href="https://hellosean1025.github.io/yapi" rel="noopener noreferrer">
-              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="question-circle" />
+              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="question-circle" theme="filled" />
             </a>
           </li>
         </Tooltip>

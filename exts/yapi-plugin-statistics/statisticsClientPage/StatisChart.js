@@ -79,6 +79,7 @@ class StatisChart extends Component {
                   type="monotone"
                   dataKey="count"
                   stroke="#8884d8"
+                  dot={false}
                   activeDot={{ r: 8 }}
                 />
               </LineChart>
