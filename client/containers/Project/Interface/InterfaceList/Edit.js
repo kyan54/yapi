@@ -61,16 +61,21 @@ class InterfaceEdit extends Component {
   }
 
   onSubmit = async params => {
-    params.id = this.props.match.params.actionId;
-    let result = await axios.post('/api/interface/up', params);
-    this.props.fetchInterfaceListMenu(this.props.currProject._id).then();
-    this.props.fetchInterfaceData(params.id).then();
-    if (result.data.errcode === 0) {
-      this.props.updateInterfaceData(params);
-      message.success('保存成功');
-    } else {
+    const id = this.props.match.params.actionId;
+    const projectId = this.props.currProject._id;
+    params = { ...params, id };
+    const result = await axios.post('/api/interface/up', params);
+    if (this.disposed || String(this.props.match.params.actionId) !== String(id) ||
+        String(this.props.currProject._id) !== String(projectId)) return false;
+    if (result.data.errcode !== 0) {
       message.error(result.data.errmsg);
+      return false;
     }
+    this.props.updateInterfaceData(params);
+    this.props.fetchInterfaceListMenu(projectId).then();
+    this.props.fetchInterfaceData(id).then();
+    message.success('保存成功');
+    return true;
   };
 
   componentWillUnmount() {

@@ -203,147 +203,152 @@ class InterfaceEditForm extends Component {
 
   schemaValidity = { request: true, response: true };
 
-  onRequestValidity = valid => { this.schemaValidity.request = valid; if (!valid) this.props.changeEditStatus(true); };
-  onResponseValidity = valid => { this.schemaValidity.response = valid; if (!valid) this.props.changeEditStatus(true); };
+  onRequestValidity = valid => { this.schemaValidity.request = valid; if (!valid) this.markDirty(); };
+  onResponseValidity = valid => { this.schemaValidity.response = valid; if (!valid) this.markDirty(); };
 
-  handleSubmit = e => {
+  editRevision = 0;
+  submitting = false;
+  markDirty = () => {
+    this.editRevision += 1;
+    this.props.changeEditStatus(true);
+  };
+
+  handleSubmit = async e => {
     e.preventDefault();
+    if (this.submitting) return;
     if (this.props.saveDisabled) return message.error('编辑锁不可用，请重新打开编辑页面后再保存。');
     const fields = this.props.form.getFieldsValue();
     if ((fields.res_body_type === 'json' && fields.res_body_is_json_schema && !this.schemaValidity.response) ||
         (fields.req_body_type === 'json' && fields.req_body_is_json_schema && !this.schemaValidity.request)) {
       return message.error('Schema JSON 无效，请修正后再保存');
     }
-    this.setState({
-      submitStatus: true
-    });
+    this.submitting = true;
+    this.setState({ submitStatus: true });
+    const revision = this.editRevision;
     try {
-      this.props.form.validateFields((err, values) => {
-        setTimeout(() => {
-          if (this._isMounted) {
-            this.setState({
-              submitStatus: false
-            });
-          }
-        }, 3000);
-        if (!err) {
-          values.desc = this.editor.getHTML();
-          values.markdown = this.editor.getMarkdown();
-          if (values.res_body_type === 'json') {
-            if (this.state.res_body && validJson(this.state.res_body) === false) {
-              return message.error('返回body json格式有问题，请检查！');
-            }
-            try {
-              values.res_body = JSON.stringify(JSON.parse(this.state.res_body), null, '   ');
-            } catch (e) {
-              values.res_body = this.state.res_body;
-            }
-          }
-          if (values.req_body_type === 'json') {
-            if (this.state.req_body_other && validJson(this.state.req_body_other) === false) {
-              return message.error('响应Body json格式有问题，请检查！');
-            }
-            try {
-              values.req_body_other = JSON.stringify(
-                JSON.parse(this.state.req_body_other),
-                null,
-                '   '
-              );
-            } catch (e) {
-              values.req_body_other = this.state.req_body_other;
-            }
-          }
+      const { err, values } = await new Promise(resolve =>
+        this.props.form.validateFields((err, values) => resolve({ err, values })));
+      if (err || !this._isMounted) return;
+      values.desc = this.editor.getHTML();
+      values.markdown = this.editor.getMarkdown();
+      if (values.res_body_type === 'json') {
+        if (this.state.res_body && validJson(this.state.res_body) === false) {
+          return message.error('返回body json格式有问题，请检查！');
+        }
+        try {
+          values.res_body = JSON.stringify(JSON.parse(this.state.res_body), null, '   ');
+        } catch (e) {
+          values.res_body = this.state.res_body;
+        }
+      }
+      if (values.req_body_type === 'json') {
+        if (this.state.req_body_other && validJson(this.state.req_body_other) === false) {
+          return message.error('响应Body json格式有问题，请检查！');
+        }
+        try {
+          values.req_body_other = JSON.stringify(
+            JSON.parse(this.state.req_body_other),
+            null,
+            '   '
+          );
+        } catch (e) {
+          values.req_body_other = this.state.req_body_other;
+        }
+      }
 
-          values.method = this.state.method;
-          values.req_params = values.req_params || [];
-          values.req_headers = values.req_headers || [];
-          values.req_body_form = values.req_body_form || [];
-          let isfile = false,
-            isHaveContentType = false;
-          if (values.req_body_type === 'form') {
-            values.req_body_form.forEach(item => {
-              if (item.type === 'file') {
-                isfile = true;
-              }
-            });
+      values.method = this.state.method;
+      values.req_params = values.req_params || [];
+      values.req_headers = values.req_headers || [];
+      values.req_body_form = values.req_body_form || [];
+      let isfile = false,
+        isHaveContentType = false;
+      if (values.req_body_type === 'form') {
+        values.req_body_form.forEach(item => {
+          if (item.type === 'file') {
+            isfile = true;
+          }
+        });
 
-            values.req_headers.map(item => {
+        values.req_headers.map(item => {
+          if (item.name === 'Content-Type') {
+            item.value = isfile ? 'multipart/form-data' : 'application/x-www-form-urlencoded';
+            isHaveContentType = true;
+          }
+        });
+        if (isHaveContentType === false) {
+          values.req_headers.unshift({
+            name: 'Content-Type',
+            value: isfile ? 'multipart/form-data' : 'application/x-www-form-urlencoded'
+          });
+        }
+      } else if (values.req_body_type === 'json') {
+        values.req_headers
+          ? values.req_headers.map(item => {
               if (item.name === 'Content-Type') {
-                item.value = isfile ? 'multipart/form-data' : 'application/x-www-form-urlencoded';
+                item.value = 'application/json';
                 isHaveContentType = true;
               }
-            });
-            if (isHaveContentType === false) {
-              values.req_headers.unshift({
-                name: 'Content-Type',
-                value: isfile ? 'multipart/form-data' : 'application/x-www-form-urlencoded'
-              });
-            }
-          } else if (values.req_body_type === 'json') {
-            values.req_headers
-              ? values.req_headers.map(item => {
-                  if (item.name === 'Content-Type') {
-                    item.value = 'application/json';
-                    isHaveContentType = true;
-                  }
-                })
-              : [];
-            if (isHaveContentType === false) {
-              values.req_headers = values.req_headers || [];
-              values.req_headers.unshift({
-                name: 'Content-Type',
-                value: 'application/json'
-              });
-            }
-          }
-          values.req_headers = values.req_headers
-            ? values.req_headers.filter(item => item.name !== '')
-            : [];
-
-          values.req_body_form = values.req_body_form
-            ? values.req_body_form.filter(item => item.name !== '')
-            : [];
-          values.req_params = values.req_params
-            ? values.req_params.filter(item => item.name !== '')
-            : [];
-          values.req_query = values.req_query
-            ? values.req_query.filter(item => item.name !== '')
-            : [];
-
-          if (HTTP_METHOD[values.method].request_body !== true) {
-            values.req_body_form = [];
-          }
-
-          if (
-            values.req_body_is_json_schema &&
-            values.req_body_other &&
-            values.req_body_type === 'json'
-          ) {
-            values.req_body_other = checkIsJsonSchema(values.req_body_other);
-            if (!values.req_body_other) {
-              return message.error('请求参数 json-schema 格式有误');
-            }
-          }
-          if (
-            values.res_body_is_json_schema &&
-            values.res_body &&
-            values.res_body_type === 'json'
-          ) {
-            values.res_body = checkIsJsonSchema(values.res_body);
-            if (!values.res_body) {
-              return message.error('返回数据 json-schema 格式有误');
-            }
-          }
-
-          this.props.onSubmit(values);
-          EditFormContext.props.changeEditStatus(false);
+            })
+          : [];
+        if (isHaveContentType === false) {
+          values.req_headers = values.req_headers || [];
+          values.req_headers.unshift({
+            name: 'Content-Type',
+            value: 'application/json'
+          });
         }
-      });
-    } catch (e) {
-      console.error(e.message);
-      this.setState({
-        submitStatus: false
-      });
+      }
+      values.req_headers = values.req_headers
+        ? values.req_headers.filter(item => item.name !== '')
+        : [];
+
+      values.req_body_form = values.req_body_form
+        ? values.req_body_form.filter(item => item.name !== '')
+        : [];
+      values.req_params = values.req_params
+        ? values.req_params.filter(item => item.name !== '')
+        : [];
+      values.req_query = values.req_query
+        ? values.req_query.filter(item => item.name !== '')
+        : [];
+
+      if (HTTP_METHOD[values.method].request_body !== true) {
+        values.req_body_form = [];
+      }
+
+      if (
+        values.req_body_is_json_schema &&
+        values.req_body_other &&
+        values.req_body_type === 'json'
+      ) {
+        values.req_body_other = checkIsJsonSchema(values.req_body_other);
+        if (!values.req_body_other) {
+          return message.error('请求参数 json-schema 格式有误');
+        }
+      }
+      if (
+        values.res_body_is_json_schema &&
+        values.res_body &&
+        values.res_body_type === 'json'
+      ) {
+        values.res_body = checkIsJsonSchema(values.res_body);
+        if (!values.res_body) {
+          return message.error('返回数据 json-schema 格式有误');
+        }
+      }
+
+      const saved = await this.props.onSubmit(values);
+      if (this._isMounted && saved === true && revision === this.editRevision) {
+        this.props.changeEditStatus(false);
+      }
+    } catch (error) {
+      if (this._isMounted) {
+        const response = error.response && error.response.data;
+        message.error((response && response.errmsg) || '保存失败，请重试');
+      }
+    } finally {
+      this.submitting = false;
+      if (this._isMounted) this.setState({ submitStatus: false });
     }
   };
 
@@ -385,14 +390,14 @@ class InterfaceEditForm extends Component {
     });
     const initialMarkdown = this.editor.getMarkdown();
     this.editor.on('change', () => {
-      if (this._isMounted && this.editor.getMarkdown() !== initialMarkdown) this.props.changeEditStatus(true);
+      if (this._isMounted && this.editor.getMarkdown() !== initialMarkdown) this.markDirty();
     });
   }
 
   componentWillUnmount() {
     if (this.editor) this.editor.destroy();
-    EditFormContext.props.changeEditStatus(false);
-    EditFormContext = null;
+    this.props.changeEditStatus(false);
+    if (EditFormContext === this) EditFormContext = null;
     this._isMounted = false;
   }
 
@@ -496,7 +501,7 @@ class InterfaceEditForm extends Component {
     this.setState({
       res_body: d.text
     });
-    EditFormContext.props.changeEditStatus(initResBody !== d.text);
+    if (initResBody !== d.text) this.markDirty();
   };
 
   // 处理 req_body_other Editor
@@ -505,7 +510,7 @@ class InterfaceEditForm extends Component {
     this.setState({
       req_body_other: d.text
     });
-    EditFormContext.props.changeEditStatus(initReqBody !== d.text);
+    if (initReqBody !== d.text) this.markDirty();
   };
 
   // 处理批量导入参数
@@ -1091,7 +1096,7 @@ class InterfaceEditForm extends Component {
                         req_body_other: text
                       });
 
-                      this.props.changeEditStatus(true);
+                      this.markDirty();
                     }}
                     isMock={true}
                     data={req_body_other_use_schema_editor}
@@ -1203,7 +1208,7 @@ class InterfaceEditForm extends Component {
                           this.setState({
                             res_body: text
                           });
-                          this.props.changeEditStatus(true);
+                          this.markDirty();
                         }}
                         isMock={true}
                         data={res_body_use_schema_editor}
@@ -1321,6 +1326,6 @@ class InterfaceEditForm extends Component {
 
 export default Form.create({
   onValuesChange() {
-    EditFormContext.props.changeEditStatus(true);
+    if (EditFormContext) EditFormContext.markDirty();
   }
 })(InterfaceEditForm);

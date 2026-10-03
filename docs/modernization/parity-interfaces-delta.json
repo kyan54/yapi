@@ -1,5 +1,5 @@
 {
-  "scope": "A/interfaces/batches-1-13",
+  "scope": "A/interfaces/batches-1-14",
   "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
   "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
   "roles": [
@@ -164,6 +164,18 @@
       "default_skipped": 6,
       "default_failed": 0,
       "note": "Two current targeted browser runs; not a new full64 aggregate."
+    },
+    "batch14_current_candidate": {
+      "new_full_regression_passed": 74,
+      "notification_paired_passed": 6,
+      "guest_pending_passed": 1,
+      "old_failed_save_observations": 2,
+      "failed": 0,
+      "save_unit_passed": 7,
+      "default_passed": 332,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "Final current product full74 plus targeted notification3 new/3 old and guest1. Historical paired metadata report includes observed old failures, not parity success. No claim of one full78 run."
     }
   },
   "scenarios": [
@@ -308,6 +320,27 @@
       "old": "failed",
       "new": "passed",
       "checks": "Connection-owned atomic edit lease: rejected/same-user/guest closes cannot clear owner; simultaneous claim grants one; owner close permits next editor; disconnect/reconnect, live revocation, expired takeover/late close, legacy uid recovery and real crash/restart bounded expiry. Old rejected close clears owner and guest claims lock. Eight new browser scenarios pass; old paired observation confirms defect, seven candidate-only cases notrun. Batch12 reloads authenticated principal existence/current role before initial authorization and every renewal: real valid-admin renewal, demotion to nonmember and account deletion both release on next pong; ten current lease browser cases pass,18 unit tests."
+    },
+    {
+      "id": "interface_edit_meta-01",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Owner/dev/guest exact title/category/method/path/status/tag/custom/open/notification false and true payload, visible result and refresh/DB. Old owner/dev combined metadata returns40011 after writing; never counted as successful save. Notification-only enabled flow passes both."
+    },
+    {
+      "id": "interface_edit_meta-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Required title/path messages block request; malformed path and duplicate method/path visibly rejected; exact DB unchanged and refresh restored; guest denied."
+    },
+    {
+      "id": "interface_edit_meta-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Old owner/dev logical failure clears dirty and silently loses draft on Preview; old late-route variants notrun. New owner/dev logical/network503 errors retain dirty draft and retry; pending guard lasts until response, edits made while pending remain dirty, late response cannot modify another interface draft. Guest actual denied double-click emits one request, remains disabled while pending, preserves local dirty draft and no DB write."
     }
   ],
   "legacy_defects": [
@@ -415,9 +448,24 @@
       "database": "interfaces/validation-final-db.json",
       "default": "interfaces/validation-default-tests.log",
       "source_sha256": "interfaces/validation-source-sha256.json"
+    },
+    "batch14": {
+      "full": "interfaces/batch14-new-results.json",
+      "paired": "interfaces/save-paired-results.json",
+      "notification": "interfaces/notification-results.json",
+      "old_failure": "interfaces/save-old-failure-results.json",
+      "guest": "interfaces/save-guest-results.json",
+      "database": [
+        "interfaces/save-old-db.json",
+        "interfaces/save-new-db.json",
+        "interfaces/save-guest-db.json"
+      ],
+      "before": "interfaces/save-failure-before-results.json",
+      "default": "interfaces/save-default-tests.log",
+      "source_sha256": "interfaces/save-source-sha256.json"
     }
   },
-  "remaining": "Unlisted original assertions remain notrun: metadata validation/save lifecycle, Body/JSON5/preview/F9, notes, remaining tree navigation and additional Schema controls. Raw hidden-Schema flag overwrite reproduced; Docs active-type counterpart coordinated with B. Preserve original246 matrix.",
+  "remaining": "Body/JSON5/preview/F9, notes, remaining tree navigation and additional Schema controls remain pending. Raw false overwrite and hidden Schema resetting reopened raw text reproduced; B active-type Docs overlay authorized for next isolated image. Preserve original246 matrix.",
   "fixed_regressions": [
     {
       "id": "interface_params-02",
