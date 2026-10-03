@@ -15,7 +15,8 @@
       color: $color-blue
     }
   }
-  .ant-breadcrumb > span:last-child {
+  .ant-breadcrumb .ant-breadcrumb-link,
+  .ant-breadcrumb .ant-breadcrumb-item:last-child {
     color: #fff;
     font-weight: normal;
   }

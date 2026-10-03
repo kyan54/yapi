@@ -13,7 +13,7 @@ function NodeEditor({ schema, onChange, depth = 0, label = '根节点' }) {
     patch({ properties: next, required: (schema.required || []).map(key => key === oldName ? name : key) });
   };
   return <fieldset style={{ margin: '8px 0', padding: 12, border: '1px solid #ddd' }}>
-    <legend style={{ width: 'auto', fontSize: 13 }}>{label}</legend>
+    <legend style={{ width: 'auto', maxWidth: '100%', overflowWrap: 'anywhere', fontSize: 13, marginBottom: 8, padding: '0 4px', border: 0 }}>{label}</legend>
     <Space wrap>
       <Select aria-label={`${label} 类型`} value={type} style={{ width: 110 }} options={types.map(value => ({ value }))} onChange={value => patch({ type: value })} />
       <Input aria-label={`${label} 描述`} placeholder="描述" value={schema.description || ''} onChange={event => patch({ description: event.target.value })} style={{ width: 230 }} />

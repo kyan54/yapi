@@ -125,7 +125,7 @@ class ProjectList extends Component {
     const Follow = () => {
       return followProject.length ? (
         <Row>
-          <h3 className="owner-type">我的关注</h3>
+          <Col span={24}><h3 className="owner-type">我的关注</h3></Col>
           {followProject.map((item, index) => {
             return (
               <Col xs={8} lg={6} xxl={4} key={index}>
@@ -139,7 +139,7 @@ class ProjectList extends Component {
     const NoFollow = () => {
       return noFollow.length ? (
         <Row style={{ borderBottom: '1px solid #eee', marginBottom: '15px' }}>
-          <h3 className="owner-type">我的项目</h3>
+          <Col span={24}><h3 className="owner-type">我的项目</h3></Col>
           {noFollow.map((item, index) => {
             return (
               <Col xs={8} lg={6} xxl={4} key={index}>
@@ -190,7 +190,7 @@ class ProjectList extends Component {
               </Col>);
           }) : <ErrMsg type="noProject" />} */}
           {this.props.currGroup.type === 'private' ? (
-            <OwnerSpace />
+            <Col span={24}><OwnerSpace /></Col>
           ) : projectData.length ? (
             projectData.map((item, index) => {
               return (
