@@ -1,0 +1,64 @@
+{
+  "format": "yapi.parity.ci-handoff.v1",
+  "base": "cf368bddf75a525ac48e13702c7f7eafa70bbb99",
+  "complete": false,
+  "rows": [
+    {
+      "id": "project_requests-03",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Mac isolated-runner prerequisite remains unavailable. Independent CI scenario authored, not yet executed; do not mark passed from discovery or units."
+    },
+    {
+      "id": "project_requests-04",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Mac isolated-runner prerequisite remains unavailable. Independent CI scenario authored, not yet executed; do not mark passed from discovery or units."
+    },
+    {
+      "id": "project_mock-03",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Mac isolated-runner prerequisite remains unavailable. Independent CI scenario authored, not yet executed; do not mark passed from discovery or units."
+    },
+    {
+      "id": "project_mock-04",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Mac isolated-runner prerequisite remains unavailable. Independent CI scenario authored, not yet executed; do not mark passed from discovery or units."
+    },
+    {
+      "id": "runner-03",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Mac isolated-runner prerequisite remains unavailable. Independent CI scenario authored, not yet executed; do not mark passed from discovery or units."
+    }
+  ],
+  "command": "npx playwright test --config test-browser/parity-collections-ci.config.cjs",
+  "scenariosDiscovered": 6,
+  "scenarioFile": "test-browser/parity-collections-ci.spec.cjs",
+  "resources": "docs/modernization/parity-fast-collections-ci.md",
+  "regression": {
+    "before": "3 failed, 4 passed: erased forwarding, browser silent omission, disabled server silent omission",
+    "focusedAfter": "13 passed, 0 failed",
+    "basic": "32 passed",
+    "modernization": "344 passed, 7 skipped, 0 failed",
+    "build": "stage13 successful",
+    "realRunnerBrowser": "notrun on Mac; CI owner must run after workflow integration"
+  },
+  "policy": "Default scriptEnable unchanged. Browser server mode delegates policy; browser local scripts reject with isolation instruction; node disabled rejects explicitly; node enabled still uses only existing runner. No eval fallback.",
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "sha256": {
+    "script-mode-before.log": "91ca5ed5ffcff8f3f2841d85a1713b1a7f68f4ca9048e58553b4cc2f85ce5caa",
+    "script-mode-after.log": "61e0cb8781a651b435a19aa962b4ff46e335609137c190be590956d545c619e4",
+    "units-stage13.log": "5b710e4e16173152cf3a4e1c05dea9c3d2e91026fc67343f2ac3c9c865fb24eb",
+    "build-stage13.log": "2709a0b89fa483d181dbff47dce67e6114e78f0d7d2def6993c4e267f3c762e2",
+    "ci-stage13-discovery.log": "d99c0b849149e806538e3885ea12b6e06cd881672cf8b6fb608099c0ee5d51ca",
+    "docs-stage12-visible.json": "a900f5a8add8aa137b1ecb068341532b7ae240771677ec18e95b0d4dc8a32468"
+  }
+}

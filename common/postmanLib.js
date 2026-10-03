@@ -259,34 +259,7 @@ async function sandbox(context = {}, script, networkScope) {
   if (isNode) {
     return await require('../server/utils/sandbox')(context, script, networkScope);
   }
-  context = sandboxByBrowser(context, script);
-  if (context.promise && typeof context.promise.then === 'function') await context.promise;
-  return context;
-}
-
-function sandboxByBrowser(context = {}, script) {
-  if (!script || typeof script !== 'string') {
-    return context;
-  }
-  let beginScript = '';
-  for (var i in context) {
-    beginScript += `var ${i} = context.${i};`;
-  }
-  try {
-    eval(beginScript + script);
-  } catch (err) {
-    let message = `Script:
-                   ----CodeBegin----:
-                   ${beginScript}
-                   ${script}
-                   ----CodeEnd----
-                  `;
-    err.message = `Script: ${message}
-    message: ${err.message}`;
-
-    throw err;
-  }
-  return context;
+  throw new Error('ISOLATED_RUNNER_REQUIRED: 请切换到服务端请求方式并配置隔离 runner');
 }
 
 /**
@@ -301,6 +274,10 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
   let options = Object.assign({}, defaultOptions);
   const taskId = options.taskId || Math.random() + '';
   const useServerProxy = !isNode && commonContext.requestMode !== 'browser';
+  const hasScript = Boolean(preScript || afterScript);
+  if (!isNode && !useServerProxy && hasScript) {
+    throw new Error('ISOLATED_RUNNER_REQUIRED: 请切换到服务端请求方式并配置隔离 runner');
+  }
   const caseScope = commonContext.caseId !== undefined || commonContext.colId !== undefined
     ? { case_id: commonContext.caseId, col_id: commonContext.colId } : {};
   if (!isNode && !useServerProxy && Object.keys(caseScope).length) {
@@ -368,6 +345,10 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     scriptEnable = yapi.WEBCONFIG.scriptEnable === true;
   } catch (err) {}
 
+  if (isNode && hasScript && !scriptEnable) {
+    throw new Error('SCRIPT_EXECUTION_DISABLED: 服务端未启用请求脚本');
+  }
+
   if (preScript && scriptEnable && !useServerProxy) {
     context = await sandbox(context, preScript, networkScope);
     defaultOptions.url = options.url = URL.format({
@@ -391,8 +372,10 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     try {
       const proxyResult = await axios.post('/api/interface/proxy', {
         options,
-        pre_script: scriptEnable ? preScript : '',
-        after_script: scriptEnable ? afterScript : '',
+        // The browser has no server configuration. The authenticated server
+        // retains scriptEnable and isolated-runner capability decisions.
+        pre_script: preScript || '',
+        after_script: afterScript || '',
         project_id: commonContext.projectId,
         interface_id: commonContext.interfaceId,
         ...caseScope
