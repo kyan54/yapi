@@ -100,12 +100,17 @@ app.use(async (ctx, next) => {
 app.use(koaStatic(staticRoot, { index: indexFile, gzip: true }));
 
 
-const server = app.listen(yapi.WEBCONFIG.port, yapi.WEBCONFIG.host || '0.0.0.0');
-
-server.setTimeout(yapi.WEBCONFIG.timeout);
-
-commons.log(
-  `服务已启动，请打开下面链接访问: \nhttp://127.0.0.1${
+// A TCP listener must not advertise readiness before the native Mongo handles
+// used by documentation and plugin routes exist. Legacy status needs no DB.
+require('./utils/start-server')({ app, connection: yapi.connect,
+  port: yapi.WEBCONFIG.port, host: yapi.WEBCONFIG.host || '0.0.0.0',
+  timeout: yapi.WEBCONFIG.timeout
+}).then(() => {
+  commons.log(`服务已启动，请打开下面链接访问: \nhttp://127.0.0.1${
     yapi.WEBCONFIG.port == '80' ? '' : ':' + yapi.WEBCONFIG.port
-  }/`
-);
+  }/`);
+}).catch(() => {
+  // Connection/listener errors may contain secrets. Startup fails closed.
+  commons.log('Application startup failed; database or listener unavailable', 'error');
+  process.exit(1);
+});
