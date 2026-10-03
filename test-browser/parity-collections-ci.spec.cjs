@@ -69,13 +69,34 @@ test('project_mock-03 actual enabled disabled and missing-runner Mock responses 
  await mockSettings(page,id,'mockJson.isolated = "enabled"; delay = 0;');await save(page);await mockEnvironment(page,id,apps.missing);await login(page,apps.missing);await runView(page,apps.missing,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(result.data.res.body.isolated).toBeUndefined();await shot(page,info,'mock-missing-runner');
 });
 for(const failure of ['business','network'])test(`project_mock-04 ${failure} save failure preserves draft and execution error can recover`,async({page},info)=>{
- const id=await fixture(page,failure==='business'?1004:1005),script='throw new Error("SYNTHETIC_MOCK_FAILURE");';await mockSettings(page,id,script);let intercepted=false;
+ const id=await fixture(page,failure==='business'?1004:1005),script='throw new Error("SYNTHETIC_MOCK_FAILURE");';await mockSettings(page,id,script);let intercepted=false,saveAttempts=0;
+ page.on('request',request=>{if(new URL(request.url()).pathname==='/api/project/up'&&request.method()==='POST')saveAttempts++;});
  await page.route('**/api/project/up',async route=>{if(!intercepted&&route.request().method()==='POST'){intercepted=true;if(failure==='network')await route.abort('failed');else await route.fulfill({json:{errcode:500,errmsg:'Synthetic rejected save'}});}else await route.continue();});
- await page.getByRole('button',{name:/^保\s*存$/}).click();await expect(page.locator('.ant-message-error')).toBeVisible();expect((await connection.db.collection('project').findOne({_id:id})).project_mock_script).toBe('');await expect(page.locator('.ace_editor .ace_content')).toContainText('SYNTHETIC_MOCK_FAILURE');await page.unroute('**/api/project/up');await save(page);await mockEnvironment(page,id,apps.default);await runView(page,apps.default,id);let result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_MOCK_FAILURE');await shot(page,info,'mock-execution-'+failure);
+ await expect(page.locator('.ant-message-success')).toHaveCount(0);
+ await page.getByRole('button',{name:/^保\s*存$/}).click();
+ // Transport and local fallback may each emit a toast. Require the exact
+ // failure-specific error, not a unique generic error element or any toast.
+ const expectedError=failure==='business'?/^\s*Synthetic rejected save\s*$/:/^\s*Network Error\s*$/;
+ await expect(page.locator('.ant-message-error').filter({hasText:expectedError}).first()).toBeVisible();
+ await expect(page.locator('.ant-message-success')).toHaveCount(0);
+ expect(intercepted).toBe(true);expect(saveAttempts).toBe(1);
+ const unchanged=await connection.db.collection('project').findOne({_id:id});expect(unchanged.project_mock_script).toBe('');expect(unchanged.is_mock_open).toBe(false);
+ await expect(page.locator('.ace_editor .ace_content')).toContainText('SYNTHETIC_MOCK_FAILURE');await expect(page.getByRole('switch')).toHaveAttribute('aria-checked','true');await expect(page.getByRole('button',{name:/^保\s*存$/})).toBeEnabled();
+ await shot(page,info,'mock-save-'+failure+'-error');await page.unroute('**/api/project/up');await save(page);expect(saveAttempts).toBe(2);
+ const retried=await connection.db.collection('project').findOne({_id:id});expect(retried.project_mock_script).toBe(script);expect(retried.is_mock_open).toBe(true);
+ await mockEnvironment(page,id,apps.default);await runView(page,apps.default,id);let result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_MOCK_FAILURE');await shot(page,info,'mock-execution-'+failure);
  await mockSettings(page,id,'mockJson.recovered = true; delay = 0;');await save(page);await runView(page,apps.default,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.recovered).toBe(true);expect(result.data.res.body.errcode).toBeUndefined();await expect(page.locator('.pretty-editor-body')).not.toContainText('SYNTHETIC_MOCK_FAILURE');
 });
 test('runner-03 browser mode refuses scripts and server sandbox failure is visible with retry',async({page},info)=>{
  const id=await fixture(page,1006);await scripts(page,id,'throw new Error("SYNTHETIC_PRE_FAILURE");');await runView(page,apps.default,id);const toggle=page.locator('.url .ant-switch');await toggle.click();let before=requests.length;await page.getByRole('button',{name:/^发\s*送$/}).click();await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(requests.length).toBe(before);
  await toggle.click();const result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_PRE_FAILURE');expect(requests.length).toBe(before);await shot(page,info,'browser-server-script-failures');
  await api(page,apps.default,'/api/project/up',{id,pre_script:'',after_script:''});await runView(page,apps.default,id);const success=await send(page);expect(success.errcode).toBe(0);expect(success.data.res.body.ok).toBe(true);await expect(page.locator('.pretty-editor-body')).not.toContainText('SYNTHETIC_PRE_FAILURE');
+});
+
+
+test('project_requests-03 post-only missing runner sends zero targets while real post failure follows one request',async({page},info)=>{
+ const id=await fixture(page,1007);await scripts(page,id,'','throw new Error("SYNTHETIC_POST_FAILURE");');
+ await login(page,apps.missing);await runView(page,apps.missing,id);const before=requests.length;let result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(requests.length).toBe(before);await shot(page,info,'post-only-missing-runner-zero-target');
+ await login(page,apps.default);await runView(page,apps.default,id);result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_POST_FAILURE');expect(requests.length).toBe(before+1);expect(requests[before].path).toBe('/echo');await shot(page,info,'post-failure-after-target');
+ await info.attach('post-only-boundary',{body:JSON.stringify({missingRunnerTargetCount:0,configuredPostFailureTargetCount:1,configurationCheckOnly:true,noRollbackGuarantee:true}),contentType:'application/json'});
 });

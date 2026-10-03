@@ -348,6 +348,11 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
   if (isNode && hasScript && !scriptEnable) {
     throw new Error('SCRIPT_EXECUTION_DISABLED: 服务端未启用请求脚本');
   }
+  if (isNode && hasScript) {
+    // A post-only script must not send its target when isolation is known to
+    // be unconfigured. This is not a liveness guarantee or a request rollback.
+    require('../server/utils/sandbox').getConfiguredSocket();
+  }
 
   if (preScript && scriptEnable && !useServerProxy) {
     context = await sandbox(context, preScript, networkScope);

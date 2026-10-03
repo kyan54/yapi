@@ -931,3 +931,40 @@ test('edit lease heartbeat preserves reviewed docs while real body edits still c
     await connection.db.collection('documentation_proposals').deleteMany({interfaceId:id,projectId:11});
   }
 });
+
+test('failed interface saves retain dirty drafts and late success cannot clear newer edits',async({page})=>{
+  const id=797001,title='Synthetic lifecycle original';let release=()=>{};
+  await connection.db.collection('interface').insertOne({...fixture,_id:id,uid:9,title,path:'/save-lifecycle-a',req_headers:[],pre_script:'',res_body:'{"type":"object","properties":{}}'});
+  try{
+    await login(page);await page.goto(baseURL+'/project/11/interface/api/'+id);await page.getByRole('tab',{name:'编辑',exact:true}).click();await page.locator('#title').fill('Synthetic pending draft');
+    const save=page.getByRole('button',{name:/^保\s*存$/});
+    for(const failure of ['logical','network','http']){
+      await page.route('**/api/interface/up',route=>failure==='network'?route.abort('failed'):route.fulfill({status:failure==='http'?503:200,json:{errcode:400,errmsg:'Synthetic lifecycle rejection'}}));
+      await save.click();await expect(page.getByText(failure==='network'?'保存失败，请重试':'Synthetic lifecycle rejection',{exact:true}).first()).toBeVisible();
+      await expect(save).toBeEnabled();await expect(page.locator('#title')).toHaveValue('Synthetic pending draft');expect((await connection.db.collection('interface').findOne({_id:id})).title).toBe(title);
+      await page.locator('[role="tab"][id$="-tab-view"]').click();const modal=page.locator('.ant-modal:visible');await expect(modal).toContainText('离开页面会丢失');await modal.getByRole('button',{name:/取\s*消/}).click();await page.unroute('**/api/interface/up');
+    }
+    const gate=new Promise(resolve=>release=resolve),receipts=[];
+    await page.route('**/api/interface/up',async route=>{const response=await route.fetch();receipts.push(await response.json());await gate;await route.fulfill({response});});
+    await save.click();await expect.poll(()=>receipts.length).toBe(1);expect(receipts[0].errcode).toBe(0);
+    await page.waitForTimeout(3300);await expect(save).toBeDisabled();await page.locator('#title').fill('Synthetic newer local edit');release();
+    await expect(save).toBeEnabled();await expect(page.locator('#title')).toHaveValue('Synthetic newer local edit');expect((await connection.db.collection('interface').findOne({_id:id})).title).toBe('Synthetic pending draft');
+    await page.locator('[role="tab"][id$="-tab-view"]').click();const modal=page.locator('.ant-modal:visible');await expect(modal).toContainText('离开页面会丢失');await modal.getByRole('button',{name:/取\s*消/}).click();await page.unroute('**/api/interface/up');
+    await expect(page.getByText('保存成功',{exact:true})).toHaveCount(0,{timeout:10000});await saveInterfaceSuccessfully(page);
+    expect((await connection.db.collection('interface').findOne({_id:id})).title).toBe('Synthetic newer local edit');await page.locator('[role="tab"][id$="-tab-view"]').click();await expect(page.locator('.ant-modal:visible')).toHaveCount(0);expect(receipts.length).toBe(1);
+  }finally{release();await page.unrouteAll({behavior:'ignoreErrors'});await connection.db.collection('interface').deleteOne({_id:id});await connection.db.collection('documentation_revisions').deleteMany({interfaceId:id,projectId:11});}
+});
+
+test('late interface save response cannot clear a different interface draft',async({page})=>{
+  const first=797002,next=797003;let release=()=>{};
+  await connection.db.collection('interface').insertMany([first,next].map((id,index)=>({...fixture,_id:id,uid:9,title:'Synthetic late save '+index,path:'/late-save-'+index,req_headers:[],pre_script:'',res_body:'{"type":"object","properties":{}}'})));
+  try{
+    await login(page);await page.goto(baseURL+'/project/11/interface/api/'+first);await page.getByRole('tab',{name:'编辑',exact:true}).click();await page.locator('#title').fill('Synthetic submitted old draft');
+    const gate=new Promise(resolve=>release=resolve),receipts=[];await page.route('**/api/interface/up',async route=>{const response=await route.fetch();receipts.push(await response.json());await gate;await route.fulfill({response});});
+    const pending=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/interface/up');await page.getByRole('button',{name:/^保\s*存$/}).click();await expect.poll(()=>receipts.length).toBe(1);expect(receipts[0].errcode).toBe(0);
+    await page.locator('a.interface-item').getByText('Synthetic late save 1',{exact:true}).click();await expect(page.locator('.ant-modal:visible')).toContainText('离开页面会丢失');await page.locator('.ant-modal:visible').getByRole('button',{name:/确\s*定/}).click();await expect(page).toHaveURL(new RegExp('/api/'+next+'$'));
+    await page.getByRole('tab',{name:'编辑',exact:true}).click();await page.locator('#title').fill('Synthetic other unsaved draft');release();expect((await(await pending).json()).errcode).toBe(0);
+    await expect(page.locator('#title')).toHaveValue('Synthetic other unsaved draft');await page.locator('[role="tab"][id$="-tab-view"]').click();await expect(page.locator('.ant-modal:visible')).toContainText('离开页面会丢失');await page.locator('.ant-modal:visible').getByRole('button',{name:/取\s*消/}).click();
+    expect((await connection.db.collection('interface').findOne({_id:first})).title).toBe('Synthetic submitted old draft');expect((await connection.db.collection('interface').findOne({_id:next})).title).toBe('Synthetic late save 1');expect(receipts.length).toBe(1);
+  }finally{release();await page.unrouteAll({behavior:'ignoreErrors'});await connection.db.collection('interface').deleteMany({_id:{$in:[first,next]}});await connection.db.collection('documentation_revisions').deleteMany({interfaceId:{$in:[first,next]},projectId:11});}
+});
