@@ -713,21 +713,25 @@ class interfaceColController extends baseController {
 
   async upCaseIndex(ctx) {
     try {
-      let params = ctx.request.body;
-      if (!params || !Array.isArray(params)) {
-        ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组');
+      const params = ctx.request.body;
+      if (!Array.isArray(params)) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组'));
       }
-      params.forEach(item => {
-        if (item.id) {
-          this.caseModel.upCaseIndex(item.id, item.index).then(
-            res => {},
-            err => {
-              yapi.commons.log(err.message, 'error');
-            }
-          );
+      const changes = [];
+      // Authorize the entire batch before any write; caller IDs are not scope.
+      for (const item of params) {
+        const id = item && Number(item.id), index = item && Number(item.index);
+        if (!item || !Number.isSafeInteger(id) || id < 1 ||
+            !Number.isSafeInteger(index) || index < 0) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '用例排序参数无效'));
         }
-      });
-
+        const record = await this.caseModel.get(id);
+        if (!record || !await this.checkAuth(record.project_id, 'project', 'edit')) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '没有权限'));
+        }
+        changes.push({ id, index });
+      }
+      await Promise.all(changes.map(item => this.caseModel.upCaseIndex(item.id, item.index)));
       return (ctx.body = yapi.commons.resReturn('成功！'));
     } catch (e) {
       ctx.body = yapi.commons.resReturn(null, 400, e.message);

@@ -665,6 +665,7 @@ class InterfaceColContent extends Component {
   
   render() {
     const currProjectId = this.props.currProject._id;
+    const canReorder = ['admin', 'owner', 'dev'].includes(this.props.curProjectRole);
     const columns = [
       {
         property: 'casename',
@@ -1079,12 +1080,12 @@ class InterfaceColContent extends Component {
 
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead className="interface-col-table-header"><tr>
-            <th scope="col">排序</th>
+            {canReorder && <th scope="col" className="interface-col-order">排序</th>}
             {columns.map((column, index) => <th scope="col" key={index} {...column.props}>{column.header.formatters ? column.header.formatters[0](column.header.label) : column.header.label}</th>)}
           </tr></thead>
           <tbody className="interface-col-table-body">
-            {rows.map((row, index) => <tr key={row.id} draggable onDragStart={() => { this.draggedRow = row.id; }} onDragOver={event => event.preventDefault()} onDrop={() => { this.onMoveRow({ sourceRowId: this.draggedRow, targetRowId: row.id }); this.setState({}, this.onDrop); }}>
-              <td><Button aria-label={`上移用例 ${row.casename}`} disabled={index === 0} onClick={() => { this.onMoveRow({ sourceRowId: row.id, targetRowId: rows[index - 1].id }); this.setState({}, this.onDrop); }} icon="arrow-up" /><Button aria-label={`下移用例 ${row.casename}`} disabled={index === rows.length - 1} onClick={() => { this.onMoveRow({ sourceRowId: row.id, targetRowId: rows[index + 1].id }); this.setState({}, this.onDrop); }} icon="arrow-down" /></td>
+            {rows.map((row, index) => <tr key={row.id} draggable={canReorder} onDragStart={() => { this.draggedRow = row.id; }} onDragOver={event => event.preventDefault()} onDrop={() => { if (!canReorder) return; this.onMoveRow({ sourceRowId: this.draggedRow, targetRowId: row.id }); this.setState({}, this.onDrop); }}>
+              {canReorder && <td className="interface-col-order"><Button aria-label={`上移用例 ${row.casename}`} disabled={index === 0} onClick={() => { this.onMoveRow({ sourceRowId: row.id, targetRowId: rows[index - 1].id }); this.setState({}, this.onDrop); }} icon="arrow-up" /><Button aria-label={`下移用例 ${row.casename}`} disabled={index === rows.length - 1} onClick={() => { this.onMoveRow({ sourceRowId: row.id, targetRowId: rows[index + 1].id }); this.setState({}, this.onDrop); }} icon="arrow-down" /></td>}
               {columns.map((column, columnIndex) => <td key={columnIndex} {...column.props}>{column.cell.formatters[0](row[column.property], { rowData: row })}</td>)}
             </tr>)}
           </tbody>

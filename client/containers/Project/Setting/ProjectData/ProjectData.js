@@ -151,7 +151,12 @@ class ProjectData extends Component {
     if (this.state.selectCatid) {
       this.setState({ showLoading: true });
       const reader = new FileReader();
-      reader.readAsText(info.file);
+      const failRead = text => {
+        message.error(text);
+        this.setState({ showLoading: false });
+      };
+      reader.onerror = () => failRead('文件读取失败，请重新选择文件');
+      reader.onabort = () => failRead('文件读取已取消，请重新选择文件');
       reader.onload = async event => {
         try {
           const result = await importDataModule[this.state.curImportType].run(event.target.result);
@@ -166,6 +171,11 @@ class ProjectData extends Component {
           this.setState({ showLoading: false });
         }
       };
+      try {
+        reader.readAsText(info.file);
+      } catch (error) {
+        failRead('文件读取失败，请重新选择文件');
+      }
     } else {
       message.error('请选择上传的默认分类');
     }

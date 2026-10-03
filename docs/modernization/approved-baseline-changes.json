@@ -137,6 +137,14 @@
     "exts/yapi-plugin-statistics/statisticsClientPage/index.js": {
       "baselineSha256": "07b4a53e78e4ef4736bb74d034febd1e16dcf32cf03b62056cdef84bb5439c9e",
       "reason": "Show an explicit admin-only refusal on direct non-admin navigation and do not request protected statistics; preserve administrator page layout and data sources."
+    },
+    "exts/yapi-plugin-export-data/controller.js": {
+      "baselineSha256": "2351d9d33f62e32b2c9a509d36a560d25288fa3ad361350aa57ad335845a894a",
+      "reason": "Deny private-project export to nonmembers before reading interfaces or Wiki; preserve project view roles, public exports and authenticated project-token scope. Verified with real paired browser requests and controller regression tests."
+    },
+    "exts/yapi-plugin-export-swagger2-data/controller.js": {
+      "baselineSha256": "eacf166ba9b7b9565cb3c8d2cc8354c0ee06449f9c7f2d57e0869b8ab52fa80e",
+      "reason": "Deny private-project export to nonmembers before reading interfaces or Wiki; preserve project view roles, public exports and authenticated project-token scope. Verified with real paired browser requests and controller regression tests."
     }
   },
   "dependencies": {

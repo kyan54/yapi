@@ -425,12 +425,14 @@ test('group and project navigation use current IDs without duplicate selection o
 
 test('collection Start Test finishes every row and opens successful reports after repeated runs', async ({page}) => {
   await connection.db.collection('project').updateOne({_id:11},{$set:{env:[{name:'local-loopback',domain:baseURL+'/mock/11',header:[],global:[]}]}});
-  await connection.db.collection('interface_col').insertOne({_id:22,uid:9,project_id:11,name:'Batched collection',desc:'Synthetic only',index:1});
+  await connection.db.collection('interface_col').insertOne({_id:22,uid:9,project_id:11,name:'Batched collection with a deliberately long synthetic name that must remain on one line 中文',desc:'Synthetic only',index:1});
   await connection.db.collection('interface_case').insertMany([31,32,33].map((id,index)=>({_id:id,uid:9,col_id:22,project_id:11,interface_id:17,casename:'Batched case '+index,index,case_env:'local-loopback',req_params:[{name:'id',value:'123'}],req_headers:[],req_query:[],req_body_form:[],test_status:'',enable_script:false,test_script:'',mock_verify:false})));
   await login(page);
   await page.goto(baseURL+'/project/11/interface/col/22');
   await expect(page.getByRole('link',{name:'Batched case 2',exact:true})).toBeVisible();
   await page.waitForLoadState('networkidle');
+  const layout=await page.evaluate(()=>{const title=[...document.querySelectorAll('.col-list-tree .menu-title > span:first-child')].find(e=>e.textContent.includes('Batched collection'));return {orderWidth:document.querySelector('th.interface-col-order').getBoundingClientRect().width,titleHeight:title.getBoundingClientRect().height,whiteSpace:getComputedStyle(title).whiteSpace}});
+  expect(layout.orderWidth).toBeLessThanOrEqual(100);expect(layout.titleHeight).toBeLessThanOrEqual(36);expect(layout.whiteSpace).toBe('nowrap');
   for(let run=0;run<2;run++) {
     await page.getByRole('button',{name:'开始测试',exact:true}).click();
     await expect(page.getByRole('button',{name:'测试报告',exact:true})).toHaveCount(3);
@@ -558,4 +560,48 @@ test('Swagger file import resolves browser module and malformed file exits loadi
   await page.locator('input[type=file]').setInputFiles({name:'synthetic-swagger.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(spec))});expect((await(await pending).json()).errcode).toBe(0);await expect(page.locator('.ant-spin-spinning')).toHaveCount(0);
   expect(await connection.db.collection('interface').countDocuments({project_id:11,path:'/browser-swagger-import'})).toBe(1);
   await page.locator('input[type=file]').setInputFiles({name:'malformed-synthetic.json',mimeType:'application/json',buffer:Buffer.from('{invalid')});await expect(page.getByText('解析失败',{exact:true})).toBeVisible();await expect(page.locator('.ant-spin-spinning')).toHaveCount(0);expect(errors).toEqual([]);
+});
+
+test('file read error abort and synchronous failure permit a successful retry',async({page})=>{
+  await login(page);await page.goto(baseURL+'/project/11/data');
+  await page.locator('.dataSync .ant-select').first().click();await page.locator('.ant-select-dropdown:visible').getByText('普通模式',{exact:true}).click();
+  await page.evaluate(()=>{const Native=window.FileReader;window.FileReader=class extends Native{readAsText(file){const mode=window.syntheticReadFailure;window.syntheticReadFailure=null;if(mode==='throw')throw new DOMException('Synthetic read failure','NotReadableError');if(mode){queueMicrotask(()=>this.dispatchEvent(new ProgressEvent(mode)));return;}return super.readAsText(file)}}});
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  for(const mode of ['error','abort','throw']){
+    await page.evaluate(value=>{window.syntheticReadFailure=value},mode);
+    const spec={swagger:'2.0',info:{title:'Synthetic retry',version:'1'},paths:{['/read-retry-'+mode]:{get:{summary:'Read retry '+mode,responses:{200:{description:'ok'}}}}}};
+    const file={name:'synthetic-'+mode+'.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(spec))};
+    await page.locator('input[type=file]').setInputFiles(file);await expect(page.getByText(mode==='abort'?'文件读取已取消，请重新选择文件':'文件读取失败，请重新选择文件',{exact:true}).last()).toBeVisible();await expect(page.locator('.ant-spin-spinning')).toHaveCount(0);
+    expect(await connection.db.collection('interface').countDocuments({project_id:11,path:'/read-retry-'+mode})).toBe(0);
+    const pending=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/interface/add');await page.locator('input[type=file]').setInputFiles(file);expect((await(await pending).json()).errcode).toBe(0);await expect(page.locator('.ant-spin-spinning')).toHaveCount(0);expect(await connection.db.collection('interface').countDocuments({project_id:11,path:'/read-retry-'+mode})).toBe(1);
+  }
+  expect(errors).toEqual([]);
+});
+
+test('case order persists for editor and guest cannot mutate it',async({page})=>{
+  await connection.db.collection('interface_col').insertOne({_id:23,uid:9,project_id:11,name:'Order ACL collection',index:2});
+  await connection.db.collection('interface_case').insertMany([41,42].map((id,index)=>({_id:id,uid:9,col_id:23,project_id:11,interface_id:17,casename:'ACL case '+index,index,req_params:[],req_headers:[],req_query:[],req_body_form:[]})));
+  await login(page);await page.goto(baseURL+'/project/11/interface/col/23');await expect(page.getByRole('button',{name:'上移用例 ACL case 0',exact:true})).toBeDisabled();
+  const pending=page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname==='/api/col/up_case_index');await page.getByRole('button',{name:'下移用例 ACL case 0',exact:true}).click();expect((await(await pending).json()).errcode).toBe(0);await page.reload();await expect(page.getByRole('button',{name:'上移用例 ACL case 1',exact:true})).toBeDisabled();
+  const email='order-guest@example.invalid',password='synthetic-order-password',passsalt='synthetic-order-salt';await connection.db.collection('user').insertOne({_id:95,username:'Synthetic order guest',email,password:sha1(password+sha1(passsalt)),passsalt,role:'member',type:'site',study:true});await connection.db.collection('project').updateOne({_id:11},{$push:{members:{uid:95,role:'guest',username:'Synthetic order guest',email}}});
+  expect((await(await page.request.post(baseURL+'/api/user/login',{data:{email,password}})).json()).errcode).toBe(0);await page.goto(baseURL+'/project/11/interface/col/23');await expect(page.getByRole('cell',{name:'ACL case 0',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:/[上下]移用例/})).toHaveCount(0);const denied=await(await page.request.post(baseURL+'/api/col/up_case_index',{data:[{id:41,index:0},{id:42,index:1}]})).json();expect(denied.errcode).not.toBe(0);expect((await connection.db.collection('interface_case').find({_id:{$in:[41,42]}}).sort({index:1}).toArray()).map(x=>x._id)).toEqual([42,41]);
+});
+
+test('private exports deny outsiders and allow read-only members and public projects',async({page})=>{
+  const email='export-reader@example.invalid',password='synthetic-export-password',passsalt='synthetic-export-salt';
+  await connection.db.collection('user').insertOne({_id:96,username:'Synthetic export reader',email,password:sha1(password+sha1(passsalt)),passsalt,role:'member',type:'site',study:true});
+  await connection.db.collection('project').updateOne({_id:11},{$set:{project_type:'private'}});
+  await login(page);
+  const endpoints=['/api/plugin/export?type=json&pid=11','/api/plugin/exportSwagger?type=OpenAPIV2&pid=11'];
+  // Legacy Mongoose hydration allocates transient nested subdocument IDs on each read.
+  const stable=value=>JSON.parse(JSON.stringify(value,(key,item)=>key==='_id'?undefined:item));
+  const bodies=[];
+  for(const endpoint of endpoints){const r=await page.request.get(baseURL+endpoint);expect(r.status()).toBe(200);bodies.push(await r.json());}
+  expect(Array.isArray(bodies[0])).toBe(true);expect(bodies[1].swagger).toBe('2.0');
+  expect((await(await page.request.post(baseURL+'/api/user/login',{data:{email,password}})).json()).errcode).toBe(0);
+  for(const endpoint of endpoints){const result=await(await page.request.get(baseURL+endpoint)).json();expect(result.errcode).toBe(400);expect(result.data).toBeNull();}
+  await connection.db.collection('project').updateOne({_id:11},{$push:{members:{uid:96,role:'guest',username:'Synthetic export reader',email}}});
+  for(let i=0;i<endpoints.length;i++)expect(stable(await(await page.request.get(baseURL+endpoints[i])).json())).toEqual(stable(bodies[i]));
+  await connection.db.collection('project').updateOne({_id:11},{$pull:{members:{uid:96}},$set:{project_type:'public'}});
+  for(let i=0;i<endpoints.length;i++)expect(stable(await(await page.request.get(baseURL+endpoints[i])).json())).toEqual(stable(bodies[i]));
 });
