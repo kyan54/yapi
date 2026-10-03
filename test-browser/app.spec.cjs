@@ -763,7 +763,14 @@ test('saving a request twice while pending creates exactly one collection case',
     await new Promise(resolve=>setTimeout(resolve,300));
     await route.continue();
   });
+  await expect(dialog.locator('.col-item.selected')).toHaveCount(1);
+  await expect.poll(()=>dialog.evaluate(element=>{
+    const root=element.closest('.ant-modal-root')||element;
+    return root.getAnimations({subtree:true}).some(animation=>animation.playState==='running');
+  })).toBe(false);
+  const receipt=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/col/add_case'&&response.request().method()==='POST');
   await dialog.getByRole('button',{name:/确\s*定/}).dblclick({delay:20});
+  const saved=await receipt;expect(saved.status()).toBe(200);expect((await saved.json()).errcode).toBe(0);
   await expect(dialog).toHaveCount(0);
   await expect.poll(()=>connection.db.collection('interface_case').countDocuments({casename:caseName})).toBe(1);
   expect(requests).toBe(1);

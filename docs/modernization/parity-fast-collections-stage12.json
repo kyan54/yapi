@@ -1,0 +1,336 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "base": "133da1a7441e78c170a81ed2b3d3b08f34840d3a",
+  "scope": "B stage12 only. Preserve original246 and compose matching rows after earlier B/C evidence.",
+  "complete": false,
+  "rows": [
+    {
+      "id": "project_requests-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Paired actual Ace syntax annotations for invalid unsaved draft; no save or request triggered and refresh restores original. C configuration evidence composed separately.",
+      "assertion": "editor syntax errors are shown without unintended submission"
+    },
+    {
+      "id": "runner_variables-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Paired real parameter modal for path, query, header, form and JSON body; selected constant, upper function and built-in Mock GUID; prior global/previous-case and literal property tree evidence retained.",
+      "assertion": "Open parameter expression editor for each supported field and insert selected variable/function/Mock rule"
+    },
+    {
+      "id": "runner_variables-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Exact second path/query/header/form index receives expression, neighboring first field stays LEFT; JSON first string changes and neighboring KEEP remains. Saved API, refreshed UI, actual synthetic echo and scoped Mongo match.",
+      "assertion": "verify correct parameter path/index receives value"
+    },
+    {
+      "id": "runner_variables-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Cancel and close discard drafts; caret inside existing expression then reopen shows current expression; literal bracket/dot/array tree selection evidence from stage10 retained.",
+      "assertion": "Cancel/Close leaves original value and reopen shows current value"
+    },
+    {
+      "id": "case_editor-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Case name and all supported request values save with errcode0, refresh exact values, actual echo executes them, Mongo exact request values match. No case-description control/schema field in either baseline; parent confirmed that subitem N/A.",
+      "assertion": "Edit case name/description and request values, save/reload exact data"
+    },
+    {
+      "id": "collection_rules-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Paired real ProjectEnv global variable create and edit each saved then referenced by a real collection request; delete via correct row control persists empty globals after refresh and scoped Mongo. Source environment and sequential dependency evidence from stage9/10 retained.",
+      "assertion": "add/edit/delete global variables and reference from cases"
+    },
+    {
+      "id": "collection_table-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Paired two distinct case names/IDs/source-interface hrefs, actual case and source link clicks, chosen environment URLs, pass versus HTTP404 assertion status and refresh match correct rows. Saved report directly matches scoped Mongo. Parent confirmed row-selection N/A; neither table provides it.",
+      "assertion": "Case names, corresponding-interface links, status, environment and selection map correct records"
+    },
+    {
+      "id": "runner_response-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Prior paired synthetic JSON/XML/plain/HTML response header/body/status evidence combined with request method/path/query/header/body roundtrips and Request/Response collection reports. Parent confirmed timing N/A after old/new source and visual inventory: neither Run nor CaseReport exposes timing.",
+      "assertion": "Request/response headers, status, timing and body render accurately for all content types"
+    },
+    {
+      "id": "collection_tree-04",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Additional real delayed clone POST or refresh GET crossed with case navigation or menu unmount: exactly one clone persists and current destination is retained. New8/8 after fix (two independent repeats each), old4/4 fail by jumping back. Guard covers mounted generation, props and actual browser URL before any refresh publication/navigation.",
+      "assertion": "Cancel/Close/reopen and repeated context-menu click never affect adjacent record"
+    },
+    {
+      "id": "project_requests-03",
+      "assertion": "authorized runner executes configured scripts and unconfigured runner displays actionable failure",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Enabled custom-script execution requires the approved dedicated isolated runner prerequisite; no old vm2 or nonempty enabled-script execution performed. Ordinary requests remain tested independently."
+    },
+    {
+      "id": "project_requests-04",
+      "assertion": "script network default-deny and allowlist failures cannot appear as a successful request",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Enabled custom-script execution requires the approved dedicated isolated runner prerequisite; no old vm2 or nonempty enabled-script execution performed. Ordinary requests remain tested independently."
+    },
+    {
+      "id": "project_mock-03",
+      "assertion": "Mock request reflects script only under supported runner capability",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Enabled custom-script execution requires the approved dedicated isolated runner prerequisite; no old vm2 or nonempty enabled-script execution performed. Ordinary requests remain tested independently."
+    },
+    {
+      "id": "project_mock-04",
+      "assertion": "save/execution failure leaves clear state and no false success",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Enabled custom-script execution requires the approved dedicated isolated runner prerequisite; no old vm2 or nonempty enabled-script execution performed. Ordinary requests remain tested independently. C actual save-error UI evidence is complete; only execution-error branch remains blocked."
+    },
+    {
+      "id": "runner-03",
+      "assertion": "switch browser/server modes and show extension/cross-origin/network/sandbox failure clearly",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Enabled custom-script execution requires the approved dedicated isolated runner prerequisite; no old vm2 or nonempty enabled-script execution performed. Ordinary requests remain tested independently. Browser/server switch, real browser CORS success and network failure already passed both. Both source baselines have no browser-extension installation control; source inventory recorded. Sandbox branch remains blocked."
+    }
+  ],
+  "executions": [
+    {
+      "evidence": "parameters-stage12-verified.json",
+      "title": "parameter modal path query header form indices and mock function insertion survive case save and actual request",
+      "version": "old",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "parameters-stage12-verified.json",
+      "title": "JSON body expression inserts only selected string and preserves neighboring fields",
+      "version": "old",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "parameters-stage12-verified.json",
+      "title": "parameter modal path query header form indices and mock function insertion survive case save and actual request",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "parameters-stage12-verified.json",
+      "title": "JSON body expression inserts only selected string and preserves neighboring fields",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "global-stage12-final.json",
+      "title": "global variable create edit delete in settings changes real collection request",
+      "version": "old",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "global-stage12-final.json",
+      "title": "global variable create edit delete in settings changes real collection request",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "config-runtime-stage12.json",
+      "title": "request script syntax annotation is visible without autosave or execution",
+      "version": "old",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "config-runtime-stage12.json",
+      "title": "request script syntax annotation is visible without autosave or execution",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "docs-stage12-verified.json",
+      "title": "Docs JSON raw JSON transitions keep stale inactive flags harmless and active invalid schema rejected",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "stage12-accepted.json",
+      "title": "parameter modal path query header form indices and mock function insertion survive case save and actual request",
+      "version": "old",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "stage12-accepted.json",
+      "title": "parameter modal path query header form indices and mock function insertion survive case save and actual request",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "table-stage12-verified.json",
+      "title": "collection rows map exact case source status and chosen environment after run and reload",
+      "version": "old",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "table-stage12-verified.json",
+      "title": "collection rows map exact case source status and chosen environment after run and reload",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "clone-stage12-verified.json",
+      "title": "clone delayed post then route cannot navigate or overwrite destination",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "clone-stage12-verified.json",
+      "title": "clone delayed post then unmount cannot navigate or overwrite destination",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "clone-stage12-verified.json",
+      "title": "clone delayed refresh then route cannot navigate or overwrite destination",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "clone-stage12-verified.json",
+      "title": "clone delayed refresh then unmount cannot navigate or overwrite destination",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "clone-stage12-verified.json",
+      "title": "clone delayed post then route cannot navigate or overwrite destination",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "clone-stage12-verified.json",
+      "title": "clone delayed post then unmount cannot navigate or overwrite destination",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "clone-stage12-verified.json",
+      "title": "clone delayed refresh then route cannot navigate or overwrite destination",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "clone-stage12-verified.json",
+      "title": "clone delayed refresh then unmount cannot navigate or overwrite destination",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "responses-paired-final.json",
+      "title": "browser CORS success network error and JSON XML plain text response display",
+      "version": "old",
+      "repeat": 0,
+      "status": "passed"
+    },
+    {
+      "evidence": "responses-paired-final.json",
+      "title": "browser CORS success network error and JSON XML plain text response display",
+      "version": "new",
+      "repeat": 0,
+      "status": "passed"
+    }
+  ],
+  "selectedExecutionCounts": {
+    "passed": 23
+  },
+  "remainingB43Counts": {
+    "passed": 38,
+    "blocked": 5
+  },
+  "ordinaryUiClosed": true,
+  "documentationFixCommit": "1b08f0701a743b75b1b6b1af6feeb7d071557744",
+  "validation": {
+    "basic": "32 passed on final product source",
+    "fullModernization": "337 passed, 7 skipped, 0 failed on final product source",
+    "finalAffectedTests": "27 passed, 0 skipped, 0 failed including actual-path guard regression",
+    "build": "stage12-nav successful",
+    "clone": "new8/8 versus legacy4/4 jump-back failures; delayed refresh+unmount failure in stage12-accepted superseded by clone-stage12-verified"
+  },
+  "crossOwnerEvidence": [
+    "/Users/hujinwu/Documents/Codex/2026-10-03/task-6/settings-evidence/parity-settings-delta.json",
+    "/Users/hujinwu/Documents/Codex/2026-10-03/task-6/stage2/parity-settings-stage2-delta.json",
+    "/Users/hujinwu/Documents/Codex/2026-10-03/task-6/stage2/parity-settings-stage3-delta.json"
+  ],
+  "notApplicable": {
+    "case_editor-01.description": "No case-description field; parent confirmed.",
+    "collection_table-01.selection": "No row selection control; parent confirmed.",
+    "collection_run-01.selected": "No selected subset run; all-case loop tested; parent confirmed.",
+    "runner_response-01.timing": "No timing control in either Run/CaseReport; parent confirmed 2026-10-03."
+  },
+  "visualReview": "Actual1920x1080 paired parameter and global settings screenshots, literal variable tree screenshots and table statuses inspected. Found blank new case environment; fixed fallback selection and rechecked visible echo label. Inputs readable without overlap. New table intentionally includes existing modern order controls; tab spacing and tree indentation differ, not pixel equality. Docs screenshot waits for the reviewed dialog after refresh; verified schema field description visible.",
+  "superseded": "config-runtime-stage12 global failures were incorrect row locator, superseded by global-stage12-final. table-stage12 failure assumed request-exception icon for HTTP assertion, corrected to actual validation-failure icon. stage12-accepted new clone refresh/unmount was a real race, fixed and superseded by clone-stage12-verified. Select only listed executions, not whole historical report counts.",
+  "limits": [
+    "Five enabled-script runner dependency rows remain blocked. No unsafe execution used to close them.",
+    "Combined A lease/WebSocket and A raw form default/type-switch regression owned by parent/A; B Docs API/type tests do not claim those browser integrations.",
+    "No main merge, no shared service/DB reset, no external traffic or real credentials."
+  ],
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "sha256": {
+    "parameters-stage12-verified.json": "2dfa975ebb6610196d04871afb61eb6eee4c50303ab485d2aa4cde0fde1e2824",
+    "global-stage12-final.json": "68cb84fe121c7e612db958e2e3069fb836b19e731d8819956804693d5f9bc907",
+    "config-runtime-stage12.json": "184477eef570a59aaaf3abe6b44a12500469f93230fa91cda894c33d1c671fdf",
+    "stage12-accepted.json": "957c43d2b060bb9e2ff4cfb12e70943809ea8c6eb92ee68089fb7731a2df6b36",
+    "table-stage12-verified.json": "c0bb354fbac526d2f9d34600809a132fd1a84b39fba2f61d033984d8029d14a4",
+    "clone-stage12-verified.json": "7071b6d659e092214660950635f926287df09dfb2f8f362f302cdb3431b8d1a8",
+    "responses-paired-final.json": "cdedd1176e579c593666fe16a1112dbadf09bc7d362432a889fdda3f946fdbfb",
+    "units-stage12-final.log": "b374f368219ac2eedd7ffe8d71a1a52751c21eba1a9b43b893361daba04fb787",
+    "clone-unit-stage12-verified.log": "07855047717c9ff131bc4d24adddbdd5df4165ea5d6bd50fe42af0b07e4e5fdd",
+    "build-stage12-nav.log": "b7a71c936b90200a659034ae13abe3bf5c6ba3366e07aa1991c78eec48ec2e90",
+    "timing-control-inventory.json": "97f38d08fb169593f22474f9a25463b2933aba51117e232f502c75f6b3abdd56",
+    "runner-mode-inventory.json": "00385bd312b4f5a2715652eb5d9e3d3ca02e9420f5e48c35e7fa42e40e8eda07",
+    "identity-clone-verified.json": "aae6888034b087fcca225a65ff121b17030d7135e89df9c78efa85dfd1ef5451",
+    "identity-table-verified.json": "aae6888034b087fcca225a65ff121b17030d7135e89df9c78efa85dfd1ef5451",
+    "docs-stage12-verified.json": "a5a11b8312d72d8510716a4179c32cacdbb6c34cd0f2d8acf09fb6386ac521c2",
+    "units-stage12-commitable.log": "3deb6c274b14f9b45f3519000d44c8197f6ba2fb1af1af98a303aba59b4f14c5"
+  }
+}
