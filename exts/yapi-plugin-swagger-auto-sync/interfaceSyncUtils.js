@@ -94,7 +94,7 @@ class syncUtils {
             if (current()) this.deleteSyncJob(projectId);
             throw new Error('自动同步项目不存在');
         }
-        const user = await yapi.getInst(userModel).get(uid);
+        const user = await yapi.getInst(userModel).findById(uid);
         const auth = new baseController({});
         auth.$user = user;
         auth.$uid = uid;

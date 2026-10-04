@@ -69,7 +69,7 @@ function fixture(options = {}) {
   class TokenModel {}
   class OpenController {}
   OpenController.swaggerWriteGuard = Symbol();
-  class UserModel {}
+  const UserModel = load('server/models/user.js', {'./base.js': class {}});
   class GroupModel {}
   const tokenModel = {
     get: async projectId => {
@@ -90,7 +90,9 @@ function fixture(options = {}) {
     request.body = state.importResult || {errcode: 0, errmsg: 'imported'};
   }};
   const instances = new Map([[SyncModel, syncModel], [TokenModel, tokenModel], [ProjectModel, projectModel], [OpenController, openController]]);
-  instances.set(UserModel, {get: async () => state.user});
+  const userModel = Object.create(UserModel.prototype);
+  userModel.model = {findOne: async filter => {assert.deepEqual(filter, {_id: 29});return state.user;}};
+  instances.set(UserModel, userModel);
   instances.set(GroupModel, {get: async () => state.group || ({uid: 1, members: []})});
   yapi.getInst = Class => instances.get(Class);
   const AuthController = load('server/controllers/base.js', {'../yapi.js': yapi, '../models/project.js': ProjectModel, '../models/user.js': UserModel, '../models/group.js': GroupModel, '../models/interface.js': class {}, '../models/token.js': TokenModel});
