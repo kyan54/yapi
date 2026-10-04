@@ -28,7 +28,8 @@ function fixture(options = {}) {
     record: options.record === undefined ? {_id: 71, project_id: 11, uid: 29, is_sync_open: true,
       sync_json_url: url, sync_cron: '* * * * *', sync_mode: 'good', last_sync_time: 100} : options.record,
     now: 200,
-    project: {_id: 11},
+    project: {_id: 11, uid: 1, group_id: 2, members: [{uid: 29, role: 'dev'}]},
+    user: {_id: 29, role: 'member'},
     token: {token: 'saved-project-token'},
     ...options.state
   };
@@ -45,6 +46,7 @@ function fixture(options = {}) {
   syncModel.model = isolated.model('Sync', new isolated.Schema({...syncModel.getSchema(), _id: Number}));
   syncModel.model.collection.findOne = async () => {
     if (state.configError) throw state.configError;
+    if (state.configReadHook) await state.configReadHook();
     return state.record && {...state.record};
   };
   syncModel.model.collection.updateOne = async (filter, update) => {
@@ -66,6 +68,9 @@ function fixture(options = {}) {
   class ProjectModel {}
   class TokenModel {}
   class OpenController {}
+  OpenController.swaggerWriteGuard = Symbol();
+  class UserModel {}
+  class GroupModel {}
   const tokenModel = {
     get: async projectId => {
       calls.tokens.push(projectId);
@@ -85,7 +90,10 @@ function fixture(options = {}) {
     request.body = state.importResult || {errcode: 0, errmsg: 'imported'};
   }};
   const instances = new Map([[SyncModel, syncModel], [TokenModel, tokenModel], [ProjectModel, projectModel], [OpenController, openController]]);
+  instances.set(UserModel, {get: async () => state.user});
+  instances.set(GroupModel, {get: async () => state.group || ({uid: 1, members: []})});
   yapi.getInst = Class => instances.get(Class);
+  const AuthController = load('server/controllers/base.js', {'../yapi.js': yapi, '../models/project.js': ProjectModel, '../models/user.js': UserModel, '../models/group.js': GroupModel, '../models/interface.js': class {}, '../models/token.js': TokenModel});
   const token = load('server/utils/token.js', {'../yapi': yapi});
   const scheduler = options.scheduler || {scheduleJob: (expression, callback) => {
     if (expression === 'invalid') return null;
@@ -97,14 +105,15 @@ function fixture(options = {}) {
   const axios = {get: async (address, config) => {
     calls.fetches.push({address, config});
     if (state.fetchError) throw state.fetchError;
+    if (options.fetchData) await options.fetchData();
     return state.response || {status: 200, data: swagger};
   }};
   const SyncUtils = load('exts/yapi-plugin-swagger-auto-sync/interfaceSyncUtils.js', {
-    'node-schedule': scheduler, 'controllers/open.js': OpenController, 'models/project.js': ProjectModel,
+    'controllers/base.js': AuthController, 'models/user.js': UserModel, 'node-schedule': scheduler, 'controllers/open.js': OpenController, 'models/project.js': ProjectModel,
     './syncModel.js': SyncModel, 'models/token.js': TokenModel, 'yapi.js': yapi, 'utils/token': token, axios
   });
   const instance = new SyncUtils();
-  return {instance, calls, state, token, syncModel, scheduler};
+  return {instance, calls, state, token, syncModel, scheduler, guardKey: OpenController.swaggerWriteGuard};
 }
 
 async function run(f) {
@@ -152,6 +161,7 @@ test('initial and recurring callbacks await import and use the same scheduled ow
   const f = fixture({importData: async request => {await imported; request.body = {errcode: 0};}});
   await f.instance.ready;
   let settled = false;
+  f.state.record.sync_mode = 'merge';
   const pending = f.instance.addSyncJob(11, '* * * * *', url, 'merge', 29).then(job => {settled = true; return job;});
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(settled, false);
@@ -215,6 +225,7 @@ test('numeric persisted project IDs and string API IDs refer to the same timer',
   await f.instance.ready;
   const first = await f.instance.addSyncJob(11, '* * * * *', url, 'good', 29);
   assert.equal(f.instance.getSyncJob('11'), first);
+  f.state.record.sync_cron = '*/2 * * * *';
   const replacement = await f.instance.addSyncJob('11', '*/2 * * * *', url, 'good', 29);
   assert.equal(first.cancelled, true);
   assert.equal(f.instance.getSyncJob(11), replacement);
@@ -227,6 +238,7 @@ test('replacing a job cancels the old timer and empty URLs are reported without 
   const f = fixture();
   await f.instance.ready;
   const first = await f.instance.addSyncJob(11, '* * * * *', url, 'good', 29);
+  f.state.record.sync_cron = '*/2 * * * *';
   const second = await f.instance.addSyncJob(11, '*/2 * * * *', url, 'good', 29);
   assert.equal(first.cancelled, true);
   assert.equal(f.instance.getSyncJob(11), second);
@@ -276,8 +288,13 @@ for (const property of ['projectError', 'configError', 'deleteError']) {
     const f = fixture({state});
     await f.instance.ready;
     const job = await f.instance.addSyncJob(11, '* * * * *', url, 'good', 29);
-    assert.equal(f.instance.getSyncJob(11), job);
-    assert.equal(job.cancelled, false);
+    if (property === 'configError') {
+      assert.equal(job, null);
+      assert.equal(f.instance.getSyncJob(11), undefined);
+    } else {
+      assert.equal(f.instance.getSyncJob(11), job);
+      assert.equal(job.cancelled, false);
+    }
     assert.ok(f.state.record);
     assert.equal(f.calls.deletes.length, 0);
     assert.equal(f.calls.imports.length, 0);
@@ -318,8 +335,8 @@ test('a concurrently removed config is not reported as a successful persistence'
   }});
   const result = await run(f);
   assert.notEqual(result.errcode, 0);
-  assert.match(result.errmsg, /配置可能已删除/);
-  assert.equal(f.calls.writes.length, 1);
+  assert.match(result.errmsg, /配置已停用、删除或变更/);
+  assert.equal(f.calls.writes.length, 0);
   assert.ok(f.calls.audit.every(log => !log.content.includes('状态:成功,')));
 });
 
@@ -347,13 +364,12 @@ test('a failed initial run keeps its schedule and succeeds on the next callback'
   assert.deepEqual(f.token.parseToken(f.calls.imports[0].token), {uid: '29', projectToken: 'saved-project-token'});
 });
 
-test('actual getProjectToken creates a project token and consistently encodes its owner', async () => {
+test('scheduled token lookup does not create a missing token', async () => {
   const f = fixture({state: {token: null}});
   await f.instance.ready;
   const first = await f.instance.getProjectToken(11, 29);
-  assert.equal(f.state.token.project_id, 11);
-  assert.match(f.state.token.token, /^[0-9a-f]{20}$/);
-  assert.deepEqual(f.token.parseToken(first), {uid: '29', projectToken: f.state.token.token});
+  assert.equal(f.state.token, null);
+  assert.equal(first, '');
   assert.equal(await f.instance.getProjectToken(11, 29), first);
   f.state.tokenError = new Error('token lookup unavailable');
   assert.equal(await f.instance.getProjectToken(11, 29), '');
@@ -387,3 +403,50 @@ test('Axios response and network errors retain useful details and never trigger 
     assert.equal(f.calls.imports.length, 0);
   }
 });
+
+const revoke = {
+  membership: f => {f.state.project.members = [];},
+  disabled: f => {f.state.record.is_sync_open = false;},
+  configDeleted: f => {f.state.record = null;},
+  projectDeleted: f => {f.state.project = null;},
+  accountDeleted: f => {f.state.user = null;},
+  taskReplaced: f => {f.instance.deleteSyncJob(11);}
+};
+for (const [kind, change] of Object.entries(revoke)) {
+  test('live guard blocks '+kind+' before recurring run without fetching or importing', async () => {
+    const f=fixture();await f.instance.ready;
+    const job=await f.instance.addSyncJob(11,'* * * * *',url,'good',29);
+    const before={fetch:f.calls.fetches.length,imports:f.calls.imports.length};change(f);
+    const result=await job.invoke();assert.notEqual(result.errcode,0);
+    assert.equal(f.calls.fetches.length,before.fetch);assert.equal(f.calls.imports.length,before.imports);
+  });
+  test('live guard blocks '+kind+' while download is pending',async()=>{
+    let changeNow=false;const f=fixture({fetchData:async()=>{if(changeNow)change(f);}});await f.instance.ready;
+    const job=await f.instance.addSyncJob(11,'* * * * *',url,'good',29);changeNow=true;
+    f.state.response={status:200,data:{...swagger,info:{version:'changed'}}};const count=f.calls.imports.length;
+    assert.notEqual((await job.invoke()).errcode,0);assert.equal(f.calls.imports.length,count);
+  });
+  for (const mode of ['normal','good','merge']) test('per-write guard stops '+kind+' between real loopback HTTP writes '+mode,async()=>{
+    const http=require('node:http'),received=[];let armed=false,f;
+    const server=http.createServer((req,res)=>{let body='';req.on('data',b=>body+=b);req.on('end',()=>{received.push(req.url);if(armed)change(f);res.setHeader('Content-Type','application/json');res.end(JSON.stringify({errcode:0,data:[{}]}));});});
+    await new Promise(r=>server.listen(0,'127.0.0.1',r));
+    try {
+      const handle=require('../common/HandleImportData');
+      f=fixture({importData:async request=>{const apis=[1,2,3].map(n=>({path:'/synthetic/'+n,method:'GET'}));await handle({cats:[],apis},11,1,[],null,mode,()=>{},()=>{},()=>{},request.params.token,server.address().port,request[f.guardKey]);request.body={errcode:0};}});
+      await f.instance.ready;f.state.record.sync_mode=mode;
+      const job=await f.instance.addSyncJob(11,'* * * * *',url,mode,29);assert.equal(received.length,3);received.length=0;armed=true;
+      f.state.response={status:200,data:{...swagger,info:{version:'next'}}};assert.notEqual((await job.invoke()).errcode,0);
+      assert.equal(received.length,1,'already-issued first write completes; no second/third request');
+      f.instance.deleteSyncJob(11);
+    } finally {await new Promise(r=>server.close(r));}
+  });
+}
+test('permission check uses saved owner, does not accept forged import uid or stale token authority',async()=>{const f=fixture();await f.instance.ready;f.state.project.members=[];assert.notEqual((await run(f)).errcode,0);assert.equal(f.calls.imports.length,0);f.state.user.role='admin';assert.equal((await run(f)).errcode,0);});
+test('native five-second scheduled callback observes revoked member and cancels without a new import',async()=>{const f=fixture({scheduler:require('node-schedule')});await f.instance.ready;f.state.record.sync_cron='*/5 * * * * *';const job=await f.instance.addSyncJob(11,'*/5 * * * * *',url,'good',29);try{assert.equal(f.calls.imports.length,1);f.state.project.members=[];const deadline=Date.now()+7500;while(f.instance.getSyncJob(11)&&Date.now()<deadline)await new Promise(r=>setTimeout(r,40));assert.equal(f.instance.getSyncJob(11),undefined);assert.equal(f.calls.imports.length,1);assert.equal(f.calls.fetches.length,1);assert.ok(f.calls.audit.some(x=>/状态:失败,.*无项目编辑权限/.test(x.content)));assert.equal(job.nextInvocation(),null);}finally{f.instance.deleteSyncJob(11);}});
+
+test('generation changed during final config read cannot start a stale import',async()=>{const f=fixture();await f.instance.ready;const job=await f.instance.addSyncJob(11,'* * * * *',url,'good',29);let reads=0;f.state.configReadHook=async()=>{if(++reads===2)f.instance.deleteSyncJob(11);};assert.notEqual((await job.invoke()).errcode,0);assert.equal(f.calls.imports.length,1);});
+test('live auth follows inherited group developer removal and permits project owner',async()=>{const f=fixture();await f.instance.ready;f.state.project.members=[];f.state.group={uid:1,members:[{uid:29,role:'dev'}]};assert.equal((await run(f)).errcode,0);f.state.group.members=[];assert.notEqual((await run(f)).errcode,0);f.state.project.uid=29;assert.equal((await run(f)).errcode,0);});
+
+test('persisted cron changed by another process invalidates the existing callback snapshot',async()=>{const f=fixture();await f.instance.ready;const job=await f.instance.addSyncJob(11,'* * * * *',url,'good',29);f.state.record.sync_cron='*/2 * * * *';assert.notEqual((await job.invoke()).errcode,0);assert.equal(f.calls.imports.length,1);assert.equal(job.cancelled,true);});
+test('failed replacement scheduling does not allow the old callback to use new saved config',async()=>{const f=fixture();await f.instance.ready;const job=await f.instance.addSyncJob(11,'* * * * *',url,'good',29);f.state.record.sync_cron='invalid';assert.equal(await f.instance.addSyncJob(11,'invalid',url,'good',29),null);assert.notEqual((await job.invoke()).errcode,0);assert.equal(f.calls.imports.length,1);assert.equal(job.cancelled,true);});
+test('normal import token error is surfaced and never advances saved hash',async()=>{let f;const handle=load('common/HandleImportData.js',{axios:{post:async()=>({data:{errcode:42014,errmsg:'invalid synthetic token'}})}});f=fixture({importData:async request=>{const errors=[];await handle({cats:[],apis:[{path:'/denied',method:'GET'}]},11,1,[],null,'normal',e=>errors.push(e),()=>{},()=>{},request.params.token,1,request[f.guardKey]);request.body={errcode:errors.length?404:0,errmsg:errors.join(';')};}});f.state.record.sync_mode='normal';await f.instance.ready;const result=await f.instance.syncInterface(11,url,'normal',29,'synthetic');assert.notEqual(result.errcode,0);assert.equal(f.calls.writes.length,0);assert.equal(f.state.record.old_swagger_content,undefined);assert.match(result.errmsg,/invalid synthetic token/);});

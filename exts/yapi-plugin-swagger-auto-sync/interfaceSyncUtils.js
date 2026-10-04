@@ -4,10 +4,17 @@ const projectModel = require('models/project.js');
 const syncModel = require('./syncModel.js');
 const tokenModel = require('models/token.js');
 const yapi = require('yapi.js')
-const sha = require('sha.js');
+const baseController = require('controllers/base.js');
+const userModel = require('models/user.js');
 const md5 = require('md5');
 const { getToken } = require('utils/token');
 const jobMap = new Map();
+const taskSnapshot = job => job && Object.freeze(Object.fromEntries(
+    ['_id', 'project_id', 'uid', 'is_sync_open', 'sync_cron', 'sync_json_url', 'sync_mode']
+        .map(key => [key, job[key]])
+));
+const sameTask = (job, expected) => job && expected &&
+    Object.keys(expected).every(key => job[key] === expected[key]);
 
 class syncUtils {
 
@@ -41,12 +48,15 @@ class syncUtils {
      * @param {*} uid 用户id
      */
     async addSyncJob(projectId, cronExpression, swaggerUrl, syncMode, uid) {
+        let scheduleItem;
+        let expected;
         const run = async () => {
             try {
-                // Derive the token with the scheduled owner's uid on every run.
+                await this.assertCurrentWrite(projectId, swaggerUrl, syncMode, uid, scheduleItem, expected);
+                // Reuse a token only after checking the saved owner's current rights.
                 const projectToken = await this.getProjectToken(projectId, uid);
                 if (!projectToken) throw new Error('获取项目 token 失败');
-                return await this.syncInterface(projectId, swaggerUrl, syncMode, uid, projectToken);
+                return await this.syncInterface(projectId, swaggerUrl, syncMode, uid, projectToken, scheduleItem, expected);
             } catch (error) {
                 return this.reportSyncFailure(error, syncMode, uid, projectId);
             }
@@ -54,7 +64,9 @@ class syncUtils {
 
         try {
             if (!swaggerUrl) throw new Error('缺少 Swagger URL');
-            const scheduleItem = schedule.scheduleJob(cronExpression, run);
+            expected = taskSnapshot(await this.syncModel.getByProjectId(projectId));
+            if (expected && expected.is_sync_open === true && typeof cronExpression === 'string' && expected.sync_cron !== cronExpression) throw new Error('自动同步配置与定时任务快照不一致');
+            scheduleItem = schedule.scheduleJob(cronExpression, run);
             if (!scheduleItem) throw new Error('无效的自动同步 cron 表达式');
 
             // Do not replace a working job with node-schedule's null result.
@@ -69,9 +81,43 @@ class syncUtils {
     }
 
     //同步接口
-    async syncInterface(projectId, swaggerUrl, syncMode, uid, projectToken) {
+    async assertCurrentWrite(projectId, swaggerUrl, syncMode, uid, generation, expected) {
+        const current = () => !generation || jobMap.get(String(projectId)) === generation;
+        if (!current()) throw new Error('自动同步任务已被替换或取消');
+        const job = await this.syncModel.getByProjectId(projectId);
+        if ((generation && !expected) || (expected && !sameTask(job, expected)) || !job || job.is_sync_open !== true || job.uid !== uid || job.sync_json_url !== swaggerUrl || job.sync_mode !== syncMode) {
+            if (current()) this.deleteSyncJob(projectId);
+            throw new Error('自动同步配置已停用、删除或变更');
+        }
+        if (!await this.projectModel.get(projectId)) {
+            await this.syncModel.delByProjectId(projectId);
+            if (current()) this.deleteSyncJob(projectId);
+            throw new Error('自动同步项目不存在');
+        }
+        const user = await yapi.getInst(userModel).get(uid);
+        const auth = new baseController({});
+        auth.$user = user;
+        auth.$uid = uid;
+        if (!user || !await auth.checkAuth(projectId, 'project', 'edit')) {
+            if (current()) this.deleteSyncJob(projectId);
+            throw new Error('自动同步任务所有者已无项目编辑权限');
+        }
+        if (!current()) throw new Error('自动同步任务已被替换或取消');
+        const latest = await this.syncModel.getByProjectId(projectId);
+        if ((expected && !sameTask(latest, expected)) || !latest || latest._id !== job._id || latest.is_sync_open !== true || latest.uid !== uid || latest.sync_json_url !== swaggerUrl || latest.sync_mode !== syncMode || latest.sync_cron !== job.sync_cron) {
+            if (current()) this.deleteSyncJob(projectId);
+            throw new Error('自动同步配置已停用、删除或变更');
+        }
+        if (!current()) throw new Error('自动同步任务已被替换或取消');
+        return job;
+    }
+
+    async syncInterface(projectId, swaggerUrl, syncMode, uid, projectToken, generation, expected) {
         yapi.commons.log('定时器触发, syncJsonUrl:' + swaggerUrl + ",合并模式:" + syncMode);
         try {
+            expected = expected || taskSnapshot(await this.syncModel.getByProjectId(projectId));
+            const beforeWrite = () => this.assertCurrentWrite(projectId, swaggerUrl, syncMode, uid, generation, expected);
+            await beforeWrite();
             const project = await this.projectModel.get(projectId);
             // Only a confirmed missing project permits deleting its saved job.
             // A rejected database query is transient and must retain the job.
@@ -92,6 +138,7 @@ class syncUtils {
             if (!swaggerContent || typeof swaggerContent !== 'object' || Array.isArray(swaggerContent)) {
                 throw new Error('数据格式出错，请检查 Swagger JSON');
             }
+            await beforeWrite();
             const newSwaggerJsonData = JSON.stringify(swaggerContent);
             const hash = md5(newSwaggerJsonData);
             if (oldSyncJob.old_swagger_content === hash) {
@@ -113,6 +160,7 @@ class syncUtils {
                     token: projectToken
                 }
             };
+            requestObj[openController.swaggerWriteGuard] = beforeWrite;
             await this.openController.importData(requestObj);
             const result = requestObj.body;
             if (!result || result.errcode === undefined || result.errcode === null) {
@@ -122,6 +170,7 @@ class syncUtils {
                 throw new Error('Swagger 导入失败 (' + result.errcode + '): ' + (result.errmsg || '未知错误'));
             }
 
+            await beforeWrite();
             // Do not pass a Mongoose document to the update helper or overwrite
             // concurrent configuration changes with the pre-import snapshot.
             const updated = await this.syncModel.upById(oldSyncJob._id, {
@@ -188,17 +237,8 @@ class syncUtils {
         try {
             let data = await this.tokenModel.get(project_id);
             let token;
-            if (!data) {
-                let passsalt = yapi.commons.randStr();
-                token = sha('sha1')
-                    .update(passsalt)
-                    .digest('hex')
-                    .substr(0, 20);
-
-                await this.tokenModel.save({ project_id, token });
-            } else {
-                token = data.token;
-            }
+            if (!data) throw new Error('项目 token 不存在');
+            token = data.token;
 
             token = getToken(token, uid);
 

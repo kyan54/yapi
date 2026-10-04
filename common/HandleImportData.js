@@ -15,7 +15,8 @@ async function handle(
   messageSuccess,
   callback,
   token,
-  port
+  port,
+  beforeWrite
 ) {
 
   const taskNotice = _.throttle((index, len)=>{
@@ -43,6 +44,7 @@ async function handle(
             desc: cat.desc,
             token
           };
+          if (beforeWrite) await beforeWrite();
           let result = await axios.post(apipath, data);
 
           if (result.data.errcode) {
@@ -80,6 +82,7 @@ async function handle(
         projectApiPath = 'http://127.0.0.1:' + port + projectApiPath;
       }
 
+      if (beforeWrite) await beforeWrite();
       await axios.post(projectApiPath, {
         id: projectId,
         basepath: info.basePath,
@@ -115,6 +118,7 @@ async function handle(
           apipath = 'http://127.0.0.1:' + port + apipath;
         }
         data.dataSync = dataSync;
+        if (beforeWrite) await beforeWrite();
         let result = await axios.post(apipath, data);
         if (result.data.errcode) {
           successNum--;
@@ -130,16 +134,18 @@ async function handle(
         if (isNode) {
           apipath = 'http://127.0.0.1:' + port + apipath;
         }
+        if (beforeWrite) await beforeWrite();
         let result = await axios.post(apipath, data);
         if (result.data.errcode) {
           successNum--;
           if (result.data.errcode == 40022) {
             existNum++;
           }
-          if (result.data.errcode == 40033) {
+          if (result.data.errcode != 40022) {
             callback({ showLoading: false });
-            messageError('没有权限');
-            break;
+            messageError(result.data.errcode == 40033 ? '没有权限' :
+              (result.data.errmsg || '导入失败 (' + result.data.errcode + ')'));
+            return;
           }
         }
       }
