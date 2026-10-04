@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 async function eventually(check){for(let n=0;n<60;n++){if(await check())return;await delay(50);}assert.fail('fixture DB observation timed out');}
 async function freePort(){const s=net.createServer();await new Promise(r=>s.listen(0,'127.0.0.1',r));const p=s.address().port;await new Promise(r=>s.close(r));return p;}
-test('isolated real app/Mongo Swagger permissions, token errors, snapshots and multiple ticks',{skip:!process.env.YAPI_TEST_MONGO_URI,timeout:300000},async()=>{
+test('isolated real app/Mongo Swagger permissions, token errors, snapshots and multiple ticks',{skip:!process.env.YAPI_TEST_MONGO_URI,timeout:360000},async()=>{
  assert.equal(process.env.YAPI_TEST_MONGO_URI,'mongodb://127.0.0.1:27017','only the fixed CI loopback Mongo endpoint is permitted');
  const uri='mongodb://127.0.0.1:27017';
  const nonce=crypto.randomBytes(16).toString('hex'),dbName='yapi_sync_guard_test_'+nonce,dir=await fs.mkdtemp(path.join(os.tmpdir(),'yapi-sync-guard-'));
@@ -28,7 +28,10 @@ test('isolated real app/Mongo Swagger permissions, token errors, snapshots and m
    await db.collection('group').insertOne({_id:id,uid:1,group_name:'Synthetic',type:'public',members:[]});
    await db.collection('project').insertOne({_id:id,uid:1,group_id:id,name:'Synthetic',project_type:'private',members:[{uid,role:extended?'owner':'dev'}],env:[],basepath:''});
    await db.collection('token').insertOne({_id:id,project_id:id,token:crypto.randomBytes(12).toString('hex')});
-   const params={project_id:id,is_sync_open:true,sync_mode:mode,sync_cron:'*/5 * * * * *',sync_json_url:'http://127.0.0.1:'+fixture.address().port+'/'+id};
+   // Keep initial import separate from wall-clock cron boundaries, then observe two real ticks five seconds apart.
+   const firstTickAt=Math.floor(Date.now()/1000)*1000+10000,secondTickAt=firstTickAt+5000;
+   const cron=new Date(firstTickAt).getUTCSeconds()+','+new Date(secondTickAt).getUTCSeconds()+' * * * * *';
+   const params={project_id:id,is_sync_open:true,sync_mode:mode,sync_cron:cron,sync_json_url:'http://127.0.0.1:'+fixture.address().port+'/'+id};
    const apiPost=async(endpoint,data)=>(await fetch(base+endpoint,{method:'POST',headers:{cookie:cookieFor(uid,salt),'content-type':'application/json'},body:JSON.stringify(data)})).json();
    const post=data=>apiPost('/api/plugin/autoSync/save',data);
    // Let the real allocator assign category IDs; raw per-scenario IDs can collide with prior generated categories.
@@ -62,8 +65,9 @@ test('isolated real app/Mongo Swagger permissions, token errors, snapshots and m
    if(scenario==='replace-cron')await db.collection('interface_auto_sync').updateOne({project_id:id},{$set:{sync_cron:'*/7 * * * * *'}});
    if(scenario==='failed-replacement'){const failed=await post({...params,id:initial._id,sync_cron:'invalid'});assert.notEqual(failed.errcode,0);}
    if(scenario==='token-invalid')await db.collection('token').deleteOne({project_id:id});
-   // Two full five-second periods; canceled callbacks must not write, and token failures must not advance hash.
-   await delay(10500);await guard();const final=await db.collection('interface_auto_sync').findOne({project_id:id});
+   assert.ok(Date.now()<firstTickAt,scenario+' setup must finish before the first scheduled tick');
+   // Wait past both actual scheduled instants; retain every exact write/hash assertion.
+   await delay(Math.max(0,secondTickAt+1000-Date.now()));await guard();const final=await db.collection('interface_auto_sync').findOne({project_id:id});
    if(success){if(source.stable){assert.equal(await count(),3,'good/merge updates existing paths without duplication');assert.notDeepEqual(await interfaceTitles(),initialTitles,'good/merge persisted refreshed fields');}else assert.ok(await count()>=6);assert.notEqual(final.old_swagger_content,initial.old_swagger_content);assert.equal((await post({...params,id:initial._id,is_sync_open:false})).errcode,0);}
    else {assert.equal(await count(),expected,scenario+' no later interface writes');if(final)assert.equal(final.old_swagger_content,initial.old_swagger_content,scenario+' hash unchanged');assert.ok(await db.collection('log').countDocuments({typeid:id,content:/自动同步接口状态:失败/})>0);}
    assert.deepEqual(await categories(),categorySnapshot,scenario+' categories unchanged across later ticks');
