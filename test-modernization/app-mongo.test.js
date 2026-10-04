@@ -18,6 +18,7 @@ test('real application HTTP on modern Mongo: session auth, docs, legacy writes, 
     await db.collection('user').insertOne({_id:9,role:'admin',username:'Synthetic admin',email:'synthetic@example.invalid',passsalt:'synthetic-only-salt',password:'not-used',type:'site'});
     await db.collection('group').insertOne({_id:8,uid:9,group_name:'Synthetic group',type:'public',members:[]});
     await db.collection('project').insertOne({_id:11,uid:9,group_id:8,name:'Synthetic project',project_type:'private',members:[],env:[],basepath:''});
+    await db.collection('token').insertOne({_id:12,project_id:11,token:'ephemeral-http-test-token'});
     await db.collection('interface_cat').insertOne({_id:13,uid:9,project_id:11,name:'Synthetic category'});
     await db.collection('interface').insertOne({...fixture,uid:9});
     const listen=await port();const configPath=path.join(dir,'config.json');

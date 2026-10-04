@@ -73,6 +73,9 @@ class openController extends baseController {
   }
 
   async importData(ctx) {
+    // Only an in-process caller can supply this Symbol-keyed closure.
+    const beforeWrite = ctx[openController.swaggerWriteGuard];
+    if (beforeWrite !== undefined && typeof beforeWrite !== 'function') throw new Error('Invalid internal import guard');
     let type = ctx.params.type;
     let content = ctx.params.json;
     let project_id = ctx.params.project_id;
@@ -127,11 +130,12 @@ class openController extends baseController {
      */
     if (menuList.length === 0) {
       const catInst = yapi.getInst(interfaceCatModel);
+      const scope = beforeWrite ? await beforeWrite() : null;
       const menu = await catInst.save({
         name: '默认分类',
         project_id: project_id,
         desc: '默认分类',
-        uid: this.getUid(),
+        uid: scope ? scope.uid : this.getUid(),
         add_time: yapi.commons.time(),
         up_time: yapi.commons.time()
       });
@@ -158,7 +162,8 @@ class openController extends baseController {
       },
       () => {},
       token,
-      yapi.WEBCONFIG.port
+      yapi.WEBCONFIG.port,
+      beforeWrite
     );
 
     if (errorMessage.length > 0) {
@@ -455,4 +460,5 @@ class openController extends baseController {
   }
 }
 
+openController.swaggerWriteGuard = Symbol('swaggerWriteGuard');
 module.exports = openController;
