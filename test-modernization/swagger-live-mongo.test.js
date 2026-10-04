@@ -27,10 +27,12 @@ test('isolated real app/Mongo Swagger permissions, token errors, snapshots and m
    await db.collection('user').insertOne({_id:uid,role:'member',username:'Synthetic',email:uid+'@invalid.test',passsalt:salt,password:'unused',type:'site'});
    await db.collection('group').insertOne({_id:id,uid:1,group_name:'Synthetic',type:'public',members:[]});
    await db.collection('project').insertOne({_id:id,uid:1,group_id:id,name:'Synthetic',project_type:'private',members:[{uid,role:extended?'owner':'dev'}],env:[],basepath:''});
-   if(scenario!=='default-category-revoke')await db.collection('interface_cat').insertOne({_id:id,uid,project_id:id,name:'Synthetic'});
    await db.collection('token').insertOne({_id:id,project_id:id,token:crypto.randomBytes(12).toString('hex')});
    const params={project_id:id,is_sync_open:true,sync_mode:mode,sync_cron:'*/5 * * * * *',sync_json_url:'http://127.0.0.1:'+fixture.address().port+'/'+id};
-   const post=async data=>(await fetch(base+'/api/plugin/autoSync/save',{method:'POST',headers:{cookie:cookieFor(uid,salt),'content-type':'application/json'},body:JSON.stringify(data)})).json();
+   const apiPost=async(endpoint,data)=>(await fetch(base+endpoint,{method:'POST',headers:{cookie:cookieFor(uid,salt),'content-type':'application/json'},body:JSON.stringify(data)})).json();
+   const post=data=>apiPost('/api/plugin/autoSync/save',data);
+   // Let the real allocator assign category IDs; raw per-scenario IDs can collide with prior generated categories.
+   if(scenario!=='default-category-revoke')assert.equal((await apiPost('/api/interface/add_cat',{project_id:id,name:'Synthetic'})).errcode,0);
    const revoke=async()=>{await guard();await db.collection('project').updateOne({_id:id},{$set:{members:[]}});};
    if(scenario==='download-revoke')downloadHook=revoke;
    if(scenario==='token-invalid')downloadHook=async()=>{await guard();await db.collection('token').updateOne({project_id:id},{$set:{token:crypto.randomBytes(12).toString('hex')}});};
@@ -40,9 +42,9 @@ test('isolated real app/Mongo Swagger permissions, token errors, snapshots and m
    assert.equal((await saved).errcode,0,'save configuration route business code');
    const initial=await db.collection('interface_auto_sync').findOne({project_id:id});assert.ok(initial);assert.equal(initial.uid,uid);
    const count=()=>db.collection('interface').countDocuments({project_id:id});let expected=await count();
-   if(['download-revoke','token-invalid','default-category-revoke','new-category-revoke','basepath-revoke'].includes(scenario)){assert.equal(expected,0);assert.equal(initial.old_swagger_content,undefined);if(scenario==='token-invalid')await eventually(async()=>await db.collection('log').countDocuments({typeid:id,content:/token 无效/})>0);}
+   if(['download-revoke','token-invalid','default-category-revoke','new-category-revoke','basepath-revoke'].includes(scenario)){assert.equal(expected,0);assert.equal(initial.old_swagger_content,undefined);if(scenario==='token-invalid'){assert.ok(events.some(e=>e.event==='http-rejected'&&e.project===id&&e.path==='/api/interface/add'&&e.errcode===40011),'actual token-only route rejects rotated token');await eventually(async()=>await db.collection('log').countDocuments({typeid:id,content:/Swagger 导入失败.*请登录/})>0);}}
    else if(scenario==='between-writes'){assert.equal(expected,1);assert.equal(initial.old_swagger_content,undefined);}
-   else {assert.equal(expected,3);assert.ok(initial.old_swagger_content);}
+   else {assert.equal(expected,3,scenario+' initial interface writes');assert.ok(initial.old_swagger_content);}
    const categories=()=>db.collection('interface_cat').find({project_id:id}).sort({name:1}).toArray();
    const interfaceTitles=async()=>(await db.collection('interface').find({project_id:id}).sort({path:1}).toArray()).map(i=>i.title);
    const initialTitles=await interfaceTitles();
@@ -66,6 +68,7 @@ test('isolated real app/Mongo Swagger permissions, token errors, snapshots and m
    else {assert.equal(await count(),expected,scenario+' no later interface writes');if(final)assert.equal(final.old_swagger_content,initial.old_swagger_content,scenario+' hash unchanged');assert.ok(await db.collection('log').countDocuments({typeid:id,content:/自动同步接口状态:失败/})>0);}
    assert.deepEqual(await categories(),categorySnapshot,scenario+' categories unchanged across later ticks');
    if(scenario!=='project-delete')assert.equal((await db.collection('project').findOne({_id:id})).basepath,projectSnapshot.basepath,scenario+' basepath unchanged across later ticks');
+   console.log('Swagger synthetic scenario passed: '+scenario);
   }
  }finally{
   if(child&&child.exitCode===null){child.kill('SIGTERM');await new Promise(r=>child.once('exit',r));}
