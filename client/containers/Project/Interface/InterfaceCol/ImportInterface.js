@@ -25,6 +25,7 @@ export default class ImportInterface extends Component {
   state = {
     selectedRowKeys: [],
     categoryCount: {},
+    statusFilter: [],
     project: this.props.currProjectId
   };
 
@@ -43,8 +44,10 @@ export default class ImportInterface extends Component {
 
   // 切换项目
   onChange = async val => {
+    this.props.selectInterface([], val);
     this.setState({
       project: val,
+      statusFilter: [],
       selectedRowKeys: [],
       categoryCount: {}
     });
@@ -61,7 +64,7 @@ export default class ImportInterface extends Component {
         title: item.name,
         isCategory: true,
         children: item.list
-          ? item.list.map(e => {
+          ? item.list.filter(e => !this.state.statusFilter.length || this.state.statusFilter.includes(e.status)).map(e => {
               e.key = e._id;
               e.categoryKey = 'category_' + item._id;
               e.categoryLength = item.list.length;
@@ -69,7 +72,7 @@ export default class ImportInterface extends Component {
             })
           : []
       };
-    });
+    }).filter(item => !this.state.statusFilter.length || item.children.length);
     const self = this;
     const rowSelection = {
       // onChange: (selectedRowKeys) => {
@@ -208,13 +211,10 @@ export default class ImportInterface extends Component {
             value: 'undone'
           }
         ],
-        onFilter: (value, record) => {
-          let arr = record.children.filter(item => {
-            return item.status.indexOf(value) === 0;
-          });
-          return arr.length > 0;
-          // record.status.indexOf(value) === 0
-        }
+        filteredValue: this.state.statusFilter,
+        onFilter: (value, record) => record.isCategory
+          ? record.children.some(item => item.status === value)
+          : record.status === value
       }
     ];
 
@@ -234,7 +234,11 @@ export default class ImportInterface extends Component {
             })}
           </Select>
         </div>
-        <Table columns={columns} rowSelection={rowSelection} dataSource={data} pagination={false} />
+        <Table columns={columns} rowSelection={rowSelection} dataSource={data} pagination={false}
+          onChange={(_, filters) => {
+            this.setState({ statusFilter: filters.status || [], selectedRowKeys: [], categoryCount: {} });
+            this.props.selectInterface([], this.state.project);
+          }} />
       </div>
     );
   }

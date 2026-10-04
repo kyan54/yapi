@@ -24,6 +24,14 @@ class statisMockController extends baseController {
     this.interfaceCaseModel = yapi.getInst(interfaceCaseModel);
   }
 
+  // Statistics expose system status and cross-project totals. The existing
+  // admin-only navigation must be enforced by every server endpoint as well.
+  requireAdministrator(ctx) {
+    if (this.$user && this.getRole() === 'admin') return true;
+    ctx.body = yapi.commons.resReturn(null, 405, '仅管理员可以查看系统统计');
+    return false;
+  }
+
   /**
    * 获取所有统计总数
    * @interface statismock/count
@@ -33,6 +41,7 @@ class statisMockController extends baseController {
    * @returns {Object}
    */
   async getStatisCount(ctx) {
+    if (!this.requireAdministrator(ctx)) return;
     try {
       let groupCount = await this.groupModel.getGroupListCount();
       let projectCount = await this.projectModel.getProjectListCount();
@@ -59,13 +68,11 @@ class statisMockController extends baseController {
    * @returns {Object}
    */
   async getMockDateList(ctx) {
+    if (!this.requireAdministrator(ctx)) return;
     try {
       let mockCount = await this.Model.getTotalCount();
       let mockDateList = [];
 
-      if (!this.getRole() === 'admin') {
-        return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
-      }
       //  默认时间是30 天为一周期
       let dateInterval = commons.getDateRange();
       mockDateList = await this.Model.getDayCount(dateInterval);
@@ -84,6 +91,7 @@ class statisMockController extends baseController {
    * @returns {Object}
    */
   async getSystemStatus(ctx) {
+    if (!this.requireAdministrator(ctx)) return;
     try {
       let mail = '';
       if (yapi.WEBCONFIG.mail && yapi.WEBCONFIG.mail.enable) {
@@ -130,6 +138,7 @@ class statisMockController extends baseController {
   }
 
   async groupDataStatis(ctx) {
+    if (!this.requireAdministrator(ctx)) return;
     try {
       let groupData = await this.groupModel.list();
       let result = [];

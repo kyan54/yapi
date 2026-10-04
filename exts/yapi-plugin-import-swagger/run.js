@@ -1,7 +1,9 @@
 const _ = require('underscore')
-const swagger = require('swagger-client');
+const swaggerModule = require('swagger-client');
+const swagger = swaggerModule.default || swaggerModule;
 const compareVersions = require('compare-versions');
 
+function isolatedImport(input) {
   var SwaggerData, isOAS3;
   function handlePath(path) {
     if (path === '/') return path;
@@ -67,25 +69,14 @@ const compareVersions = require('compare-versions');
 
   async function handleSwaggerData(res) {
 
-    return await new Promise(resolve => {
-      let data = swagger({
-        spec: res
-      });
-
-      data.then(res => {
-        resolve(res.spec);
-      });
-    });
+    const result = await swagger({ spec: res });
+    return result.spec;
   }
 
   async function run(res) {
       let interfaceData = { apis: [], cats: [] };
       if(typeof res === 'string' && res){
-        try{
-          res = JSON.parse(res);
-        } catch (e) {
-          console.error('json 解析出错',e.message)
-        }
+        res = JSON.parse(res);
       }
 
       isOAS3 = res.openapi && compareVersions(res.openapi,'3.0.0') >= 0;
@@ -323,4 +314,6 @@ const compareVersions = require('compare-versions');
 
 
 
-module.exports = run;
+  return run(input);
+}
+module.exports = isolatedImport;

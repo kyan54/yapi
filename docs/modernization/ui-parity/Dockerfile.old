@@ -1,0 +1,10 @@
+# UNEXECUTED legacy compatibility candidate. EOL; disposable isolated test only.
+# Do not replace the old lockfile/dependencies with the modern dependency tree.
+FROM node:16.20.2-bullseye
+WORKDIR /parity/vendor
+COPY package.json package-lock.json ./
+RUN node --version && npm --version && npm ci --ignore-scripts --legacy-peer-deps --omit=dev --no-audit --no-fund
+COPY . .
+# Use the version's tracked compiled assets, not a reconstruction with new deps.
+RUN test -f static/index.html && test -d static/prd
+CMD ["node", "server/app.js"]

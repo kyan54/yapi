@@ -82,13 +82,13 @@ class userModel extends baseModel {
   }
 
   del(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       _id: id
     });
   }
 
   update(id, data) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },

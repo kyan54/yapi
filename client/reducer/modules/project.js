@@ -47,6 +47,8 @@ const initialState = {
 export default (state = initialState, action) => {
   switch (action.type) {
     case GET_CURR_PROJECT: {
+      if (action.meta && action.meta.isCurrent && !action.meta.isCurrent()) return state;
+      if (action.error || !action.payload.data || action.payload.data.errcode || !action.payload.data.data) return state;
       return {
         ...state,
         currProject: action.payload.data.data
@@ -54,6 +56,8 @@ export default (state = initialState, action) => {
     }
 
     case FETCH_PROJECT_LIST: {
+      if (action.meta && action.meta.isCurrent && !action.meta.isCurrent()) return state;
+      if (action.error || !action.payload.data || action.payload.data.errcode || !action.payload.data.data) return state;
       return {
         ...state,
         projectList: action.payload.data.data.list,
@@ -112,9 +116,10 @@ export default (state = initialState, action) => {
 };
 
 // 获取某分组下的项目列表
-export function fetchProjectList(id, pageNum) {
+export function fetchProjectList(id, pageNum, meta) {
   return {
     type: FETCH_PROJECT_LIST,
+    meta,
     payload: axios.get('/api/project/list', {
       params: {
         group_id: id,
@@ -294,10 +299,11 @@ export function delProject(id) {
   };
 }
 
-export async function getProject(id) {
+export async function getProject(id, meta) {
   let result = await axios.get('/api/project/get?id=' + id);
   return {
     type: GET_CURR_PROJECT,
+    meta,
     payload: result
   };
 }

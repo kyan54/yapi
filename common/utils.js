@@ -2,7 +2,7 @@ const Mock = require('mockjs');
 const filter = require('./power-string.js').filter;
 const stringUtils = require('./power-string.js').utils;
 const json5 = require('json5');
-const Ajv = require('ajv');
+const Ajv = require('ajv-draft-04');
 /**
  * 作用：解析规则串 key ，然后根据规则串的规则以及路径找到在 json 中对应的数据
  * 规则串：$.{key}.{body||params}.{dataPath} 其中 body 为返回数据，params 为请求数据，datapath 为数据的路径
@@ -17,22 +17,15 @@ function simpleJsonPathParse(key, json) {
   if (!key || typeof key !== 'string' || key.indexOf('$.') !== 0 || key.length <= 2) {
     return null;
   }
-  let keys = key.substr(2).split('.');
-  keys = keys.filter(item => {
-    return item;
-  });
-  for (let i = 0, l = keys.length; i < l; i++) {
-    try {
-      let m = keys[i].match(/(.*?)\[([0-9]+)\]/);
-      if (m) {
-        json = json[m[1]][m[2]];
-      } else {
-        json = json[keys[i]];
-      }
-    } catch (e) {
-      json = '';
-      break;
+  const keys = key.substr(2).replace(/\[([0-9]+)\]/g, '.$1').split('.').filter(Boolean);
+  for (const part of keys) {
+    if (['__proto__', 'prototype', 'constructor'].includes(part) || json == null ||
+        !Object.prototype.hasOwnProperty.call(Object(json), part)) {
+      const error = new Error('MISSING_CASE_OUTPUT: 前置用例输出或字段不存在，请先运行依赖用例并检查变量路径');
+      error.code = 'MISSING_CASE_OUTPUT';
+      throw error;
     }
+    json = json[part];
   }
 
   return json;
@@ -96,6 +89,7 @@ function handleFilter(str, match, context) {
 
     return a;
   } catch (err) {
+    if (err && err.code === 'MISSING_CASE_OUTPUT') throw err;
     return str;
   }
 }
@@ -251,14 +245,7 @@ exports.timeago = function(timestamp) {
 // json schema 验证器
 exports.schemaValidator = function(schema, params) {
   try {
-    const ajv = new Ajv({
-      format: false,
-      meta: false
-    });
-    let metaSchema = require('ajv/lib/refs/json-schema-draft-04.json');
-    ajv.addMetaSchema(metaSchema);
-    ajv._opts.defaultMeta = metaSchema.id;
-    ajv._refs['http://json-schema.org/schema'] = 'http://json-schema.org/draft-04/schema';
+    const ajv = new Ajv({ strict: false, validateFormats: false });
     var localize = require('ajv-i18n');
 
     schema = schema || {

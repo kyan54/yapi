@@ -36,14 +36,14 @@ class followModel extends baseModel {
   }
 
   del(projectid, uid) {
-    return this.model.remove({
+    return this.removeDocuments({
       projectid: projectid,
       uid: uid
     });
   }
 
   delByProjectId(projectid){
-    return this.model.remove({
+    return this.removeDocuments({
       projectid: projectid
     })
   }
@@ -70,7 +70,7 @@ class followModel extends baseModel {
   }
 
   updateById(id, typeid, data) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         uid: id,
         projectid: typeid

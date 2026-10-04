@@ -34,7 +34,8 @@ class Login extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      loginType: 'ldap'
+      loginType: 'ldap',
+      submitting: false
     };
   }
 
@@ -49,28 +50,34 @@ class Login extends Component {
   handleSubmit = e => {
     e.preventDefault();
     const form = this.props.form;
-    form.validateFields((err, values) => {
-      if (!err) {
-        if (this.props.isLDAP && this.state.loginType === 'ldap') {
-          this.props.loginLdapActions(values).then(res => {
-            if (res.payload.data.errcode == 0) {
-              this.props.history.replace('/group');
-              message.success('登录成功! ');
-            }
-          });
-        } else {
-          this.props.loginActions(values).then(res => {
-            if (res.payload.data.errcode == 0) {
-              this.props.history.replace('/group');
-              message.success('登录成功! ');
-            }
-          });
+    if (!this.mounted || this.submitting) return;
+    form.validateFields(async (err, values) => {
+      if (err || !this.mounted || this.submitting) return;
+      this.submitting = true;
+      this.setState({ submitting: true });
+      try {
+        const action = this.props.isLDAP && this.state.loginType === 'ldap'
+          ? this.props.loginLdapActions : this.props.loginActions;
+        const res = await action(values);
+        if (this.mounted && res.payload.data.errcode === 0) {
+          this.props.history.replace('/group');
+          message.success('登录成功! ');
         }
+      } catch (error) {
+        if (this.mounted) message.error('登录失败，请重试');
+      } finally {
+        this.submitting = false;
+        if (this.mounted) this.setState({ submitting: false });
       }
     });
   };
 
+  componentWillUnmount() {
+    this.mounted = false;
+  }
+
   componentDidMount() {
+    this.mounted = true;
     //Qsso.attach('qsso-login','/api/user/login_by_token')
     console.log('isLDAP', this.props.isLDAP);
   }
@@ -84,12 +91,12 @@ class Login extends Component {
     const { isLDAP } = this.props;
 
     const emailRule =
-      this.state.loginType === 'ldap'
-        ? {}
+      isLDAP && this.state.loginType === 'ldap'
+        ? { required: true, message: '请输入用户名!' }
         : {
             required: true,
             message: '请输入正确的email!',
-            pattern: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{1,})+$/
+            type: 'email'
           };
     return (
       <Form onSubmit={this.handleSubmit}>
@@ -133,6 +140,7 @@ class Login extends Component {
             style={changeHeight}
             type="primary"
             htmlType="submit"
+            loading={this.state.submitting}
             className="login-form-button"
           >
             登录

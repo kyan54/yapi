@@ -2,9 +2,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Icon } from 'antd';
 import './Intro.scss';
-import { OverPack } from 'rc-scroll-anim';
-import TweenOne from 'rc-tween-one';
-import QueueAnim from 'rc-queue-anim';
+// CSS transitions replace the legacy animation packages' removed findDOMNode API.
+const OverPack = ({ children }) => <div>{children}</div>;
+const TweenOne = ({ children, id, className }) => <div id={id} className={className}>{children}</div>;
+const QueueAnim = TweenOne;
 
 const IntroPart = props => (
   <li className="switch-content">

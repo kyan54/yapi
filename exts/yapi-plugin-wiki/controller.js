@@ -3,12 +3,19 @@ const wikiModel = require('./wikiModel.js');
 const projectModel = require('models/project.js');
 const userModel = require('models/user.js');
 const jsondiffpatch = require('jsondiffpatch');
-const formattersHtml = jsondiffpatch.formatters.html;
+const formattersHtml = require('jsondiffpatch/formatters/html');
 const yapi = require('yapi.js');
 // const util = require('./util.js');
 const fs = require('fs-extra');
 const path = require('path');
 const showDiffMsg = require('../../common/diff-view.js');
+
+function numericId(value) {
+  if (typeof value !== 'number' && (typeof value !== 'string' || !/^\d+$/.test(value))) return null;
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
 class wikiController extends baseController {
   constructor(ctx) {
     super(ctx);
@@ -26,9 +33,16 @@ class wikiController extends baseController {
    */
   async getWikiDesc(ctx) {
     try {
-      let project_id = ctx.request.query.project_id;
+      const project_id = numericId(ctx.request.query.project_id);
       if (!project_id) {
         return (ctx.body = yapi.commons.resReturn(null, 400, '项目id不能为空'));
+      }
+      const project = await this.projectModel.get(project_id);
+      if (!project) {
+        return (ctx.body = yapi.commons.resReturn(null, 404, '项目不存在'));
+      }
+      if ((await this.checkAuth(project_id, 'project', 'view')) !== true) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, '没有权限'));
       }
       let result = await this.Model.get(project_id);
       return (ctx.body = yapi.commons.resReturn(result));
@@ -49,6 +63,10 @@ class wikiController extends baseController {
   async uplodaWikiDesc(ctx) {
     try {
       let params = ctx.request.body;
+      const projectId = numericId(params.project_id);
+      if (!projectId) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, '项目id参数有误'));
+      }
       params = yapi.commons.handleParams(params, {
         project_id: 'number',
         desc: 'string',
@@ -58,11 +76,12 @@ class wikiController extends baseController {
       if (!params.project_id) {
         return (ctx.body = yapi.commons.resReturn(null, 400, '项目id不能为空'));
       }
-      if (!this.$tokenAuth) {
-        let auth = await this.checkAuth(params.project_id, 'project', 'edit');
-        if (!auth) {
-          return (ctx.body = yapi.commons.resReturn(null, 400, '没有权限'));
-        }
+      const project = await this.projectModel.get(projectId);
+      if (!project) {
+        return (ctx.body = yapi.commons.resReturn(null, 404, '项目不存在'));
+      }
+      if ((await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, '没有权限'));
       }
 
       let notice = params.email_notice;
@@ -98,20 +117,17 @@ class wikiController extends baseController {
         current: params.desc,
         old: result ? result.toObject().desc : ''
       };
-      let wikiUrl = `${ctx.request.origin}/project/${params.project_id}/wiki`;
+      let wikiUrl = `${(ctx.protocol + '://' + ctx.host)}/project/${params.project_id}/wiki`;
 
       if (notice) {
         let diffView = showDiffMsg(jsondiffpatch, formattersHtml, logData);
 
         let annotatedCss = fs.readFileSync(
-          path.resolve(
-            yapi.WEBROOT,
-            'node_modules/jsondiffpatch/dist/formatters-styles/annotated.css'
-          ),
+          require.resolve('jsondiffpatch/formatters/styles/annotated.css'),
           'utf8'
         );
         let htmlCss = fs.readFileSync(
-          path.resolve(yapi.WEBROOT, 'node_modules/jsondiffpatch/dist/formatters-styles/html.css'),
+          require.resolve('jsondiffpatch/formatters/styles/html.css'),
           'utf8'
         );
         let project = await this.projectModel.getBaseInfo(params.project_id);
@@ -168,9 +184,13 @@ class wikiController extends baseController {
     try {
       let result;
       ctx.websocket.on('message', async message => {
-        let id = parseInt(ctx.query.id, 10);
+        const id = numericId(ctx.query.id);
         if (!id) {
           return ctx.websocket.send('id 参数有误');
+        }
+        if (!(await this.projectModel.get(id)) ||
+            (await this.checkAuth(id, 'project', 'edit')) !== true) {
+          return ctx.websocket.send('没有权限');
         }
         result = await this.Model.get(id);
         let data = await this.websocketMsgMap(message, result);
@@ -191,6 +211,7 @@ class wikiController extends baseController {
       editor: this.editorFunc.bind(this)
     };
 
+    if (!Object.prototype.hasOwnProperty.call(map, msg)) return null;
     return map[msg](result);
   }
 
@@ -203,7 +224,7 @@ class wikiController extends baseController {
 
   // socket 结束链接
   async endFunc(result) {
-    if (result) {
+    if (result && result.edit_uid === this.getUid()) {
       await this.Model.upEditUid(result._id, 0);
     }
   }

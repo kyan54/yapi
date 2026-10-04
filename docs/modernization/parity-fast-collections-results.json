@@ -1,0 +1,1018 @@
+{
+  "format": "yapi.parity.scope-delta.v1",
+  "scope": "B collections / Run / Mock / Docs",
+  "date": "2026-10-03",
+  "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
+  "oldBase": "fd90eaf108c0382db133a6650e368e5d7d38734a",
+  "branch": "fix/parity-fast-collections-20261003",
+  "complete": false,
+  "originalCompoundCount": 246,
+  "ownedCompoundCount": 52,
+  "rule": "Partial atomic success is not full compound closure; do not overwrite main matrix. passed permits explicitly recorded intentional corrections of legacy defects.",
+  "scenarios": [
+    {
+      "id": "runner-01",
+      "assertion": "Choose environment, edit path/query/header/body/file inputs and send intended method/URL",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "GET path/query/header and repeated case send covered; file and all body variants remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner-02",
+      "assertion": "required fields cannot be silently disabled and optional inclusion works",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Optional query checkbox observed; required-disable boundary not exhaustively exercised.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner-03",
+      "assertion": "switch browser/server modes and show extension/cross-origin/network/sandbox failure clearly",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Server mode ordinary proxy covered; browser extension/CORS failures remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner-04",
+      "assertion": "repeated send, navigation during request and late response do not overwrite another interface",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Sequential repeat covered; late interface switch remains.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner_response-01",
+      "assertion": "Request/response headers, status, timing and body render accurately for all content types",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "JSON reports observed; all MIME/content types and timing accuracy remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner_response-02",
+      "assertion": "raw/pretty/preview and auto-preview switch without executing unsafe active content outside intended sandbox",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Raw/pretty/HTML preview safety controls not fully exercised.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner_response-03",
+      "assertion": "test script toggle, editor and assertion results remain usable",
+      "status": "blocked",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Script execution requires isolated legacy runner; editor UI remains independently testable.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner_response-04",
+      "assertion": "failed HTTP/assertion/schema cases are distinct and old results clear before a new run",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Built-in toggles and fresh-run reset covered; distinct HTTP/schema assertion failures remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner_variables-01",
+      "assertion": "Open parameter expression editor for each supported field and insert selected variable/function/Mock rule",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Path expression modal basic insertion covered; each field/function/Mock rule remains.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner_variables-02",
+      "assertion": "verify correct parameter path/index receives value",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Path parameter 0 inserted and saved correctly; other field indexes remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner_variables-03",
+      "assertion": "Cancel/Close leaves original value and reopen shows current value",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Path Cancel/reopen covered owner/developer; other field types remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "runner_variables-04",
+      "assertion": "run expression with missing prior-case output and show clear failure without leaking unrelated data",
+      "status": "blocked",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Missing prior-case expression dependency requires controlled script runner.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "add_case-01",
+      "assertion": "Name case and select collection, submit then open newly saved case with exact request data",
+      "status": "passed",
+      "coverage": "complete scoped assertion",
+      "evidenceNote": "Owner/developer actual inline collection, custom case name, exact path parameter saved and reopened.",
+      "rolesTested": [
+        "owner",
+        "developer"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "add_case-02",
+      "assertion": "inline create collection validates and updates destination options",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Inline creation and destination selection covered; blank/duplicate validation not fully exercised.",
+      "rolesTested": [
+        "owner",
+        "developer"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "add_case-03",
+      "assertion": "Cancel/reopen preserves documented defaults without creating collection/case",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Cancel/reopen creates no case before explicit save; full defaults/Close need exact assertions.",
+      "rolesTested": [
+        "owner",
+        "developer"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "add_case-04",
+      "assertion": "repeated submit or response failure cannot duplicate case",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Double confirm creates one case in new; server rejection and late response still need dedicated tests.",
+      "rolesTested": [
+        "owner",
+        "developer"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_tree-01",
+      "assertion": "Create/edit/delete/clone collection and create/delete/clone case with correct IDs and refreshed tree",
+      "status": "passed",
+      "coverage": "complete scoped assertion",
+      "evidenceNote": "Owner/developer collection CRUD/clone/cancel; owner case create/clone/delete and API ID readback covered.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_tree-02",
+      "assertion": "search and case selection route/highlight correctly",
+      "status": "passed",
+      "coverage": "complete scoped assertion",
+      "evidenceNote": "Owner/developer/guest search, clear, route and browser Back covered. Legacy destructive clear is recorded; new restores sibling cases.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_tree-03",
+      "assertion": "drag collection or case within/across collections persists order and ownership",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Within-collection old drag/new arrows covered; cross-collection ownership and collection drag remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_tree-04",
+      "assertion": "Cancel/Close/reopen and repeated context-menu click never affect adjacent record",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Delete cancel/reopen covered; repeated context click and all adjacent-record boundaries remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_import-01",
+      "assertion": "Choose source project and filter by category/status",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Source project and status filtering covered; category filter variants remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_import-02",
+      "assertion": "selection updates as source/filter changes and no hidden stale IDs import",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "New source/filter changes clear hidden selection. Legacy source keeps hidden IDs; legacy status filter not rerun after known defects.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_import-03",
+      "assertion": "submit creates expected cases only and reports duplicate/inaccessible entries",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Public cross-project import exact ID covered; duplicate/inaccessible source reports remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_import-04",
+      "assertion": "Cancel/reopen and repeated confirm do not duplicate cases",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "New cancel/reopen and delayed double confirm covered; legacy duplicate confirm remains.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_table-01",
+      "assertion": "Case names, corresponding-interface links, status, environment and selection map correct records",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Names, corresponding API and current environment observed; selection/all environment mapping remains.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_table-02",
+      "assertion": "drag reorder and new up/down buttons persist exact order",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Old drag/new up/down exact order verified after refresh; new drag additionally remains.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_table-03",
+      "assertion": "first/last buttons disable correctly and repeated clicks never lose/duplicate rows",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "New first/last disabled checked; rapid repeated ordering not fully covered.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_table-04",
+      "assertion": "rerun, reload and browser Back preserve saved ordering and cases",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Refresh order covered; full rerun plus Back sequence remains.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_rules-01",
+      "assertion": "Toggle HTTP-code/JSON/data-structure checks and persist rules",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "New HTTP/JSON/schema toggles saved and restored; legacy immutable _id failure prevents successful save.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_rules-02",
+      "assertion": "add/edit/delete global variables and reference from cases",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Global variable CRUD and reference sequence not run.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_rules-03",
+      "assertion": "edit/enable/save collection script and verify execution scope",
+      "status": "blocked",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Enabled collection script execution blocked until dedicated isolated runner exists.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_rules-04",
+      "assertion": "Cancel/reopen and guest permissions preserve baseline with no hidden unauthorized write",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Owner/developer cancellation and injected API rejection covered; new guest API denies. Legacy guest rule endpoint not completed after Mock denial failure.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_run-01",
+      "assertion": "Run selected/all cases with chosen environment and intended sequential variable dependencies",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "All three ordinary cases run; selected subset/env/dependency chain remains.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_run-02",
+      "assertion": "start loading/progress and final per-case report reflect actual results",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Three actual reports and persistence covered; exact intermediate progress assertions remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_run-03",
+      "assertion": "repeated start, cancelled modal and route change do not overlap or corrupt run state",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "New double-start makes three proxy calls not six; pending route change discards late results; cancelled modal sequence remains.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_run-04",
+      "assertion": "open/close/reopen report and inspect request/response/assertion data including failures",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Report open/close/reopen and persisted reports covered; individual request/response/assertion failure content checks remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_server-01",
+      "assertion": "Generate/copy exact test URL with selected environment/output/notification options",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "JSON/download/email=false URL options verified; clipboard and all environment/notification combinations remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_server-02",
+      "assertion": "valid token runs intended project only and invalid token shows denial",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Own synthetic token runs collection; invalid token denied old/new. Cross-project token scope has unit coverage only.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_server-03",
+      "assertion": "download JSON/report data matches selected collection and preserves encoding",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "JSON download contains intended case IDs old/new; non-ASCII download encoding and full report comparison remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "collection_server-04",
+      "assertion": "sandbox/network policy failures remain visible and do not look like empty successful tests",
+      "status": "blocked",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Blocked script/network policy failure presentation needs dedicated runner; ordinary requests tested independently.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "case_editor-01",
+      "assertion": "Edit case name/description and request values, save/reload exact data",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Name and path parameter persist old/new; description and every raw/body value remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "case_editor-02",
+      "assertion": "corresponding-interface link opens right API and Back restores case",
+      "status": "passed",
+      "coverage": "complete scoped assertion",
+      "evidenceNote": "Corresponding API route and browser Back restore saved case value old/new.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "case_editor-03",
+      "assertion": "changed/deleted source API handles missing fields without crash",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Deleted/changed source API not tested in this batch.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "case_editor-04",
+      "assertion": "repeated Save, rejected permissions and late responses leave consistent state",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Repeated case creation guarded; case UPDATE late response/rejected role not fully exercised.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "mock_advanced-01",
+      "assertion": "Switch expectation/script tabs and toggle script enable",
+      "status": "passed",
+      "coverage": "complete scoped assertion",
+      "evidenceNote": "Actual expectation/script tab, enable toggle on/off, save only disabled and reload old/new.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "mock_advanced-02",
+      "assertion": "edit/save script with clear runner/syntax errors",
+      "status": "blocked",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Disabled comment save/reload covered; enabled syntax/runner errors await isolated runner.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "mock_advanced-03",
+      "assertion": "add/edit/delete/reorder expectations and verify matched response priority",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Add/edit-open/cancel/delete/hide covered; expectation reorder and priority conflicts remain.",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "mock_advanced-04",
+      "assertion": "guest mutation controls and server authorization enforce permissions",
+      "status": "passed",
+      "coverage": "complete scoped assertion",
+      "evidenceNote": "Guest add control disabled old/new; direct write denied new and allowed legacy (recorded security defect).",
+      "rolesTested": [
+        "owner"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "mock_expectation-01",
+      "assertion": "Set expectation name/IP/parameter filters and response status/delay/headers/body then save and verify matching request",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Name/query condition/header and matching response covered; IP/code/delay/body variation remains.",
+      "rolesTested": [
+        "owner",
+        "developer"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "mock_expectation-02",
+      "assertion": "add/remove condition/header rows with correct values and ordering",
+      "status": "notrun",
+      "coverage": "partial; do not promote compound",
+      "evidenceNote": "Condition add/remove and header edit covered; header add/remove/order remains.",
+      "rolesTested": [
+        "owner",
+        "developer"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "mock_expectation-03",
+      "assertion": "Cancel/Close/reopen no writes and no previous-expectation state",
+      "status": "passed",
+      "coverage": "complete scoped assertion",
+      "evidenceNote": "New expectation cancel/reopen and existing expectation edit/cancel retain correct values owner/developer.",
+      "rolesTested": [
+        "owner",
+        "developer"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    },
+    {
+      "id": "mock_expectation-04",
+      "assertion": "disable/delete confirmation and repeated Save affect intended expectation only",
+      "status": "passed",
+      "coverage": "complete scoped assertion",
+      "evidenceNote": "Hide removes matching header; delete cancel/confirm targets correct expectation; repeated save new writes once, legacy fails.",
+      "rolesTested": [
+        "owner",
+        "developer"
+      ],
+      "evidence": [
+        "acceptance.json",
+        "new-final.json",
+        "targeted-final.json",
+        "script-fixed.json"
+      ]
+    }
+  ],
+  "newOnly": [
+    {
+      "id": "docs-local-fixture",
+      "status": "passed",
+      "evidence": "targeted-final.json",
+      "actions": [
+        "outbound consent gating",
+        "preview current/proposed diff",
+        "discard without write",
+        "accept explicit review",
+        "restore cancel",
+        "restore version 0",
+        "reload history"
+      ],
+      "legacy": "non-comparable: no AI feature"
+    },
+    {
+      "id": "mcp-read-only",
+      "status": "notrun",
+      "evidence": "unit-approved.log",
+      "note": "Read-only MCP and redaction unit suites pass; no MCP browser UI found. No end-user MCP session performed."
+    }
+  ],
+  "runtime": {
+    "old": "http://127.0.0.1:4186",
+    "new": "http://127.0.0.1:4187",
+    "databases": [
+      "parity_fast_collections_old_fastb1003",
+      "parity_fast_collections_new_fastb1003"
+    ],
+    "isolation": "own internal Docker network; loopback reverse proxies; headless Chrome; no external LLM; scripts never enabled/saved for execution"
+  },
+  "legacyDefects": [
+    "Rule save sends immutable _id, errcode400; cancelled draft retained.",
+    "Tree search mutates list, clear loses sibling cases.",
+    "Source change leaves hidden selected interface IDs.",
+    "Double-start makes 6 proxy calls for 3 cases.",
+    "Guest advanced Mock direct save succeeds despite disabled button.",
+    "Repeated expectation save fails/duplicates depending payload.",
+    "Inline collection creation resets custom case name."
+  ],
+  "visualReview": {
+    "viewport": [
+      1920,
+      1080
+    ],
+    "status": "reviewed; not pixel-equivalent",
+    "files": [
+      "final-old-run.png",
+      "final-old-case.png",
+      "final-old-collection.png",
+      "final-old-rules.png",
+      "final-old-mock.png",
+      "final-new-run.png",
+      "final-new-case.png",
+      "final-new-collection.png",
+      "final-new-rules.png",
+      "final-new-mock.png"
+    ],
+    "findings": [
+      "Fixed half-width URL group and wrapped request-mode label.",
+      "New collection ordering arrows are intentional.",
+      "Shared tab typography/spacing and tree row density differ.",
+      "New rules modal is about 60px shorter; controls remain visible.",
+      "Advanced Mock empty state is taller with icon; requires parent shared-style acceptance.",
+      "Independent fixtures contain different synthetic test history; row counts/status differences are not a pixel-equality assertion."
+    ]
+  },
+  "testRuns": {
+    "acceptance": {
+      "stats": {
+        "startTime": "2026-10-03T07:39:20.083Z",
+        "duration": 169306.556,
+        "expected": 37,
+        "skipped": 4,
+        "unexpected": 3,
+        "flaky": 0
+      },
+      "sha256": "101b1bb4d138287abdf180fee3b4d5b17cd961172911b3b1cc262c99240b2a0a"
+    },
+    "new-final": {
+      "stats": {
+        "startTime": "2026-10-03T07:44:47.407Z",
+        "duration": 134556.665,
+        "expected": 21,
+        "skipped": 0,
+        "unexpected": 3,
+        "flaky": 0
+      },
+      "sha256": "bd1f223258218f04feb6e0f71d4d5d871ccc501ed10dad47fbae96f9979560a3"
+    },
+    "targeted-final": {
+      "stats": {
+        "startTime": "2026-10-03T07:47:28.188Z",
+        "duration": 40917.155,
+        "expected": 6,
+        "skipped": 1,
+        "unexpected": 1,
+        "flaky": 0
+      },
+      "sha256": "c1cf62ff7b8753db855e3f2572a59a799f88270b432ecee8de54588aa8242f3d"
+    },
+    "script-fixed": {
+      "stats": {
+        "startTime": "2026-10-03T07:49:51.863Z",
+        "duration": 10515.438,
+        "expected": 2,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sha256": "d839954970aa3cb6670da5b94091ec7026d572937ae097431c8e6f355b936f96"
+    },
+    "repo-regressions": {
+      "stats": {
+        "startTime": "2026-10-03T07:52:00.406Z",
+        "duration": 10767.167,
+        "expected": 3,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sha256": "62ded9cb9675bd37fd78ae5bee4bc5135a46eeb32ec9bdf8d27b52ae8deb5ba1"
+    }
+  },
+  "localEvidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "skips": [
+    "old docs: new-only feature",
+    "old pending route: only new regression",
+    "old builtin toggles: known immutable _id save defect",
+    "old status filter: known legacy selection defects"
+  ],
+  "blockers": [
+    "No dedicated disposable legacy script runner; only dependent script execution is blocked.",
+    "Remaining ordinary compound substeps explicitly listed as notrun; this batch does not complete whole scope."
+  ],
+  "verification": {
+    "build": "passed; network-none image yapi-fast-collections:final",
+    "unit": {
+      "passed": 32,
+      "failed": 0
+    },
+    "modernization": {
+      "passed": 268,
+      "skipped": 6,
+      "failed": 0
+    },
+    "browserNew": "24 distinct tests verified across new-final, targeted-final and script-fixed; final checked-in hydration/docs/route subset 3 passed",
+    "browserOld": "2 actual legacy failures remain in acceptance; 4 explicit skips; characterization success does not assert legacy correctness",
+    "database": "db-final.json plus projected direct DB attachments with PARITY_DB_READBACK=1"
+  },
+  "evidenceHashes": {
+    "final-old-mock.png": "29c8f1f01cca97c5a1196a023f40478653ccebd900ba6f0848f604f04f739e19",
+    "final-new-mock.png": "2b23cdc2b5a1bef7919fa7f96c87cc2dba9a527d555eeba7ce80d47a260d72b0",
+    "final-new-collection.png": "9686fe5a96d43adaa9bc95f1bf655717eaeea2ba58f128cd881c8f901dfcf7e3",
+    "final-old-case.png": "a20bab95307899a3386e673204db9f89b4167370d43be3a76ae2e7d6d44b06e4",
+    "final-old-run.png": "89bec520a0804575201f36b521b2ce9d88424bf54660778c5e89eaff5e017d28",
+    "final-old-collection.png": "15f064d1120e3d708729641c98e8a613591edf710fdb00286d470fa901f6fc1b",
+    "final-new-rules.png": "7fea4271c749b69aa22a19d3545d3e108a3113426f19c605e8172a4a71e4c0c8",
+    "final-new-case.png": "439b1000cad97c5472002c13c6dc5295b2bbd3063bc62d8745429370b654d68e",
+    "final-new-run.png": "8b7d442c9fab2c0aef07314e12b620c63b6222f99e18519f766d283ecdcf406a",
+    "final-old-rules.png": "fc224424d2d11283904552f8d9a4ccacc631059332c95a6eaeabf44d1782ad22",
+    "db-final.json": "a31732bc68288e3b5c0de009ff61aaa95fca95bea3b6099950b7cd72846ceeb1"
+  }
+}

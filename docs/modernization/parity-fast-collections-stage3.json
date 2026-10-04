@@ -1,0 +1,36 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "scope": "B stage3 only; amend matching ID over B stage2; do not overwrite original246",
+  "base": "adc9137db8b7334b3b609ea58d682c39b26d10a8",
+  "complete": false,
+  "rows": [
+    {
+      "id": "collection_server-02",
+      "status": "passed",
+      "new": "passed",
+      "old": "failed",
+      "detail": "Existing synthetic token from real automation dialog runs imported public source using its own environment and case ID; source changed private is rejected before network. Same-project token, invalid token and foreign collection denials were verified in previous batches. Legacy foreign collection acceptance remains an intentional correction."
+    }
+  ],
+  "contract": "Project-token authority remains limited to the target collection/case. Foreign source must still be public. Every case is preflighted before the batch and checked again before its request. Environment source derives from persisted interface; client env IDs cannot select another project. Network scope remains target. No new tokens, script runner gates or private-source permission grants.",
+  "validation": {
+    "basicPass": 32,
+    "modernizationPass": 304,
+    "modernizationSkipped": 6,
+    "fail": 0,
+    "browserBefore": "automation-before.json: failed on wrong source Mock body",
+    "browserAfter": "automation-after.json: passed public-source response and revoked private-source denial"
+  },
+  "composition": {
+    "passed": 24,
+    "failed": 0,
+    "blocked": 5,
+    "notrun": 23,
+    "ownedTotal": 52
+  },
+  "sha256": {
+    "automation-before.json": "79b072b6520505b1f0162bb9e5e4871604fa040af25d02aa40c8462bca2a5a6b",
+    "automation-after.json": "d8738427a6ea9bb1f753cee6512c4a11de9c6782f58df9a24bd241f2e444e8af",
+    "automation-unit-final.log": "a0621acfd22be88096f29edeed2097ce2779e6b79804c66796ab508bdcad2e6a"
+  }
+}

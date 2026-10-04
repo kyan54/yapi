@@ -394,7 +394,7 @@ class projectController extends baseController {
    */
   async addMember(ctx) {
     let params = ctx.params;
-    if ((await this.checkAuth(params.id, 'project', 'edit')) !== true) {
+    if ((await this.checkAuth(params.id, 'project', 'danger')) !== true) {
       return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
     }
 
@@ -698,6 +698,14 @@ class projectController extends baseController {
   async changeMemberEmailNotice(ctx) {
     try {
       let params = ctx.request.body;
+      const actorUid = this.getUid();
+      const memberUid = Number(params.member_uid);
+      if (!Number.isSafeInteger(actorUid) || actorUid <= 0 ||
+          !Number.isSafeInteger(memberUid) || memberUid <= 0 ||
+          (actorUid !== memberUid &&
+           (await this.checkAuth(params.id, 'project', 'danger')) !== true)) {
+        return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+      }
       let projectInst = yapi.getInst(projectModel);
       var check = await projectInst.checkMemberRepeat(params.id, params.member_uid);
       if (check === 0) {
@@ -1077,37 +1085,35 @@ class projectController extends baseController {
       return (ctx.body = yapi.commons.resReturn(void 0, 400, 'Bad query.'));
     }
 
-    let projectList = await this.Model.search(q);
-    let groupList = await this.groupModel.search(q);
-    let interfaceList = await this.interfaceModel.search(q);
+    const scope = { uid: this.getUid(), isAdmin: this.getRole() === 'admin' };
+    let projectList = await this.Model.search(q, scope);
+    let groupList = await this.groupModel.search(q, scope);
+    let interfaceList = await this.interfaceModel.search(q, scope);
 
-    let projectRules = [
-      '_id',
-      'name',
-      'basepath',
-      'uid',
-      'env',
-      'members',
-      { key: 'group_id', alias: 'groupId' },
-      { key: 'up_time', alias: 'upTime' },
-      { key: 'add_time', alias: 'addTime' }
-    ];
-    let groupRules = [
-      '_id',
-      'uid',
-      { key: 'group_name', alias: 'groupName' },
-      { key: 'group_desc', alias: 'groupDesc' },
-      { key: 'add_time', alias: 'addTime' },
-      { key: 'up_time', alias: 'upTime' }
-    ];
-    let interfaceRules = [
-      '_id',
-      'uid',
-      { key: 'title', alias: 'title' },
-      { key: 'project_id', alias: 'projectId' },
-      { key: 'add_time', alias: 'addTime' },
-      { key: 'up_time', alias: 'upTime' }
-    ];
+    // Search is a read boundary, not an unrestricted model serialization.
+    const visibility = new Map();
+    const canReadProject = async id => {
+      const key = String(id);
+      if (!visibility.has(key)) {
+        const project = await this.Model.get(id);
+        visibility.set(key, !!project && (project.project_type !== 'private' ||
+          await this.checkAuth(project._id, 'project', 'view')));
+      }
+      return visibility.get(key);
+    };
+    const visibleProjects = [];
+    for (const project of projectList) {
+      if (await canReadProject(project._id)) visibleProjects.push(project);
+    }
+    const visibleInterfaces = [];
+    for (const entry of interfaceList) {
+      if (await canReadProject(entry.project_id)) visibleInterfaces.push(entry);
+    }
+    projectList = visibleProjects;
+    interfaceList = visibleInterfaces;
+    const projectRules = ['_id', 'name', { key: 'group_id', alias: 'groupId' }];
+    const groupRules = ['_id', { key: 'group_name', alias: 'groupName' }];
+    const interfaceRules = ['_id', 'title', { key: 'project_id', alias: 'projectId' }];
 
     projectList = commons.filterRes(projectList, projectRules);
     groupList = commons.filterRes(groupList, groupRules);

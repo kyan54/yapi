@@ -32,59 +32,27 @@ class ProjectEnvContent extends Component {
     projectMsg: PropTypes.object,
     form: PropTypes.object,
     onSubmit: PropTypes.func,
+    disabled: PropTypes.bool,
     handleEnvInput: PropTypes.func
   };
 
-  initState(curdata) {
-    let header = [
-      {
-        name: '',
-        value: ''
+  initState(curdata = {}) {
+    const header = [];
+    const cookie = [];
+    const global = [];
+    (curdata.header || []).forEach(item => {
+      if (item.name === 'Cookie') {
+        (item.value || '').split(';').forEach(part => {
+          const separator = part.indexOf('=');
+          if (separator < 0) return;
+          cookie.push({ name: part.slice(0, separator).trim(), value: part.slice(separator + 1).trim() });
+        });
+      } else {
+        header.push({ ...item });
       }
-    ];
-    let cookie = [
-      {
-        name: '',
-        value: ''
-      }
-    ];
-
-    let global = [
-      {
-        name: '',
-        value: ''
-      }
-    ];
-
-    const curheader = curdata.header;
-    const curGlobal = curdata.global;
-
-    if (curheader && curheader.length !== 0) {
-      curheader.forEach(item => {
-        if (item.name === 'Cookie') {
-          let cookieStr = item.value;
-          if (cookieStr) {
-            cookieStr = cookieStr.split(';').forEach(c => {
-              if (c) {
-                c = c.split('=');
-                cookie.unshift({
-                  name: c[0] ? c[0].trim() : '',
-                  value: c[1] ? c[1].trim() : ''
-                });
-              }
-            });
-          }
-        } else {
-          header.unshift(item);
-        }
-      });
-    }
-
-    if (curGlobal && curGlobal.length !== 0) {
-      curGlobal.forEach(item => {
-        global.unshift(item);
-      });
-    }
+    });
+    (curdata.global || []).forEach(item => global.push({ ...item }));
+    for (const rows of [header, cookie, global]) rows.push({ name: '', value: '' });
     return { header, cookie, global };
   }
 
@@ -113,17 +81,28 @@ class ProjectEnvContent extends Component {
     this.setState(newValue);
   };
 
-  handleInit(data) {
-    this.props.form.resetFields();
-    let newValue = this.initState(data);
-    this.setState({ ...newValue });
+  handleInit(data = {}) {
+    const rows = this.initState(data);
+    const separator = (data.domain || '').indexOf('//');
+    this.setState(rows, () => {
+      this.props.form.setFieldsValue({
+        ...rows,
+        env: {
+          name: data.name === '新环境' ? '' : data.name || '',
+          domain: separator < 0 ? data.domain || '' : data.domain.slice(separator + 2),
+          protocol: separator < 0 ? 'http://' : data.domain.slice(0, separator + 2)
+        }
+      });
+    });
   }
 
-  componentWillReceiveProps(nextProps) {
-    let curEnvName = this.props.projectMsg.name;
-    let nextEnvName = nextProps.projectMsg.name;
-    if (curEnvName !== nextEnvName) {
-      this.handleInit(nextProps.projectMsg);
+  componentDidMount() {
+    this.handleInit(this.props.projectMsg);
+  }
+
+  componentDidUpdate(previousProps) {
+    if (previousProps.projectMsg !== this.props.projectMsg) {
+      this.handleInit(this.props.projectMsg);
     }
   }
 
@@ -252,7 +231,7 @@ class ProjectEnvContent extends Component {
       );
     };
 
-    const envTpl = data => {
+    const envTpl = (data = {}) => {
       return (
         <div>
           <h3 className="env-label">环境名称</h3>
@@ -362,7 +341,7 @@ class ProjectEnvContent extends Component {
     };
 
     return (
-      <div>
+      <Form>
         {envTpl(projectMsg)}
         <div className="btnwrap-changeproject">
           <Button
@@ -370,12 +349,13 @@ class ProjectEnvContent extends Component {
             icon="save"
             type="primary"
             size="large"
+            disabled={this.props.disabled}
             onClick={this.handleOk}
           >
             保 存
           </Button>
         </div>
-      </div>
+      </Form>
     );
   }
 }

@@ -1,0 +1,673 @@
+{
+  "commit": "fd90eaf108c0382db133a6650e368e5d7d38734a",
+  "models": {
+    "avatar.js": {
+      "uid": {
+        "type": "number",
+        "required": true
+      },
+      "basecode": {
+        "type": "string",
+        "required": false
+      },
+      "type": {
+        "type": "string",
+        "required": false
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "follow.js": {
+      "uid": {
+        "type": "number",
+        "required": true
+      },
+      "projectid": {
+        "type": "number",
+        "required": true
+      },
+      "projectname": {
+        "type": "string",
+        "required": true
+      },
+      "icon": {
+        "type": "string",
+        "required": false
+      },
+      "color": {
+        "type": "string",
+        "required": false
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "group.js": {
+      "uid": {
+        "type": "number",
+        "required": false
+      },
+      "group_name": {
+        "type": "string",
+        "required": false
+      },
+      "group_desc": {
+        "type": "string",
+        "required": false
+      },
+      "add_time": {
+        "type": "number",
+        "required": false
+      },
+      "up_time": {
+        "type": "number",
+        "required": false
+      },
+      "type": {
+        "type": "string",
+        "required": false,
+        "enum": [
+          "public",
+          "private"
+        ],
+        "default": "public"
+      },
+      "members": {
+        "type": "array",
+        "required": false
+      },
+      "custom_field1.name": {
+        "type": "string",
+        "required": false
+      },
+      "custom_field1.enable": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "interface.js": {
+      "title": {
+        "type": "string",
+        "required": true
+      },
+      "uid": {
+        "type": "number",
+        "required": true
+      },
+      "path": {
+        "type": "string",
+        "required": true
+      },
+      "method": {
+        "type": "string",
+        "required": true
+      },
+      "project_id": {
+        "type": "number",
+        "required": true
+      },
+      "catid": {
+        "type": "number",
+        "required": true
+      },
+      "edit_uid": {
+        "type": "number",
+        "required": false,
+        "default": 0
+      },
+      "status": {
+        "type": "string",
+        "required": false,
+        "enum": [
+          "undone",
+          "done"
+        ],
+        "default": "undone"
+      },
+      "desc": {
+        "type": "string",
+        "required": false
+      },
+      "markdown": {
+        "type": "string",
+        "required": false
+      },
+      "add_time": {
+        "type": "number",
+        "required": false
+      },
+      "up_time": {
+        "type": "number",
+        "required": false
+      },
+      "type": {
+        "type": "string",
+        "required": false,
+        "enum": [
+          "static",
+          "var"
+        ],
+        "default": "static"
+      },
+      "query_path.path": {
+        "type": "string",
+        "required": false
+      },
+      "query_path.params": {
+        "type": "array",
+        "required": false
+      },
+      "req_query": {
+        "type": "array",
+        "required": false
+      },
+      "req_headers": {
+        "type": "array",
+        "required": false
+      },
+      "req_params": {
+        "type": "array",
+        "required": false
+      },
+      "req_body_type": {
+        "type": "string",
+        "required": false,
+        "enum": [
+          "form",
+          "json",
+          "text",
+          "file",
+          "raw"
+        ]
+      },
+      "req_body_is_json_schema": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "req_body_form": {
+        "type": "array",
+        "required": false
+      },
+      "req_body_other": {
+        "type": "string",
+        "required": false
+      },
+      "res_body_type": {
+        "type": "string",
+        "required": false,
+        "enum": [
+          "json",
+          "text",
+          "xml",
+          "raw",
+          "json-schema"
+        ]
+      },
+      "res_body": {
+        "type": "string",
+        "required": false
+      },
+      "res_body_is_json_schema": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "custom_field_value": {
+        "type": "string",
+        "required": false
+      },
+      "field2": {
+        "type": "string",
+        "required": false
+      },
+      "field3": {
+        "type": "string",
+        "required": false
+      },
+      "api_opened": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "index": {
+        "type": "number",
+        "required": false,
+        "default": 0
+      },
+      "tag": {
+        "type": "array",
+        "required": false
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "interfaceCase.js": {
+      "casename": {
+        "type": "string",
+        "required": true
+      },
+      "uid": {
+        "type": "number",
+        "required": true
+      },
+      "col_id": {
+        "type": "number",
+        "required": true
+      },
+      "index": {
+        "type": "number",
+        "required": false,
+        "default": 0
+      },
+      "project_id": {
+        "type": "number",
+        "required": true
+      },
+      "interface_id": {
+        "type": "number",
+        "required": true
+      },
+      "add_time": {
+        "type": "number",
+        "required": false
+      },
+      "up_time": {
+        "type": "number",
+        "required": false
+      },
+      "case_env": {
+        "type": "string",
+        "required": false
+      },
+      "req_params": {
+        "type": "array",
+        "required": false
+      },
+      "req_headers": {
+        "type": "array",
+        "required": false
+      },
+      "req_query": {
+        "type": "array",
+        "required": false
+      },
+      "req_body_form": {
+        "type": "array",
+        "required": false
+      },
+      "req_body_other": {
+        "type": "string",
+        "required": false
+      },
+      "test_res_body": {
+        "type": "string",
+        "required": false
+      },
+      "test_status": {
+        "type": "string",
+        "required": false,
+        "enum": [
+          "ok",
+          "invalid",
+          "error",
+          ""
+        ]
+      },
+      "test_res_header": {
+        "type": "mixed",
+        "required": false
+      },
+      "mock_verify": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "enable_script": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "test_script": {
+        "type": "string",
+        "required": false
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "interfaceCat.js": {
+      "name": {
+        "type": "string",
+        "required": true
+      },
+      "uid": {
+        "type": "number",
+        "required": true
+      },
+      "project_id": {
+        "type": "number",
+        "required": true
+      },
+      "desc": {
+        "type": "string",
+        "required": false
+      },
+      "add_time": {
+        "type": "number",
+        "required": false
+      },
+      "up_time": {
+        "type": "number",
+        "required": false
+      },
+      "index": {
+        "type": "number",
+        "required": false,
+        "default": 0
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "interfaceCol.js": {
+      "name": {
+        "type": "string",
+        "required": true
+      },
+      "uid": {
+        "type": "number",
+        "required": true
+      },
+      "project_id": {
+        "type": "number",
+        "required": true
+      },
+      "desc": {
+        "type": "string",
+        "required": false
+      },
+      "add_time": {
+        "type": "number",
+        "required": false
+      },
+      "up_time": {
+        "type": "number",
+        "required": false
+      },
+      "index": {
+        "type": "number",
+        "required": false,
+        "default": 0
+      },
+      "test_report": {
+        "type": "string",
+        "required": false,
+        "default": "{}"
+      },
+      "checkHttpCodeIs200": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "checkResponseSchema": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "checkResponseField.name": {
+        "type": "string",
+        "required": true,
+        "default": "code"
+      },
+      "checkResponseField.value": {
+        "type": "string",
+        "required": true,
+        "default": "0"
+      },
+      "checkResponseField.enable": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "checkScript.content": {
+        "type": "string",
+        "required": false
+      },
+      "checkScript.enable": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "log.js": {
+      "uid": {
+        "type": "number",
+        "required": true
+      },
+      "typeid": {
+        "type": "number",
+        "required": true
+      },
+      "type": {
+        "type": "string",
+        "required": true,
+        "enum": [
+          "user",
+          "group",
+          "interface",
+          "project",
+          "other",
+          "interface_col"
+        ]
+      },
+      "content": {
+        "type": "string",
+        "required": true
+      },
+      "username": {
+        "type": "string",
+        "required": true
+      },
+      "add_time": {
+        "type": "number",
+        "required": false
+      },
+      "data": {
+        "type": "mixed",
+        "required": false
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "project.js": {
+      "uid": {
+        "type": "number",
+        "required": true
+      },
+      "name": {
+        "type": "string",
+        "required": true
+      },
+      "basepath": {
+        "type": "string",
+        "required": false
+      },
+      "switch_notice": {
+        "type": "boolean",
+        "required": false,
+        "default": true
+      },
+      "desc": {
+        "type": "string",
+        "required": false
+      },
+      "group_id": {
+        "type": "number",
+        "required": true
+      },
+      "project_type": {
+        "type": "string",
+        "required": true,
+        "enum": [
+          "public",
+          "private"
+        ]
+      },
+      "members": {
+        "type": "array",
+        "required": false
+      },
+      "env": {
+        "type": "array",
+        "required": false
+      },
+      "icon": {
+        "type": "string",
+        "required": false
+      },
+      "color": {
+        "type": "string",
+        "required": false
+      },
+      "add_time": {
+        "type": "number",
+        "required": false
+      },
+      "up_time": {
+        "type": "number",
+        "required": false
+      },
+      "pre_script": {
+        "type": "string",
+        "required": false
+      },
+      "after_script": {
+        "type": "string",
+        "required": false
+      },
+      "project_mock_script": {
+        "type": "string",
+        "required": false
+      },
+      "is_mock_open": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "strice": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "is_json5": {
+        "type": "boolean",
+        "required": false,
+        "default": true
+      },
+      "tag": {
+        "type": "array",
+        "required": false
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "storage.js": {
+      "key": {
+        "type": "number",
+        "required": true
+      },
+      "data": {
+        "type": "string",
+        "required": false,
+        "default": ""
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "token.js": {
+      "project_id": {
+        "type": "number",
+        "required": true
+      },
+      "token": {
+        "type": "string",
+        "required": false
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    },
+    "user.js": {
+      "username": {
+        "type": "string",
+        "required": true
+      },
+      "password": {
+        "type": "string",
+        "required": true
+      },
+      "email": {
+        "type": "string",
+        "required": true
+      },
+      "passsalt": {
+        "type": "string",
+        "required": false
+      },
+      "study": {
+        "type": "boolean",
+        "required": false,
+        "default": false
+      },
+      "role": {
+        "type": "string",
+        "required": false
+      },
+      "add_time": {
+        "type": "number",
+        "required": false
+      },
+      "up_time": {
+        "type": "number",
+        "required": false
+      },
+      "type": {
+        "type": "string",
+        "required": false,
+        "enum": [
+          "site",
+          "third"
+        ],
+        "default": "site"
+      },
+      "_id": {
+        "type": "objectid",
+        "required": false
+      }
+    }
+  }
+}

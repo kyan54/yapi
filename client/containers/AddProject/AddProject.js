@@ -48,6 +48,7 @@ class ProjectList extends Component {
     super(props);
     this.state = {
       groupList: [],
+      creating: false,
       currGroupId: null
     };
   }
@@ -73,23 +74,39 @@ class ProjectList extends Component {
   handleOk(e) {
     const { form, addProject } = this.props;
     e.preventDefault();
-    form.validateFields((err, values) => {
-      if (!err) {
+    if (this.creating) return;
+    this.creating = true;
+    this.setState({ creating: true });
+    form.validateFields(async (err, values) => {
+      try {
+        if (err) return;
         values.group_id = values.group;
         values.icon = constants.PROJECT_ICON[0];
         values.color = pickRandomProperty(constants.PROJECT_COLOR);
-        addProject(values).then(res => {
-          if (res.payload.data.errcode == 0) {
-            form.resetFields();
-            message.success('创建成功! ');
-            this.props.history.push('/project/' + res.payload.data.data._id + '/interface/api');
-          }
-        });
+        const res = await addProject(values);
+        if (!this.mounted) return;
+        if (res.payload.data.errcode === 0) {
+          form.resetFields();
+          message.success('创建成功! ');
+          this.props.history.push('/project/' + res.payload.data.data._id + '/interface/api');
+        } else {
+          message.error(res.payload.data.errmsg || '创建项目失败，请重试');
+        }
+      } catch (error) {
+        if (this.mounted) message.error('创建项目失败，请重试');
+      } finally {
+        this.creating = false;
+        if (this.mounted) this.setState({ creating: false });
       }
     });
   }
 
+  componentWillUnmount() {
+    this.mounted = false;
+  }
+
   async componentWillMount() {
+    this.mounted = true;
     this.props.setBreadcrumb([{ name: '新建项目' }]);
     if (!this.props.currGroup._id) {
       await this.props.fetchGroupList();
@@ -107,7 +124,7 @@ class ProjectList extends Component {
     const { getFieldDecorator } = this.props.form;
     return (
       <div className="g-row">
-        <div className="g-row m-container">
+        <div className="g-row m-container add-project-page">
           <Form>
             <FormItem {...formItemLayout} label="项目名称">
               {getFieldDecorator('name', {
@@ -201,7 +218,7 @@ class ProjectList extends Component {
           </Form>
           <Row>
             <Col sm={{ offset: 6 }} lg={{ offset: 3 }}>
-              <Button className="m-btn" icon="plus" type="primary" onClick={this.handleOk}>
+              <Button className="m-btn" icon="plus" type="primary" loading={this.state.creating} onClick={this.handleOk}>
                 创建项目
               </Button>
             </Col>

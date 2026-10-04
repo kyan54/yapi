@@ -1,3 +1,4 @@
+const { parseAvatarPayload } = require('../utils/avatar-payload');
 const userModel = require('../models/user.js');
 const yapi = require('../yapi.js');
 const baseController = require('./base.js');
@@ -378,6 +379,10 @@ class userController extends baseController {
    * @example
    */
   async list(ctx) {
+    if (this.getRole() !== 'admin') {
+      return (ctx.body = yapi.commons.resReturn(null, 403, '仅管理员可以查看用户列表'));
+    }
+
     let page = ctx.request.query.page || 1,
       limit = ctx.request.query.limit || 10;
 
@@ -559,21 +564,11 @@ class userController extends baseController {
       if (!basecode) {
         return (ctx.body = yapi.commons.resReturn(null, 400, 'basecode不能为空'));
       }
-      let pngPrefix = 'data:image/png;base64,';
-      let jpegPrefix = 'data:image/jpeg;base64,';
       let type;
-      if (basecode.substr(0, pngPrefix.length) === pngPrefix) {
-        basecode = basecode.substr(pngPrefix.length);
-        type = 'image/png';
-      } else if (basecode.substr(0, jpegPrefix.length) === jpegPrefix) {
-        basecode = basecode.substr(jpegPrefix.length);
-        type = 'image/jpeg';
-      } else {
-        return (ctx.body = yapi.commons.resReturn(null, 400, '仅支持jpeg和png格式的图片'));
-      }
-      let strLength = basecode.length;
-      if (parseInt(strLength - (strLength / 8) * 2) > 200000) {
-        return (ctx.body = yapi.commons.resReturn(null, 400, '图片大小不能超过200kb'));
+      try {
+        ({ basecode, type } = parseAvatarPayload(basecode));
+      } catch (error) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, error.message));
       }
 
       let avatarInst = yapi.getInst(avatarModel);

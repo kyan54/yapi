@@ -1,0 +1,180 @@
+'use strict';
+// New-runtime CI evidence only. Never starts an old vm2 runtime or changes Docker security.
+// Requires the existing modernization workflow's disposable MongoDB, built worker image,
+// and trusted host-side service. Missing CI prerequisites FAIL rather than skip.
+const {test,expect}=require('@playwright/test');
+const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
+const http=require('node:http'),net=require('node:net'),{spawn}=require('node:child_process');
+const {randomUUID}=require('node:crypto'),mongoose=require('mongoose'),sha1=require('sha1');
+const root=path.resolve(__dirname,'..'),children=[],requests=[];
+let connection,directory,echo,echoOrigin,apps,sequence=1000,dbName;
+test.describe.configure({mode:'default'});
+test.beforeAll(async()=>{
+  if(process.env.CI!=='true')throw Error('CI_ONLY: requires the existing disposable GitHub runner; do not execute on a user Mac');
+  const uri=new URL(process.env.YAPI_TEST_MONGO_URI||'http://missing.invalid');
+  if(uri.protocol!=='mongodb:'||uri.hostname!=='127.0.0.1'||uri.username||uri.password||!['','/'].includes(uri.pathname)||uri.search||uri.hash)throw Error('DISPOSABLE_LOOPBACK_MONGO_REQUIRED');
+  const socket=process.env.YAPI_ISOLATED_RUNNER_SOCKET;
+  if(!socket||!path.isAbsolute(socket)||!(await fs.stat(socket)).isSocket())throw Error('EXISTING_ISOLATED_RUNNER_REQUIRED');
+  directory=await fs.mkdtemp(path.join(os.tmpdir(),'yapi-collections-ci-'));
+  dbName='yapi_ci_collections_'+randomUUID().replaceAll('-','');
+  connection=await mongoose.createConnection(process.env.YAPI_TEST_MONGO_URI,{dbName,serverSelectionTimeoutMS:15000}).asPromise();
+  const db=connection.db;
+  await db.collection('_ci_fixture').insertOne({_id:dbName,synthetic:true});
+  await db.collection('user').insertOne({_id:9,role:'admin',username:'Synthetic CI runner admin',email:'runner-ci@example.invalid',passsalt:'ci-only-salt',password:sha1('synthetic-ci-password'+sha1('ci-only-salt')),type:'site',study:true});
+  await db.collection('group').insertOne({_id:8,uid:9,group_name:'Synthetic CI group',type:'public',members:[],custom_field1:{name:'',enable:false}});
+  echo=http.createServer((req,res)=>{requests.push({path:req.url,pre:req.headers['x-ci-pre']||null});res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,pre:req.headers['x-ci-pre']||null,path:req.url}));});
+  await new Promise(r=>echo.listen(0,'127.0.0.1',r));echoOrigin='http://127.0.0.1:'+echo.address().port;
+  const allowedSocket=path.join(directory,'allowed.sock'),rulesPath=path.join(directory,'rules.json');
+  // One fixed synthetic project is granted one loopback GET path. No wildcards/external destinations.
+  await fs.writeFile(rulesPath,JSON.stringify([{id:'ci-fixed',projectIds:['1002'],userIds:['9'],origin:echoOrigin,paths:['/allowed'],methods:['GET'],headers:[],contextHeaders:[],privateAddresses:['127.0.0.1']}]),{mode:0o600});
+  const service=launch(['server/sandbox/service.js'],{...process.env,YAPI_ISOLATED_RUNNER_SOCKET:allowedSocket,YAPI_SCRIPT_HTTP_RULES_FILE:rulesPath});
+  await ready(async()=>{try{return(await fs.stat(allowedSocket)).isSocket();}catch{return false;}},service,'trusted allowlist service');
+  apps={default:await app('default',socket),missing:await app('missing',null),allowed:await app('allowed',allowedSocket),disabled:await app('disabled',socket,false)};
+});
+function launch(args,env){const child=spawn(process.execPath,args,{cwd:root,env,stdio:['ignore','pipe','pipe']});child.diagnostic='';for(const stream of [child.stdout,child.stderr])stream.on('data',b=>{child.diagnostic=(child.diagnostic+b).slice(-3000);});children.push(child);return child;}
+async function ready(check,child,label){for(let i=0;i<150;i++){if(child.exitCode!==null)throw Error(label+' exited');if(await check())return;await new Promise(r=>setTimeout(r,100));}throw Error(label+' startup timeout');}
+async function app(name,socket,scriptEnable=true){const listener=net.createServer();await new Promise(r=>listener.listen(0,'127.0.0.1',r));const port=listener.address().port;await new Promise(r=>listener.close(r));const config=path.join(directory,name+'.json');await fs.writeFile(config,JSON.stringify({port,host:'127.0.0.1',scriptEnable,timeout:10000,db:{connectString:process.env.YAPI_TEST_MONGO_URI,options:{dbName}},mail:{enable:false},closeRegister:true,versionNotify:false}));const env={...process.env,YAPI_CONFIG:config};delete env.YAPI_SCRIPT_HTTP_RULES_FILE;delete env.YAPI_LLM_API_KEY;delete env.YAPI_LLM_BASE_URL;if(socket)env.YAPI_ISOLATED_RUNNER_SOCKET=socket;else delete env.YAPI_ISOLATED_RUNNER_SOCKET;const child=launch(['server/app.js'],env),origin='http://127.0.0.1:'+port;await ready(async()=>{try{return(await fetch(origin+'/api/user/status')).ok;}catch{return false;}},child,name+' app');return origin;}
+test.afterAll(async()=>{
+  for(const child of children.reverse())if(child.exitCode===null&&child.signalCode===null){child.kill('SIGTERM');await new Promise(r=>child.once('exit',r));}
+  if(echo){echo.closeAllConnections();await new Promise(r=>echo.close(r));}
+  if(connection){const marker=await connection.db.collection('_ci_fixture').findOne({_id:dbName,synthetic:true});if(marker&&/^yapi_ci_collections_[a-f0-9]{32}$/.test(dbName))await connection.dropDatabase();await connection.close();}
+  if(directory)await fs.rm(directory,{recursive:true,force:true});
+});
+async function fixture(page,projectId){const id=projectId||++sequence;const data={_id:id,uid:9,group_id:8,name:'Synthetic CI '+id,project_type:'private',members:[],env:[{name:'echo',domain:echoOrigin,header:[],global:[]}],basepath:'',tag:[],switch_notice:false,pre_script:'',after_script:'',is_mock_open:false,project_mock_script:''};await connection.db.collection('project').insertOne(data);await connection.db.collection('interface_cat').insertOne({_id:id,uid:9,project_id:id,name:'Synthetic CI category'});await connection.db.collection('interface').insertOne({_id:id,uid:9,project_id:id,catid:id,title:'Synthetic CI request',path:'/echo',method:'GET',status:'done',req_params:[],req_query:[],req_headers:[],req_body_type:'raw',req_body_other:'',req_body_is_json_schema:false,res_body_type:'json',res_body_is_json_schema:false,res_body:'{"ok":true}',pre_script:'',after_script:''});page.ciProject=id;await login(page,apps.default);return id;}
+async function login(page,origin){await page.context().clearCookies();await page.goto(origin+'/login');await page.getByPlaceholder('Email',{exact:true}).fill('runner-ci@example.invalid');await page.getByPlaceholder('Password',{exact:true}).fill('synthetic-ci-password');await page.getByRole('button',{name:/^登\s*录$/}).click();await expect(page).toHaveURL(/\/group/);}
+async function api(page,origin,url,data){const response=data===undefined?await page.request.get(origin+url):await page.request.post(origin+url,{data});expect(response.status()).toBe(200);const result=await response.json();expect(result.errcode,url).toBe(0);return result.data;}
+async function editor(page,locator,text){await locator.locator('textarea').focus();await page.keyboard.press('ControlOrMeta+A');await page.keyboard.insertText(text);if(text)await expect(locator.locator('.ace_content')).toContainText(text);}
+async function save(page){await expect(page.getByText('保存成功',{exact:true})).toHaveCount(0,{timeout:10000});const wait=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/project/up'&&r.request().method()==='POST');await page.getByRole('button',{name:/^保\s*存$/}).click();expect((await(await wait).json()).errcode).toBe(0);await expect(page.getByText('保存成功',{exact:true})).toBeVisible();}
+async function scripts(page,id,pre,post=''){await page.goto(apps.default+`/project/${id}/setting`);await page.getByRole('tab',{name:'请求配置',exact:true}).click();await editor(page,page.locator('.request-editor').first(),pre);await editor(page,page.locator('.request-editor').last(),post);await save(page);await page.reload();await page.getByRole('tab',{name:'请求配置',exact:true}).click();await expect(page.locator('.request-editor').first().locator('.ace_content')).toContainText(pre);const stored=await connection.db.collection('project').findOne({_id:id});expect(stored.pre_script).toBe(pre);expect(stored.after_script).toBe(post);}
+async function runView(page,origin,id){await page.goto(origin+`/project/${id}/interface/api/${id}`);await page.getByRole('tab',{name:'运行',exact:true}).click();await expect(page.getByRole('button',{name:/^发\s*送$/})).toBeEnabled();}
+async function send(page){const wait=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/interface/proxy');await page.getByRole('button',{name:/^发\s*送$/}).click();const response=await wait;expect(response.status()).toBe(200);return response.json();}
+async function mockSettings(page,id,script,enabled=true){await page.goto(apps.default+`/project/${id}/setting`);await page.getByRole('tab',{name:'全局mock脚本',exact:true}).click();await editor(page,page.locator('.ace_editor').first(),script);const toggle=page.getByRole('switch');if((await toggle.getAttribute('aria-checked')==='true')!==enabled)await toggle.click();}
+async function mockEnvironment(page,id,origin){await api(page,apps.default,'/api/project/up',{id,env:[{name:'mock',domain:origin+'/mock/'+id,header:[],global:[]}]});}
+async function visibleFailure(page,error){await expect(page.locator('.pretty-editor-body')).toContainText(error);await expect(page.getByRole('button',{name:/^发\s*送$/})).toBeEnabled();}
+async function shot(page,info,name){await page.screenshot({path:info.outputPath(name+'.png'),fullPage:true});}
+test.afterEach(async({page},info)=>{if(!page.ciProject||!connection)return;const p=await connection.db.collection('project').findOne({_id:page.ciProject},{projection:{_id:1,pre_script:1,after_script:1,is_mock_open:1,project_mock_script:1,env:1}});await info.attach('synthetic-config-db-readback',{body:JSON.stringify(p),contentType:'application/json'});});
+
+test('project_requests-03 configured isolated pre and post scripts execute and missing runner visibly fails',async({page},info)=>{
+ const id=await fixture(page,1001);await scripts(page,id,'requestHeader["x-ci-pre"] = "isolated-pre";','responseData.post = "isolated-post";');await runView(page,apps.default,id);const result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body).toMatchObject({pre:'isolated-pre',post:'isolated-post'});await expect(page.locator('.pretty-editor-body')).toContainText('isolated-post');await shot(page,info,'configured-pre-post');
+ await login(page,apps.missing);await runView(page,apps.missing,id);const before=requests.length,missing=await send(page);expect(missing.errcode).not.toBe(0);await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(requests.length).toBe(before);await shot(page,info,'missing-runner');await login(page,apps.disabled);await runView(page,apps.disabled,id);const disabled=await send(page);expect(disabled.errcode).not.toBe(0);await visibleFailure(page,'SCRIPT_EXECUTION_DISABLED');expect(requests.length).toBe(before);
+});
+test('project_requests-04 default deny and scoped allowlist rejection never report request success',async({page},info)=>{
+ const id=await fixture(page,1002);await scripts(page,id,`const response = await utils.axios.get(${JSON.stringify(echoOrigin+'/allowed')}); requestHeader["x-ci-pre"] = "broker-allowed";`);await runView(page,apps.default,id);let before=requests.length,result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'SCRIPT_NETWORK_DISABLED');expect(requests.length).toBe(before);
+ await login(page,apps.allowed);await runView(page,apps.allowed,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.pre).toBe('broker-allowed');expect(requests.slice(before).map(r=>r.path)).toEqual(['/allowed','/echo']);
+ await login(page,apps.default);await scripts(page,id,`await utils.axios.get(${JSON.stringify(echoOrigin+'/denied')});`);await login(page,apps.allowed);await runView(page,apps.allowed,id);before=requests.length;result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'SCRIPT_NETWORK_DENIED');expect(requests.length).toBe(before);await shot(page,info,'allowlist-denied');
+});
+test('project_mock-03 actual enabled disabled and missing-runner Mock responses follow capability',async({page},info)=>{
+ const id=await fixture(page,1003);await mockSettings(page,id,'mockJson.isolated = "enabled"; delay = 0;');await save(page);await mockEnvironment(page,id,apps.default);await runView(page,apps.default,id);let result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.isolated).toBe('enabled');await expect(page.locator('.pretty-editor-body')).toContainText('enabled');
+ await mockSettings(page,id,'mockJson.isolated = "enabled"; delay = 0;',false);await save(page);await runView(page,apps.default,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body).toEqual({ok:true});
+ await mockSettings(page,id,'mockJson.isolated = "enabled"; delay = 0;');await save(page);await mockEnvironment(page,id,apps.missing);await login(page,apps.missing);await runView(page,apps.missing,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(result.data.res.body.isolated).toBeUndefined();await shot(page,info,'mock-missing-runner');
+});
+for(const failure of ['business','network'])test(`project_mock-04 ${failure} save failure preserves draft and execution error can recover`,async({page},info)=>{
+ const id=await fixture(page,failure==='business'?1004:1005),script='throw new Error("SYNTHETIC_MOCK_FAILURE");';await mockSettings(page,id,script);let intercepted=false,saveAttempts=0;
+ page.on('request',request=>{if(new URL(request.url()).pathname==='/api/project/up'&&request.method()==='POST')saveAttempts++;});
+ await page.route('**/api/project/up',async route=>{if(!intercepted&&route.request().method()==='POST'){intercepted=true;if(failure==='network')await route.abort('failed');else await route.fulfill({json:{errcode:500,errmsg:'Synthetic rejected save'}});}else await route.continue();});
+ await expect(page.locator('.ant-message-success')).toHaveCount(0);
+ await page.getByRole('button',{name:/^保\s*存$/}).click();
+ // Transport and local fallback may each emit a toast. Require the exact
+ // failure-specific error, not a unique generic error element or any toast.
+ const expectedError=failure==='business'?/^\s*Synthetic rejected save\s*$/:/^\s*Network Error\s*$/;
+ await expect(page.locator('.ant-message-error').filter({hasText:expectedError}).first()).toBeVisible();
+ await expect(page.locator('.ant-message-success')).toHaveCount(0);
+ expect(intercepted).toBe(true);expect(saveAttempts).toBe(1);
+ const unchanged=await connection.db.collection('project').findOne({_id:id});expect(unchanged.project_mock_script).toBe('');expect(unchanged.is_mock_open).toBe(false);
+ await expect(page.locator('.ace_editor .ace_content')).toContainText('SYNTHETIC_MOCK_FAILURE');await expect(page.getByRole('switch')).toHaveAttribute('aria-checked','true');await expect(page.getByRole('button',{name:/^保\s*存$/})).toBeEnabled();
+ await shot(page,info,'mock-save-'+failure+'-error');await page.unroute('**/api/project/up');await save(page);expect(saveAttempts).toBe(2);
+ const retried=await connection.db.collection('project').findOne({_id:id});expect(retried.project_mock_script).toBe(script);expect(retried.is_mock_open).toBe(true);
+ await mockEnvironment(page,id,apps.default);await runView(page,apps.default,id);let result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_MOCK_FAILURE');await shot(page,info,'mock-execution-'+failure);
+ await mockSettings(page,id,'mockJson.recovered = true; delay = 0;');await save(page);await runView(page,apps.default,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.recovered).toBe(true);expect(result.data.res.body.errcode).toBeUndefined();await expect(page.locator('.pretty-editor-body')).not.toContainText('SYNTHETIC_MOCK_FAILURE');
+});
+test('runner-03 browser mode refuses scripts and server sandbox failure is visible with retry',async({page},info)=>{
+ const id=await fixture(page,1006);await scripts(page,id,'throw new Error("SYNTHETIC_PRE_FAILURE");');await runView(page,apps.default,id);const toggle=page.locator('.url .ant-switch');await toggle.click();let before=requests.length;await page.getByRole('button',{name:/^发\s*送$/}).click();await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(requests.length).toBe(before);
+ await toggle.click();const result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_PRE_FAILURE');expect(requests.length).toBe(before);await shot(page,info,'browser-server-script-failures');
+ await api(page,apps.default,'/api/project/up',{id,pre_script:'',after_script:''});await runView(page,apps.default,id);const success=await send(page);expect(success.errcode).toBe(0);expect(success.data.res.body.ok).toBe(true);await expect(page.locator('.pretty-editor-body')).not.toContainText('SYNTHETIC_PRE_FAILURE');
+});
+
+
+test('project_requests-03 post-only missing runner sends zero targets while real post failure follows one request',async({page},info)=>{
+ const id=await fixture(page,1007);await scripts(page,id,'','throw new Error("SYNTHETIC_POST_FAILURE");');
+ await login(page,apps.missing);await runView(page,apps.missing,id);const before=requests.length;let result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(requests.length).toBe(before);await shot(page,info,'post-only-missing-runner-zero-target');
+ await login(page,apps.default);await runView(page,apps.default,id);result=await send(page);expect(result.errcode).not.toBe(0);await visibleFailure(page,'SYNTHETIC_POST_FAILURE');expect(requests.length).toBe(before+1);expect(requests[before].path).toBe('/echo');await shot(page,info,'post-failure-after-target');
+ await info.attach('post-only-boundary',{body:JSON.stringify({missingRunnerTargetCount:0,configuredPostFailureTargetCount:1,configurationCheckOnly:true,noRollbackGuarantee:true}),contentType:'application/json'});
+});
+
+async function saved(page,endpoint,click){const wait=page.waitForResponse(r=>new URL(r.url()).pathname===endpoint&&r.request().method()==='POST');await click();const response=await wait;expect(response.status()).toBe(200);const value=await response.json();expect(value.errcode).toBe(0);return response.request().postDataJSON();}
+async function collection(page,id,name='CI collection'){
+ const col=await api(page,apps.default,'/api/col/add_col',{project_id:id,name});
+ const record=await api(page,apps.default,'/api/col/add_case',{project_id:id,col_id:col._id,interface_id:id,casename:name+' case'});
+ return{id,col:col._id,case:record._id,name:name+' case'};
+}
+async function colView(page,f,origin=apps.default){
+ await page.goto(origin+`/project/${f.id}/interface/col/${f.col}`);
+ // The name column deliberately truncates names longer than 23 characters.
+ // Locate by persisted case identity, then verify both presentation and Key.
+ const link=page.getByRole('cell').locator(`a[href="/project/${f.id}/interface/case/${f.case}"]`);
+ await expect(link).toBeVisible();await expect(link).toHaveText(f.name.length>23?f.name.slice(0,20)+'...':f.name);
+ await expect(page.getByRole('cell',{name:String(f.case),exact:true})).toBeVisible();
+}
+async function caseScript(page,f,script,enabled){await page.goto(apps.default+`/project/${f.id}/interface/case/${f.case}`);await page.getByRole('tab',{name:'Test',exact:true}).click();const pane=page.locator('.response-test');await editor(page,pane.locator('.case-script'),script);const toggle=pane.getByRole('switch');if((await toggle.getAttribute('aria-checked')==='true')!==enabled)await toggle.click();const payload=await saved(page,'/api/col/up_case',()=>page.getByRole('button',{name:/^更\s*新$/}).click());expect(payload).toMatchObject({id:f.case,test_script:script,enable_script:enabled});await page.reload();await page.getByRole('tab',{name:'Test',exact:true}).click();await expect(pane.getByRole('switch')).toHaveAttribute('aria-checked',String(enabled));await expect(pane.locator('.ace_content')).toContainText(script);const db=await connection.db.collection('interface_case').findOne({_id:f.case});expect(db).toMatchObject({test_script:script,enable_script:enabled});}
+async function collectionScript(page,f,script,enabled){await colView(page,f);await page.getByRole('button',{name:'通用规则配置',exact:true}).click();const d=page.getByRole('dialog',{name:'通用规则配置'});await editor(page,d.locator('.case-script'),script);const toggle=d.locator('.setting-item').filter({hasText:'全局测试脚本'}).getByRole('switch');if((await toggle.getAttribute('aria-checked')==='true')!==enabled)await toggle.click();await expect(d.locator('.case-script .ace_content')).toContainText(script);const payload=await saved(page,'/api/col/up_col',()=>d.getByRole('button',{name:/确\s*定$/}).click());expect(payload.checkScript).toEqual({content:script,enable:enabled});await page.reload();await page.getByRole('button',{name:'通用规则配置',exact:true}).click();await expect(toggle).toHaveAttribute('aria-checked',String(enabled));await expect(d.locator('.case-script .ace_content')).toContainText(script);await d.getByRole('button',{name:/取\s*消$/}).click();expect((await connection.db.collection('interface_col').findOne({_id:f.col})).checkScript).toEqual({content:script,enable:enabled});}
+async function runCollection(page,f,info,label,expected){await colView(page,f);await saved(page,'/api/col/up_col',()=>page.getByRole('button',{name:'开始测试',exact:true}).click());const db=await connection.db.collection('interface_col').findOne({_id:f.col}),report=JSON.parse(db.test_report);expect(Object.keys(report)).toEqual([String(f.case)]);await page.reload();await page.getByRole('button',{name:'测试报告',exact:true}).click();const dialog=page.getByRole('dialog',{name:'测试报告',exact:true});await dialog.getByRole('tab',{name:'验证结果',exact:true}).click();await expect(dialog.locator('.case-report-pane:visible')).toContainText(expected);await shot(page,info,label);await dialog.locator('.ant-modal-close').click();await info.attach(label+'-db-report',{body:JSON.stringify(report),contentType:'application/json'});return report[f.case];}
+
+test('runner_response-03 collection_rules-03 Test and collection scripts preserve toggles and exact execution scope',async({page},info)=>{
+ const id=await fixture(page,1010),f=await collection(page,id),neighbor=await collection(page,id,'Neighbor collection'),caseText='assert.equal(body.ok, false, "CI_CASE_ASSERTION");',globalText='assert.equal(body.ok, false, "CI_COLLECTION_ASSERTION");';
+ const payloads=[];page.on('request',r=>{if(new URL(r.url()).pathname==='/api/col/run_script')payloads.push(r.postDataJSON());});
+ await caseScript(page,f,caseText,true);let result=await runCollection(page,f,info,'case-enabled-failure','CI_CASE_ASSERTION');expect(result.code).not.toBe(0);expect(payloads.at(-1)).toMatchObject({script:caseText,case_id:f.case,col_id:f.col,interface_id:id});
+ await caseScript(page,f,caseText,false);result=await runCollection(page,f,info,'case-disabled-pass','验证通过');expect(result.code).toBe(0);expect(payloads.at(-1).script).toBe('');
+ await collectionScript(page,f,globalText,true);result=await runCollection(page,f,info,'collection-enabled-failure','CI_COLLECTION_ASSERTION');expect(result.code).not.toBe(0);expect(JSON.stringify(result.validRes)).not.toContain('CI_CASE_ASSERTION');
+ result=await runCollection(page,neighbor,info,'neighbor-unaffected-pass','验证通过');expect(result.code).toBe(0);expect(payloads.at(-1).col_id).toBe(neighbor.col);
+ await collectionScript(page,f,globalText,false);result=await runCollection(page,f,info,'collection-disabled-pass','验证通过');expect(result.code).toBe(0);
+ await caseScript(page,f,'assert.equal(body.ok, true);',true);result=await runCollection(page,f,info,'case-enabled-recovery','验证通过');expect(result.code).toBe(0);
+});
+
+async function automationFormat(page,dialog,info,label,settleBeforeOpen){
+ const settle=async()=>{
+  // Prepare can have transform:none before scale-in starts, so also wait for
+  // the actual appear/enter classes to disappear. No fixed sleep or force click.
+  await expect.poll(()=>dialog.evaluate(node=>{const modal=node.closest('.ant-modal')||node;return !/ant-zoom-(?:appear|enter)/.test(modal.className)&&getComputedStyle(modal).transform==='none';})).toBe(true);
+  await expect.poll(async()=>{const box=await dialog.boundingBox();return box?Math.round(box.width):0;}).toBe(780);
+ };
+ if(settleBeforeOpen)await settle();
+ const phase=()=>dialog.evaluate(node=>({className:node.className,transform:getComputedStyle(node).transform,width:node.getBoundingClientRect().width}));
+ const before=await phase(),format=dialog.locator('.row').filter({hasText:'输出格式'}).locator('.ant-select');await expect(format).toHaveCount(1);await format.click();const after=await phase();await settle();
+ const popup=page.locator('.ant-select-dropdown:visible'),option=popup.locator('.ant-select-item-option-content').filter({hasText:/^json$/});await expect(popup).toHaveCount(1);await expect(option).toHaveCount(1);await expect(option).toBeVisible();
+ await expect.poll(async()=>{const box=await popup.boundingBox();return box?box.width:0;}).toBeGreaterThanOrEqual(120);
+ await expect.poll(()=>option.evaluate(node=>node.clientWidth>=node.scrollWidth&&node.clientWidth>=20)).toBe(true);
+ const geometry={before,after,popup:await popup.boundingBox(),option:await option.evaluate(node=>({clientWidth:node.clientWidth,scrollWidth:node.scrollWidth}))};
+ await page.screenshot({path:info.outputPath(label+'.png'),fullPage:true,mask:[dialog.locator('.autoTestUrl')]});await option.click();await expect(format).toContainText('json');
+ const url=new URL(await dialog.locator('.autoTestUrl a').getAttribute('href'),page.url());expect(url.searchParams.get('mode')).toBe('json');
+ await info.attach(label+'-geometry',{body:JSON.stringify(geometry),contentType:'application/json'});return url;
+}
+
+test('collection_server-04 UI-generated automation shows nonempty sandbox and network failure reports',async({page},info)=>{
+ const id=await fixture(page,1011),f=await collection(page,id);await collectionScript(page,f,`await utils.axios.get(${JSON.stringify(echoOrigin+'/must-not-send')});`,true);
+ for(const [origin,error]of[[apps.default,'SCRIPT_NETWORK_DISABLED'],[apps.missing,'ISOLATED_RUNNER_REQUIRED']]){
+  await login(page,origin);await colView(page,f,origin);await page.getByRole('button',{name:'服务端测试',exact:true}).click();const d=page.getByRole('dialog',{name:'服务端自动化测试'});
+  await automationFormat(page,d,info,'automation-format-rapid-'+error,false);await d.locator('.ant-modal-close').click();await expect(d).toHaveCount(0);
+  await page.getByRole('button',{name:'服务端测试',exact:true}).click();const url=await automationFormat(page,d,info,'automation-format-settled-'+error,true);
+  url.searchParams.set('email','false');const before=requests.length,response=await page.request.get(url.href);expect(response.status()).toBe(200);const report=await response.json();expect(report.numbs).toBe(1);expect(report.list).toHaveLength(1);expect(report.list[0].id||report.list[0].caseId).toBe(f.case);expect(report.list[0].code).not.toBe(0);expect(report.message).toMatchObject({failedNum:1,successNum:0});expect(JSON.stringify(report.list[0].validRes)).toContain(error);expect(requests.slice(before).some(r=>r.path==='/must-not-send')).toBe(false);
+  await page.screenshot({path:info.outputPath('automation-'+error+'.png'),fullPage:true,mask:[d.locator('.autoTestUrl')]});await info.attach('automation-'+error+'-report',{body:JSON.stringify(report),contentType:'application/json'});
+  // Render the generated result in its own tab as the user following the link does.
+  const resultPage=await page.context().newPage();await resultPage.goto(url.href);await expect(resultPage.locator('body')).toContainText(error);await resultPage.screenshot({path:info.outputPath('automation-'+error+'-visible-result.png'),fullPage:true});await resultPage.close();
+ }
+});
+
+async function advancedScript(page,id,text,enabled=true){await page.goto(apps.default+`/project/${id}/interface/api/${id}`);await page.getByRole('tab',{name:'高级Mock',exact:true}).click();await page.getByText('脚本',{exact:true}).click();await editor(page,page.locator('#mock-script'),text);const toggle=page.getByRole('switch');if((await toggle.getAttribute('aria-checked')==='true')!==enabled)await toggle.click();const payload=await saved(page,'/api/plugin/advmock/save',()=>page.getByRole('button',{name:/^保\s*存$/}).click());expect(payload).toMatchObject({mock_script:text,enable:enabled});await page.reload();await page.getByRole('tab',{name:'高级Mock',exact:true}).click();await page.getByText('脚本',{exact:true}).click();await expect(page.locator('#mock-script .ace_content')).toContainText(text);await expect(page.getByRole('switch')).toHaveAttribute('aria-checked',String(enabled));expect(await connection.db.collection('adv_mock').findOne({interface_id:id})).toMatchObject({mock_script:text,enable:enabled,project_id:id});}
+test('mock_advanced-02 advanced script syntax and runner errors are visible and recover through saved UI',async({page},info)=>{
+ const id=await fixture(page,1012);await advancedScript(page,id,'const = ;');await mockEnvironment(page,id,apps.default);await runView(page,apps.default,id);let result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,/SyntaxError|Unexpected token/);await shot(page,info,'advanced-syntax-error');
+ const text='mockJson.advanced = "CI_ADVANCED_RECOVERED"; delay = 0;';await advancedScript(page,id,text);await runView(page,apps.default,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.advanced).toBe('CI_ADVANCED_RECOVERED');await expect(page.locator('.pretty-editor-body')).toContainText('CI_ADVANCED_RECOVERED');await shot(page,info,'advanced-recovered');
+ await mockEnvironment(page,id,apps.missing);await login(page,apps.missing);await runView(page,apps.missing,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body.errcode).not.toBe(0);await visibleFailure(page,'ISOLATED_RUNNER_REQUIRED');expect(result.data.res.body.advanced).toBeUndefined();await shot(page,info,'advanced-missing-runner');
+ await login(page,apps.default);await advancedScript(page,id,text,false);await mockEnvironment(page,id,apps.default);await runView(page,apps.default,id);result=await send(page);expect(result.errcode).toBe(0);expect(result.data.res.body).toEqual({ok:true});
+});
+
+test('runner_variables-04 missing previous output fails before echo and never leaks neighbor records',async({page},info)=>{
+ const id=await fixture(page,1013);await api(page,apps.default,'/api/interface/up',{id,req_query:[{name:'missing',required:'0',example:'',desc:''}]});const f=await collection(page,id),neighbor=await collection(page,id,'Unrelated variable collection');
+ await connection.db.collection('interface_col').updateOne({_id:neighbor.col},{$set:{test_report:JSON.stringify({[neighbor.case]:{code:0,res_body:{secret:'CI_UNRELATED_MUST_NOT_LEAK'}}})}});
+ await page.goto(apps.default+`/project/${id}/interface/case/${f.case}`);const expression=`{{ $.${neighbor.case}.body.secret }}`,input=page.locator('#req_query_0'),field=page.locator('.key-value-wrap').filter({has:input});await input.fill(expression);
+ for(const action of['cancel','insert']){await input.focus();await page.keyboard.press('Home');await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight');await field.locator('.ant-input-group-addon').click();const modal=page.getByRole('dialog',{name:/高级参数设置/});await expect(modal.locator('.ant-alert-warning')).toContainText('尚未运行');await expect(modal.locator('.modal-postman-expression')).toContainText(expression);await shot(page,info,'missing-variable-preview-'+action);await modal.getByRole('button',{name:action==='cancel'?/取\s*消$/:/插\s*入$/}).click();await expect(modal).toHaveCount(0);await expect(input).toHaveValue(expression);}
+ await saved(page,'/api/col/up_case',()=>page.getByRole('button',{name:/^更\s*新$/}).click());
+ const before=requests.length,result=await runCollection(page,f,info,'missing-previous-variable','MISSING_CASE_OUTPUT');expect(result.code).not.toBe(0);expect(requests.length).toBe(before);expect(JSON.stringify(result)).not.toContain('CI_UNRELATED_MUST_NOT_LEAK');expect(JSON.stringify(result)).not.toContain('验证通过');
+});

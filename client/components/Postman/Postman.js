@@ -14,7 +14,8 @@ import {
   Switch,
   Row,
   Col,
-  Alert
+  Alert,
+  message
 } from 'antd';
 import constants from '../../constants/variable.js';
 import AceEditor from 'client/components/AceEditor/AceEditor';
@@ -32,7 +33,8 @@ const {
   checkRequestBodyIsRaw,
   handleContentType,
   crossRequest,
-  checkNameIsExistInArray
+  checkNameIsExistInArray,
+  MAX_FILE_BYTES
 } = require('common/postmanLib.js');
 
 const plugin = require('client/plugin.js');
@@ -122,6 +124,8 @@ export default class Run extends Component {
     super(props);
     this.state = {
       loading: false,
+      initializing: true,
+      initializationError: '',
       resStatusCode: null,
       test_valid_msg: null,
       resStatusText: null,
@@ -133,6 +137,7 @@ export default class Run extends Component {
       inputValue: '',
       cursurPosition: { row: 1, column: -1 },
       envModalVisible: false,
+      envDropdownOpen: false,
       test_res_header: null,
       test_res_body: null,
       autoPreviewHTML: true,
@@ -156,6 +161,7 @@ export default class Run extends Component {
 
   // 整合header信息
   handleReqHeader = (value, env) => {
+    env = Array.isArray(env) ? env : [];
     let index = value
       ? env.findIndex(item => {
           return item.name === value;
@@ -164,7 +170,7 @@ export default class Run extends Component {
     index = index === -1 ? 0 : index;
 
     let req_header = [].concat(this.props.data.req_headers || []);
-    let header = [].concat(env[index].header || []);
+    let header = [].concat((env[index] && env[index].header) || []);
     header.forEach(item => {
       if (!checkNameIsExistInArray(item.name, req_header)) {
         item = {
@@ -188,10 +194,27 @@ export default class Run extends Component {
     });
   };
 
+  requestIdentity = data => data && `${this.props.type}:${data.project_id}:${data.interface_id || data._id}:${data._id}`;
+
+  isRequestReady = () => !this.state.initializing && !this.state.initializationError &&
+    Number(this.props.interfaceId) === Number(this.props.data.interface_id || this.props.data._id) &&
+    Number(this.props.projectId) === Number(this.props.data.project_id) &&
+    this.initializedIdentity === this.requestIdentity(this.props.data) &&
+    this.requestIdentity(this.state) === this.requestIdentity(this.props.data);
+
   async initState(data) {
-    if (!this.checkInterfaceData(data)) {
-      return null;
-    }
+    this.activeRequest = null;
+    this.initializedIdentity = null;
+    this.singleFile = null;
+    const initialization = {};
+    this.activeInitialization = initialization;
+    this.envModalContext = null;
+    this.setState({ envModalVisible: false, envDropdownOpen: false, initializing: true,
+      initializationError: '', loading: false, path: '', req_body_other: '',
+      req_query: [], req_headers: [], req_params: [], req_body_form: [], env: [],
+      test_res_header: null, test_res_body: null, resStatusCode: null, resStatusText: null, test_valid_msg: null });
+    try {
+    if (!this.checkInterfaceData(data)) throw new Error('接口数据无效');
 
     const { req_body_other, req_body_type, req_body_is_json_schema } = data;
     let body = req_body_other;
@@ -202,13 +225,7 @@ export default class Run extends Component {
       req_body_other &&
       req_body_is_json_schema
     ) {
-      let schema = {};
-      try {
-        schema = json5.parse(req_body_other);
-      } catch (e) {
-        console.log('e', e);
-        return;
-      }
+      const schema = json5.parse(req_body_other);
       let result = await axios.post('/api/interface/schema2json', {
         schema: schema,
         required: true
@@ -236,9 +253,11 @@ export default class Run extends Component {
       )
     }
 
+    if (this.activeInitialization !== initialization) return;
     this.setState(
       {
         ...this.state,
+        loading: false,
         test_res_header: null,
         test_res_body: null,
         ...data,
@@ -248,11 +267,26 @@ export default class Run extends Component {
         test_valid_msg: null,
         resStatusText: null
       },
-      () => this.props.type === 'inter' && this.initEnvState(data.case_env, data.env)
+      () => {
+        if (this.activeInitialization !== initialization) return;
+        if (this.props.type === 'inter') this.initEnvState(data.case_env, data.env);
+        else {
+          const choices = Array.isArray(data.env) ? data.env : [];
+          this.setState({ case_env: choices.some(item => item.name === data.case_env)
+            ? data.case_env : ((choices[0] && choices[0].name) || '') });
+        }
+        this.initializedIdentity = this.requestIdentity(data);
+        this.setState({ initializing: false });
+      }
     );
+    } catch (_) {
+      if (this.activeInitialization !== initialization) return;
+      this.setState({ initializing: false, initializationError: '请求初始化失败，请重试', env: [], path: '', req_body_other: '' });
+    }
   }
 
   initEnvState(case_env, env) {
+    env = Array.isArray(env) ? env : [];
     let headers = this.handleReqHeader(case_env, env);
 
     this.setState(
@@ -264,7 +298,7 @@ export default class Run extends Component {
         let s = !_.find(env, item => item.name === this.state.case_env);
         if (!this.state.case_env || s) {
           this.setState({
-            case_env: this.state.env[0].name
+            case_env: (env[0] && env[0].name) || ''
           });
         }
       }
@@ -317,21 +351,40 @@ export default class Run extends Component {
     this.setState({ requestMode });
   };
 
+  componentWillUnmount() {
+    this.envModalContext = null;
+    this.activeRequest = null;
+    this.activeInitialization = null;
+  }
+
   reqRealInterface = async () => {
-    if (this.state.loading === true) {
+    if (!this.isRequestReady()) return;
+    if (this.activeRequest) {
+      this.activeRequest = null;
       this.setState({
         loading: false
       });
       return null;
     }
-    this.setState({
-      loading: true
-    });
+    const request = { id: this.props.data._id };
+    this.activeRequest = request;
+    this.setState({ loading: true, test_res_header: null, test_res_body: null,
+      resStatusCode: null, resStatusText: null, test_valid_msg: null });
 
-    let options = handleParams(this.state, this.handleValue),
-      result;
-
-
+    let options, result;
+    try {
+    options = handleParams(this.state, this.handleValue);
+    if (this.state.req_body_type === 'file') {
+      const file = this.singleFile;
+      if (!file) throw new Error('请先选择要发送的文件');
+      if (file.size > MAX_FILE_BYTES) throw new Error('文件不能超过 512 KiB');
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (this.activeRequest !== request || !this.isRequestReady()) return;
+      let binary = '';
+      for (let offset = 0; offset < bytes.length; offset += 32768) binary += String.fromCharCode(...bytes.subarray(offset, offset + 32768));
+      delete options.data;
+      options.binary = { base64: btoa(binary), size: bytes.length };
+    }
     await plugin.emitHook('before_request', options, {
       type: this.props.type,
       caseId: options.caseId,
@@ -339,17 +392,19 @@ export default class Run extends Component {
       interfaceId: this.props.interfaceId
     });
 
-    try {
+      if (this.activeRequest !== request) return;
       options.taskId = this.props.curUid;
       result = await crossRequest(
         options,
         options.pre_script || this.state.pre_script,
         options.after_script || this.state.after_script,
         createContext(this.props.curUid, this.props.projectId, this.props.interfaceId, {
+          ...(this.props.type === 'case' ? { caseId: this.props.data._id, colId: this.props.data.col_id } : {}),
           requestMode: this.state.requestMode
         })
       );
 
+      if (this.activeRequest !== request || this.props.data._id !== request.id) return;
       await plugin.emitHook('after_request', result, {
         type: this.props.type,
         caseId: options.caseId,
@@ -367,19 +422,15 @@ export default class Run extends Component {
 
     } catch (data) {
       result = {
-        header: data.header,
-        body: data.body,
+        header: data.header || {},
+        body: data.body || data.message,
         status: null,
         statusText: data.message
       };
     }
-    if (this.state.loading === true) {
-      this.setState({
-        loading: false
-      });
-    } else {
-      return null;
-    }
+    if (this.activeRequest !== request || this.props.data._id !== request.id) return;
+    this.activeRequest = null;
+    this.setState({ loading: false });
 
     let tempJson = result.body;
     if (tempJson && typeof tempJson === 'object') {
@@ -549,22 +600,40 @@ export default class Run extends Component {
 
   // 环境变量模态框相关操作
   showEnvModal = () => {
+    this.envModalContext = {};
     this.setState({
-      envModalVisible: true
+      envModalVisible: true,
+      envDropdownOpen: false
     });
   };
 
   handleEnvOk = (newEnv, index) => {
+    this.envModalContext = null;
+    const case_env = (newEnv[index] && newEnv[index].name) || '';
     this.setState({
       envModalVisible: false,
-      case_env: newEnv[index].name
+      envDropdownOpen: false,
+      env: newEnv,
+      req_headers: this.handleReqHeader(case_env, newEnv),
+      case_env
     });
   };
 
-  handleEnvCancel = () => {
-    this.setState({
-      envModalVisible: false
-    });
+  handleEnvCancel = async () => {
+    const context = this.envModalContext;
+    this.setState({ envModalVisible: false, envDropdownOpen: false });
+    try {
+      const result = await axios.get('/api/project/get_env', {
+        params: { project_id: this.props.data.source_project_id || this.props.data.project_id }
+      });
+      if (this.envModalContext !== context) return;
+      if (result.data.errcode !== 0) throw new Error('环境加载失败');
+      const env = result.data.data.env || [];
+      const selected = env.findIndex(item => item.name === this.state.case_env);
+      this.handleEnvOk(env, selected < 0 ? 0 : selected);
+    } catch (_) {
+      if (this.envModalContext === context) message.error('环境加载失败，请刷新重试');
+    }
   };
 
   render() {
@@ -585,6 +654,9 @@ export default class Run extends Component {
     // console.log(env);
     return (
       <div className="interface-test postman">
+        {this.state.initializationError && <Alert type="error" message={this.state.initializationError}
+          action={<Button onClick={() => this.initState(this.props.data)}>重新初始化</Button>} />}
+
         {this.state.modalVisible && (
           <ModalPostman
             visible={this.state.modalVisible}
@@ -606,11 +678,11 @@ export default class Run extends Component {
             width={800}
             className="env-modal"
           >
-            <ProjectEnv projectId={this.props.data.project_id} onOk={this.handleEnvOk} />
+            <ProjectEnv inline projectId={this.props.data.source_project_id || this.props.data.project_id} onOk={this.handleEnvOk} />
           </Modal>
         )}
         <div className="url">
-          <InputGroup compact style={{ display: 'flex' }}>
+          <InputGroup compact style={{ display: 'flex', flex: 1, minWidth: 0 }}>
             <Select disabled value={method} style={{ flexBasis: 60 }}>
               {Object.keys(HTTP_METHOD).map(name => {
                 <Option value={name.toUpperCase()}>{name.toUpperCase()}</Option>;
@@ -618,19 +690,24 @@ export default class Run extends Component {
             </Select>
             <Select
               value={case_env}
+              open={this.state.envDropdownOpen}
+              onOpenChange={envDropdownOpen => this.setState({ envDropdownOpen })}
               style={{ flexBasis: 180, flexGrow: 1 }}
               onSelect={this.selectDomain}
+              popupRender={menu => (
+                <div>
+                  {menu}
+                  <Button type="primary" onClick={this.showEnvModal} style={{ margin: 8 }}>
+                    环境配置
+                  </Button>
+                </div>
+              )}
             >
               {env.map((item, index) => (
                 <Option value={item.name} key={index}>
                   {item.name + '：' + item.domain}
                 </Option>
               ))}
-              <Option value="环境配置" disabled style={{ cursor: 'pointer', color: '#2395f1' }}>
-                <Button type="primary" onClick={this.showEnvModal}>
-                  环境配置
-                </Button>
-              </Option>
             </Select>
 
             <Input
@@ -650,7 +727,7 @@ export default class Run extends Component {
                 : '由浏览器直接发起请求，目标接口需要支持 CORS'
             }
           >
-            <span style={{ marginLeft: 10, display: 'inline-flex', alignItems: 'center' }}>
+            <span style={{ marginLeft: 10, display: 'inline-flex', alignItems: 'center', flexShrink: 0, whiteSpace: 'nowrap' }}>
               <span style={{ marginRight: 8 }}>请求方式</span>
               <Switch
                 checked={requestMode === REQUEST_MODE.SERVER}
@@ -667,6 +744,7 @@ export default class Run extends Component {
           >
             <Button
               onClick={this.reqRealInterface}
+              disabled={!this.isRequestReady()}
               type="primary"
               style={{ marginLeft: 10 }}
               icon={loading ? 'loading' : ''}
@@ -681,7 +759,7 @@ export default class Run extends Component {
               return this.props.type === 'inter' ? '保存到测试集' : '更新该用例';
             }}
           >
-            <Button onClick={this.props.save} type="primary" style={{ marginLeft: 10 }}>
+            <Button onClick={this.props.save} disabled={!this.isRequestReady()} type="primary" style={{ marginLeft: 10 }}>
               {this.props.type === 'inter' ? '保存' : '更新'}
             </Button>
           </Tooltip>
@@ -921,7 +999,8 @@ export default class Run extends Component {
             {HTTP_METHOD[method].request_body &&
               req_body_type === 'file' && (
                 <div>
-                  <Input type="file" id="single-file" />
+                  <Input key={this.requestIdentity(this.props.data)} type="file" id="single-file" onChange={event => { this.singleFile = event.target.files[0] || null; }} />
+                  <span>单文件上限 512 KiB</span>
                 </div>
               )}
           </Panel>
@@ -995,6 +1074,8 @@ export default class Run extends Component {
                     this.state.autoPreviewHTML && this.testResponseBodyIsHTML
                       ? <iframe
                           className="pretty-editor-body"
+                          title="HTML response preview"
+                          sandbox=""
                           srcDoc={this.state.test_res_body}
                         />
                       : <AceEditor

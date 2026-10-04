@@ -1,0 +1,8 @@
+# UNEXECUTED local harness. Node major follows the repository CI.
+FROM node:24-bookworm-slim
+WORKDIR /parity/vendor
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund
+COPY . .
+RUN npm run build-client
+CMD ["node", "server/app.js"]

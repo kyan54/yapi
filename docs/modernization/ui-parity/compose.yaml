@@ -1,0 +1,94 @@
+# UNEXECUTED TEMPLATE. Use only in the approved dedicated disposable environment.
+# Official image tags must resolve and be recorded by digest before the run.
+name: yapi-parity-${PARITY_RUN:?set_unique_run_id}
+services:
+  mongo_old:
+    image: mongo:4.4.29
+    platform: linux/amd64
+    networks:
+      old_net:
+        aliases: [mongo]
+    volumes: ["./bundle:/fixture:ro"]
+    tmpfs: ["/data/db", "/data/configdb"]
+    environment: {TZ: UTC}
+    healthcheck:
+      test: [CMD, mongo, --quiet, --host, "127.0.0.1", --port, "27017", --eval, "quit(db.adminCommand({ping:1}).ok ? 0 : 1)"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+  mongo_new:
+    image: mongo:9.0.2
+    networks:
+      new_net:
+        aliases: [mongo]
+    volumes: ["./bundle:/fixture:ro"]
+    tmpfs: ["/data/db", "/data/configdb"]
+    environment: {TZ: UTC}
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --host, "127.0.0.1", --port, "27017", --eval, "quit(db.adminCommand({ping:1}).ok ? 0 : 1)"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+  app_old:
+    build:
+      context: ./old/vendor
+      dockerfile: Dockerfile.parity
+    platform: linux/amd64
+    networks: [old_net]
+    ports: ["127.0.0.1:4174:3000"]
+    volumes: ["./bundle/old.config.json:/parity/config.json:ro"]
+    tmpfs: ["/tmp", "/parity/log"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 1g
+    environment: {TZ: UTC, NODE_ENV: production}
+    depends_on:
+      mongo_old: {condition: service_healthy}
+  app_new:
+    build:
+      context: ./new/vendor
+      dockerfile: Dockerfile.parity
+    networks: [new_net]
+    ports: ["127.0.0.1:4175:3000"]
+    volumes:
+      - "./bundle/new.config.json:/parity/config.json:ro"
+      - "runner_socket:/run/yapi-parity:ro"
+    tmpfs: ["/tmp", "/parity/log"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 1g
+    environment:
+      TZ: UTC
+      NODE_ENV: production
+      YAPI_CONFIG: /parity/config.json
+      YAPI_ISOLATED_RUNNER_SOCKET: /run/yapi-parity/runner.sock
+    depends_on:
+      mongo_new: {condition: service_healthy}
+      runner: {condition: service_healthy}
+  runner:
+    build:
+      context: ./new/vendor
+      dockerfile: Dockerfile.runner
+    network_mode: none
+    read_only: true
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "runner_socket:/run/yapi-parity"
+    tmpfs: ["/tmp"]
+    environment:
+      TZ: UTC
+      YAPI_ISOLATED_RUNNER_SOCKET: /run/yapi-parity/runner.sock
+    healthcheck:
+      test: [CMD, node, -e, "if (!require('node:fs').statSync('/run/yapi-parity/runner.sock').isSocket()) process.exit(1)"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+networks:
+  old_net: {internal: true}
+  new_net: {internal: true}
+volumes:
+  runner_socket: {}

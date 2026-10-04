@@ -5,52 +5,34 @@ import _ from 'underscore';
 import constants from '../../../../constants/variable.js';
 import { handlePath, nameLengthLimit } from '../../../../common.js';
 import { changeEditStatus } from '../../../../reducer/modules/interface.js';
-import json5 from 'json5';
 import { message, Affix, Tabs, Modal } from 'antd';
 import EasyDragSort from '../../../../components/EasyDragSort/EasyDragSort.js';
 import mockEditor from 'client/components/AceEditor/mockEditor';
 import AceEditor from 'client/components/AceEditor/AceEditor';
 import axios from 'axios';
 import { MOCK_SOURCE } from '../../../../constants/variable.js';
-import Editor from 'common/tui-editor/dist/tui-editor-Editor-all.min.js';
-const jSchema = require('json-schema-editor-visual');
-const ResBodySchema = jSchema({ lang: 'zh_CN', mock: MOCK_SOURCE });
-const ReqBodySchema = jSchema({ lang: 'zh_CN', mock: MOCK_SOURCE });
+import Editor from '@toast-ui/editor';
+import DOMPurify from 'dompurify';
+import '@toast-ui/editor/dist/toastui-editor.css';
+import SchemaEditor from 'client/components/SchemaEditor';
+import checkIsJsonSchema from './normalizeSchema';
+import parseBulkParameters from './parseBulkParameters';
+import reconcilePathParameters from './reconcilePathParameters';
+import { initialSchemaMode, parseBodyJson, clearInactiveBodies } from './bodyModes';
+const ResBodySchema = SchemaEditor;
+const ReqBodySchema = SchemaEditor;
 const TabPane = Tabs.TabPane;
 
 
-require('common/tui-editor/dist/tui-editor.min.css'); // editor ui
-require('common/tui-editor/dist/tui-editor-contents.min.css'); // editor content
+
+
 require('./editor.css');
 
 
-function checkIsJsonSchema(json) {
-  try {
-    json = json5.parse(json);
-    if (json.properties && typeof json.properties === 'object' && !json.type) {
-      json.type = 'object';
-    }
-    if (json.items && typeof json.items === 'object' && !json.type) {
-      json.type = 'array';
-    }
-    if (!json.type) {
-      return false;
-    }
-    json.type = json.type.toLowerCase();
-    let types = ['object', 'string', 'number', 'array', 'boolean', 'integer'];
-    if (types.indexOf(json.type) === -1) {
-      return false;
-    }
-    return JSON.stringify(json);
-  } catch (e) {
-    return false;
-  }
-}
-
 let EditFormContext;
-const validJson = json => {
+const validJson = (json, allowJson5) => {
   try {
-    json5.parse(json);
+    parseBodyJson(json, allowJson5);
     return true;
   } catch (e) {
     return false;
@@ -124,6 +106,7 @@ class InterfaceEditForm extends Component {
     curdata: PropTypes.object,
     mockUrl: PropTypes.string,
     onSubmit: PropTypes.func,
+    saveDisabled: PropTypes.bool,
     basepath: PropTypes.string,
     noticed: PropTypes.bool,
     cat: PropTypes.array,
@@ -217,141 +200,180 @@ class InterfaceEditForm extends Component {
     const { curdata } = this.props;
     // console.log('custom_field1', this.props.custom_field);
     this.state = this.initState(curdata);
+    this.bodyTypes = { request: this.state.req_body_type, response: this.state.res_body_type };
   }
 
-  handleSubmit = e => {
+  schemaValidity = { request: true, response: true };
+
+  onRequestValidity = valid => { this.schemaValidity.request = valid; if (!valid) this.markDirty(); };
+  onResponseValidity = valid => { this.schemaValidity.response = valid; if (!valid) this.markDirty(); };
+
+  editRevision = 0;
+  submitting = false;
+  markDirty = () => {
+    this.editRevision += 1;
+    this.props.changeEditStatus(true);
+  };
+
+  handleSubmit = async e => {
     e.preventDefault();
-    this.setState({
-      submitStatus: true
-    });
+    if (this.submitting) return;
+    if (this.props.saveDisabled) return message.error('编辑锁不可用，请重新打开编辑页面后再保存。');
+    const fields = this.props.form.getFieldsValue();
+    if ((fields.res_body_type === 'json' && fields.res_body_is_json_schema && !this.schemaValidity.response) ||
+        (HTTP_METHOD[this.state.method].request_body && fields.req_body_type === 'json' && fields.req_body_is_json_schema && !this.schemaValidity.request)) {
+      return message.error('Schema JSON 无效，请修正后再保存');
+    }
+    this.submitting = true;
+    this.setState({ submitStatus: true });
+    const revision = this.editRevision;
     try {
-      this.props.form.validateFields((err, values) => {
-        setTimeout(() => {
-          if (this._isMounted) {
-            this.setState({
-              submitStatus: false
-            });
-          }
-        }, 3000);
-        if (!err) {
-          values.desc = this.editor.getHtml();
-          values.markdown = this.editor.getMarkdown();
-          if (values.res_body_type === 'json') {
-            if (this.state.res_body && validJson(this.state.res_body) === false) {
-              return message.error('返回body json格式有问题，请检查！');
-            }
-            try {
-              values.res_body = JSON.stringify(JSON.parse(this.state.res_body), null, '   ');
-            } catch (e) {
-              values.res_body = this.state.res_body;
-            }
-          }
-          if (values.req_body_type === 'json') {
-            if (this.state.req_body_other && validJson(this.state.req_body_other) === false) {
-              return message.error('响应Body json格式有问题，请检查！');
-            }
-            try {
-              values.req_body_other = JSON.stringify(
-                JSON.parse(this.state.req_body_other),
-                null,
-                '   '
-              );
-            } catch (e) {
-              values.req_body_other = this.state.req_body_other;
-            }
-          }
+      const { err, values } = await new Promise(resolve =>
+        this.props.form.validateFields((err, values) => resolve({ err, values })));
+      if (err || !this._isMounted) return;
+      values.desc = this.editor.getHTML();
+      values.markdown = this.editor.getMarkdown();
+      if (values.res_body_type === 'json') {
+        if (this.state.res_body && validJson(this.state.res_body, this.props.projectMsg.is_json5 && !values.res_body_is_json_schema) === false) {
+          return message.error('返回body json格式有问题，请检查！');
+        }
+        try {
+          values.res_body = values.res_body_is_json_schema ? this.state.res_body : JSON.stringify(JSON.parse(this.state.res_body), null, '   ');
+        } catch (e) {
+          values.res_body = this.state.res_body;
+        }
+      }
+      if (HTTP_METHOD[this.state.method].request_body && values.req_body_type === 'json') {
+        if (this.state.req_body_other && validJson(this.state.req_body_other, this.props.projectMsg.is_json5 && !values.req_body_is_json_schema) === false) {
+          return message.error('请求Body json格式有问题，请检查！');
+        }
+        try {
+          values.req_body_other = values.req_body_is_json_schema ? this.state.req_body_other : JSON.stringify(
+            JSON.parse(this.state.req_body_other),
+            null,
+            '   '
+          );
+        } catch (e) {
+          values.req_body_other = this.state.req_body_other;
+        }
+      }
 
-          values.method = this.state.method;
-          values.req_params = values.req_params || [];
-          values.req_headers = values.req_headers || [];
-          values.req_body_form = values.req_body_form || [];
-          let isfile = false,
-            isHaveContentType = false;
-          if (values.req_body_type === 'form') {
-            values.req_body_form.forEach(item => {
-              if (item.type === 'file') {
-                isfile = true;
-              }
-            });
+      values.method = this.state.method;
+      values.req_params = values.req_params || [];
+      values.req_headers = values.req_headers || [];
+      values.req_body_form = values.req_body_form || [];
+      let isfile = false,
+        isHaveContentType = false;
+      if (values.req_body_type === 'form') {
+        values.req_body_form.forEach(item => {
+          if (item.type === 'file') {
+            isfile = true;
+          }
+        });
 
-            values.req_headers.map(item => {
+        values.req_headers.map(item => {
+          if (item.name === 'Content-Type') {
+            item.value = isfile ? 'multipart/form-data' : 'application/x-www-form-urlencoded';
+            isHaveContentType = true;
+          }
+        });
+        if (isHaveContentType === false) {
+          values.req_headers.unshift({
+            name: 'Content-Type',
+            value: isfile ? 'multipart/form-data' : 'application/x-www-form-urlencoded'
+          });
+        }
+      } else if (values.req_body_type === 'json') {
+        values.req_headers
+          ? values.req_headers.map(item => {
               if (item.name === 'Content-Type') {
-                item.value = isfile ? 'multipart/form-data' : 'application/x-www-form-urlencoded';
+                item.value = 'application/json';
                 isHaveContentType = true;
               }
-            });
-            if (isHaveContentType === false) {
-              values.req_headers.unshift({
-                name: 'Content-Type',
-                value: isfile ? 'multipart/form-data' : 'application/x-www-form-urlencoded'
-              });
-            }
-          } else if (values.req_body_type === 'json') {
-            values.req_headers
-              ? values.req_headers.map(item => {
-                  if (item.name === 'Content-Type') {
-                    item.value = 'application/json';
-                    isHaveContentType = true;
-                  }
-                })
-              : [];
-            if (isHaveContentType === false) {
-              values.req_headers = values.req_headers || [];
-              values.req_headers.unshift({
-                name: 'Content-Type',
-                value: 'application/json'
-              });
-            }
-          }
-          values.req_headers = values.req_headers
-            ? values.req_headers.filter(item => item.name !== '')
-            : [];
-
-          values.req_body_form = values.req_body_form
-            ? values.req_body_form.filter(item => item.name !== '')
-            : [];
-          values.req_params = values.req_params
-            ? values.req_params.filter(item => item.name !== '')
-            : [];
-          values.req_query = values.req_query
-            ? values.req_query.filter(item => item.name !== '')
-            : [];
-
-          if (HTTP_METHOD[values.method].request_body !== true) {
-            values.req_body_form = [];
-          }
-
-          if (
-            values.req_body_is_json_schema &&
-            values.req_body_other &&
-            values.req_body_type === 'json'
-          ) {
-            values.req_body_other = checkIsJsonSchema(values.req_body_other);
-            if (!values.req_body_other) {
-              return message.error('请求参数 json-schema 格式有误');
-            }
-          }
-          if (
-            values.res_body_is_json_schema &&
-            values.res_body &&
-            values.res_body_type === 'json'
-          ) {
-            values.res_body = checkIsJsonSchema(values.res_body);
-            if (!values.res_body) {
-              return message.error('返回数据 json-schema 格式有误');
-            }
-          }
-
-          this.props.onSubmit(values);
-          EditFormContext.props.changeEditStatus(false);
+            })
+          : [];
+        if (isHaveContentType === false) {
+          values.req_headers = values.req_headers || [];
+          values.req_headers.unshift({
+            name: 'Content-Type',
+            value: 'application/json'
+          });
         }
-      });
-    } catch (e) {
-      console.error(e.message);
-      this.setState({
-        submitStatus: false
-      });
+      }
+      values.req_headers = values.req_headers
+        ? values.req_headers.filter(item => item.name !== '')
+        : [];
+
+      values.req_body_form = values.req_body_form
+        ? values.req_body_form.filter(item => item.name !== '')
+        : [];
+      values.req_params = values.req_params
+        ? values.req_params.filter(item => item.name !== '')
+        : [];
+      values.req_query = values.req_query
+        ? values.req_query.filter(item => item.name !== '')
+        : [];
+
+      clearInactiveBodies(values, HTTP_METHOD[values.method].request_body === true);
+
+      if (
+        values.req_body_is_json_schema &&
+        values.req_body_other &&
+        values.req_body_type === 'json'
+      ) {
+        values.req_body_other = checkIsJsonSchema(values.req_body_other, { preserveFormatting: true });
+        if (!values.req_body_other) {
+          return message.error('请求参数 json-schema 格式有误');
+        }
+      }
+      if (
+        values.res_body_is_json_schema &&
+        values.res_body &&
+        values.res_body_type === 'json'
+      ) {
+        values.res_body = checkIsJsonSchema(values.res_body, { preserveFormatting: true });
+        if (!values.res_body) {
+          return message.error('返回数据 json-schema 格式有误');
+        }
+      }
+
+      const saved = await this.props.onSubmit(values);
+      if (this._isMounted && saved === true && revision === this.editRevision) {
+        this.props.changeEditStatus(false);
+      }
+    } catch (error) {
+      if (this._isMounted) {
+        const response = error.response && error.response.data;
+        message.error((response && response.errmsg) || '保存失败，请重试');
+      }
+    } finally {
+      this.submitting = false;
+      if (this._isMounted) this.setState({ submitStatus: false });
     }
+  };
+
+  schemaPreferences = {};
+  changeBodyType = (kind, event) => {
+    const type = event.target.value;
+    const request = kind === 'request';
+    const flag = request ? 'req_body_is_json_schema' : 'res_body_is_json_schema';
+    const body = request ? 'req_body_other' : 'res_body';
+    if (this.bodyTypes[kind] === 'json') {
+      this.schemaPreferences[kind] = this.props.form.getFieldValue(flag);
+    }
+    this.bodyTypes[kind] = type;
+    const mode = Object.prototype.hasOwnProperty.call(this.schemaPreferences, kind)
+      ? this.schemaPreferences[kind]
+      : initialSchemaMode('json', this.state[flag], this.props.projectMsg.is_json5);
+    const next = { [flag]: type === 'json' ? mode : false };
+    if (type === 'raw' || type === 'file') next[body] = this.state[body];
+    this.props.form.setFieldsValue(next);
+    this.markDirty();
+  };
+
+  handleBodyText = (kind, text) => {
+    this.setState({ [kind === 'request' ? 'req_body_other' : 'res_body']: text });
+    this.markDirty();
   };
 
   onChangeMethod = val => {
@@ -383,17 +405,54 @@ class InterfaceEditForm extends Component {
       readOnly: true
     });
 
+    this.remarkEditorElement = document.querySelector('#desc');
     this.editor = new Editor({
-      el: document.querySelector('#desc'),
+      el: this.remarkEditorElement,
       initialEditType: 'wysiwyg',
+      autofocus: false,
+      usageStatistics: false,
       height: '500px',
-      initialValue: this.state.markdown || this.state.desc
+      initialValue: this.state.markdown || ''
     });
+    // HTML-only historical notes must enter through the HTML parser. Treating
+    // them as Markdown leaves raw table wrappers mixed with generated GFM.
+    if (!this.state.markdown && this.state.desc) {
+      this.editor.setHTML(DOMPurify.sanitize(this.state.desc), false);
+    }
+    this.editor.addCommand('wysiwyg', 'selectRemarkContextCell', ({ cell }, state, dispatch, view) => {
+      // Preserve existing text/cell selections, including keyboard menu use.
+      if (!state.selection.empty || !view.dom.contains(cell)) return;
+      const paragraph = cell.querySelector('p') || cell;
+      const position = view.posAtDOM(paragraph, 0);
+      this.editor.setSelection(position, position);
+    });
+    this.remarkEditorElement.addEventListener('contextmenu', this.handleRemarkTableContextMenu, true);
+    this.observedMarkdown = this.editor.getMarkdown();
+    this.editor.on('change', this.handleMarkdownChange);
   }
 
+  handleRemarkTableContextMenu = event => {
+    if (event.button !== 2 || !event.target || !event.target.closest) return;
+    const cell = event.target.closest('.toastui-editor-ww-container td, .toastui-editor-ww-container th');
+    if (cell && this.remarkEditorElement.contains(cell)) {
+      this.editor.exec('selectRemarkContextCell', { cell });
+    }
+  };
+
+  handleMarkdownChange = () => {
+    const markdown = this.editor.getMarkdown();
+    const changed = markdown !== this.observedMarkdown;
+    this.observedMarkdown = markdown;
+    if (this._isMounted && changed) this.markDirty();
+  };
+
   componentWillUnmount() {
-    EditFormContext.props.changeEditStatus(false);
-    EditFormContext = null;
+    if (this.remarkEditorElement) {
+      this.remarkEditorElement.removeEventListener('contextmenu', this.handleRemarkTableContextMenu, true);
+    }
+    if (this.editor) this.editor.destroy();
+    this.props.changeEditStatus(false);
+    if (EditFormContext === this) EditFormContext = null;
     this._isMounted = false;
   }
 
@@ -418,8 +477,15 @@ class InterfaceEditForm extends Component {
     let str = '';
 
     try {
+      if (this.props.form.getFieldValue('res_body_is_json_schema') && !this.schemaValidity.response) {
+        return this.mockPreview.setValue('解析出错: Schema JSON 无效');
+      }
+      if (!this.props.form.getFieldValue('res_body_is_json_schema') &&
+          !validJson(this.state.res_body, this.props.projectMsg.is_json5)) {
+        return this.mockPreview.setValue('解析出错: JSON 格式有误');
+      }
       if (this.props.form.getFieldValue('res_body_is_json_schema')) {
-        let schema = json5.parse(this.props.form.getFieldValue('res_body'));
+        let schema = JSON.parse(this.state.res_body);
         let result = await axios.post('/api/interface/schema2json', {
           schema: schema
         });
@@ -447,42 +513,11 @@ class InterfaceEditForm extends Component {
   };
 
   handlePath = e => {
-    let val = e.target.value,
-      queue = [];
-
-    let insertParams = name => {
-      let findExist = _.find(this.state.req_params, { name: name });
-      if (findExist) {
-        queue.push(findExist);
-      } else {
-        queue.push({ name: name, desc: '' });
-      }
-    };
-    val = handlePath(val);
-    this.props.form.setFieldsValue({
-      path: val
-    });
-    if (val && val.indexOf(':') !== -1) {
-      let paths = val.split('/'),
-        name,
-        i;
-      for (i = 1; i < paths.length; i++) {
-        if (paths[i][0] === ':') {
-          name = paths[i].substr(1);
-          insertParams(name);
-        }
-      }
-    }
-
-    if (val && val.length > 3) {
-      val.replace(/\{(.+?)\}/g, function(str, match) {
-        insertParams(match);
-      });
-    }
-
-    this.setState({
-      req_params: queue
-    });
+    const path = handlePath(e.target.value);
+    const current = this.props.form.getFieldValue('req_params') || this.state.req_params;
+    const req_params = reconcilePathParameters(path, current);
+    this.props.form.setFieldsValue({ path, req_params });
+    this.setState({ req_params });
   };
 
   // 点击切换radio
@@ -528,7 +563,7 @@ class InterfaceEditForm extends Component {
     this.setState({
       res_body: d.text
     });
-    EditFormContext.props.changeEditStatus(initResBody !== d.text);
+    if (initResBody !== d.text) this.markDirty();
   };
 
   // 处理 req_body_other Editor
@@ -537,24 +572,21 @@ class InterfaceEditForm extends Component {
     this.setState({
       req_body_other: d.text
     });
-    EditFormContext.props.changeEditStatus(initReqBody !== d.text);
+    if (initReqBody !== d.text) this.markDirty();
   };
 
   // 处理批量导入参数
   handleBulkOk = () => {
-    let curValue = this.props.form.getFieldValue(this.state.bulkName)||[];
-    // { name: '', required: '1', desc: '', example: '' }
-    let newValue = [];
-
-    this.state.bulkValue.split('\n').forEach((item, index) => {
-      let valueItem = Object.assign({}, curValue[index] || dataTpl[this.state.bulkName]);
-      let indexOfColon = item.indexOf(':');
-      if (indexOfColon!==-1) {
-        valueItem.name = item.substring(0, indexOfColon);
-        valueItem.example = item.substring(indexOfColon + 1) || '';
-        newValue.push(valueItem);
-      }
-    });
+    const parsed = parseBulkParameters(
+      this.state.bulkValue,
+      this.props.form.getFieldValue(this.state.bulkName) || [],
+      dataTpl[this.state.bulkName]
+    );
+    if (parsed.invalidLine) {
+      message.error(`第 ${parsed.invalidLine} 行格式错误，请输入 name:example，参数名称不能为空`);
+      return;
+    }
+    const newValue = parsed.values;
 
     this.props.form.setFieldsValue({[this.state.bulkName]: newValue});
     this.setState({
@@ -606,9 +638,9 @@ class InterfaceEditForm extends Component {
       wrapperCol: { span: 18 }
     };
 
-    const res_body_use_schema_editor = checkIsJsonSchema(this.state.res_body) || '';
+    const res_body_use_schema_editor = checkIsJsonSchema(this.state.res_body, { preserveFormatting: true }) || '';
 
-    const req_body_other_use_schema_editor = checkIsJsonSchema(this.state.req_body_other) || '';
+    const req_body_other_use_schema_editor = checkIsJsonSchema(this.state.req_body_other, { preserveFormatting: true }) || '';
 
     const queryTpl = (data, index) => {
       return (
@@ -840,7 +872,7 @@ class InterfaceEditForm extends Component {
                 rules: [{ required: true, message: '请选择一个分类' }]
               })(
                 <Select placeholder="请选择一个分类">
-                  {this.props.cat.map(item => {
+                  {(this.props.cat || []).map(item => {
                     return (
                       <Option key={item._id} value={item._id + ''}>
                         {item.name}
@@ -876,7 +908,7 @@ class InterfaceEditForm extends Component {
                 </span>
               }
             >
-              <InputGroup compact>
+              <InputGroup compact style={{ width: '100%' }}>
                 <Select
                   value={this.state.method}
                   onChange={this.onChangeMethod}
@@ -925,8 +957,11 @@ class InterfaceEditForm extends Component {
             </FormItem>
             <FormItem className="interface-edit-item" {...formItemLayout} label="Tag">
               {getFieldDecorator('tag', { initialValue: this.state.tag })(
-                <Select placeholder="请选择 tag " mode="multiple">
-                  {projectMsg.tag.map(item => {
+                <Select placeholder="请选择 tag " mode="multiple"
+                  open={this.state.tagDropdownOpen}
+                  onOpenChange={tagDropdownOpen => this.setState({ tagDropdownOpen })}
+                >
+                  {(projectMsg.tag || []).map(item => {
                     return (
                       <Option value={item.name} key={item._id}>
                         {item.name}
@@ -934,7 +969,10 @@ class InterfaceEditForm extends Component {
                     );
                   })}
                   <Option value="tag设置" disabled style={{ cursor: 'pointer', color: '#2395f1' }}>
-                    <Button type="primary" onClick={this.props.onTagClick}>
+                    <Button type="primary" onClick={() => {
+                      this.setState({ tagDropdownOpen: false });
+                      this.props.onTagClick();
+                    }}>
                       Tag设置
                     </Button>
                   </Option>
@@ -996,7 +1034,7 @@ class InterfaceEditForm extends Component {
             </FormItem>
 
             <Row className={'interface-edit-item ' + this.state.hideTabs.req.query}>
-              <Col>
+              <Col span={24}>
                 <EasyDragSort
                   data={() => this.props.form.getFieldValue('req_query')}
                   onChange={this.handleDragMove('req_query')}
@@ -1014,7 +1052,7 @@ class InterfaceEditForm extends Component {
             </FormItem>
 
             <Row className={'interface-edit-item ' + this.state.hideTabs.req.headers}>
-              <Col>
+              <Col span={24}>
                 <EasyDragSort
                   data={() => this.props.form.getFieldValue('req_headers')}
                   onChange={this.handleDragMove('req_headers')}
@@ -1030,7 +1068,7 @@ class InterfaceEditForm extends Component {
                   {getFieldDecorator('req_body_type', {
                     initialValue: this.state.req_body_type
                   })(
-                    <RadioGroup>
+                    <RadioGroup onChange={event => this.changeBodyType('request', event)}>
                       <Radio value="form">form</Radio>
                       <Radio value="json">json</Radio>
                       <Radio value="file">file</Radio>
@@ -1047,7 +1085,7 @@ class InterfaceEditForm extends Component {
                       : 'hide')
                   }
                 >
-                  <Col style={{ minHeight: '50px' }}>
+                  <Col span={24} style={{ minHeight: '50px' }}>
                     <Row type="flex" justify="space-around">
                       <Col span="12" className="interface-edit-item">
                         <Button
@@ -1094,7 +1132,7 @@ class InterfaceEditForm extends Component {
               </span>
               {getFieldDecorator('req_body_is_json_schema', {
                 valuePropName: 'checked',
-                initialValue: this.state.req_body_is_json_schema || !projectMsg.is_json5
+                initialValue: initialSchemaMode(this.state.req_body_type, this.state.req_body_is_json_schema, projectMsg.is_json5)
               })(
                 <Switch
                   checkedChildren="开"
@@ -1103,7 +1141,7 @@ class InterfaceEditForm extends Component {
                 />
               )}
 
-              <Col style={{ marginTop: '5px' }} className="interface-edit-json-info">
+              <Col span={24} style={{ marginTop: '5px' }} className="interface-edit-json-info">
                 {!this.props.form.getFieldValue('req_body_is_json_schema') ? (
                   <span>
                     基于 Json5, 参数描述信息用注释的方式实现{' '}
@@ -1114,21 +1152,20 @@ class InterfaceEditForm extends Component {
                   </span>
                 ) : (
                   <ReqBodySchema
+                    onValidityChange={this.onRequestValidity}
                     onChange={text => {
                       this.setState({
                         req_body_other: text
                       });
 
-                      if (new Date().getTime() - this.startTime > 1000) {
-                        EditFormContext.props.changeEditStatus(true);
-                      }
+                      this.markDirty();
                     }}
                     isMock={true}
                     data={req_body_other_use_schema_editor}
                   />
                 )}
               </Col>
-              <Col>
+              <Col span={24}>
                 {!this.props.form.getFieldValue('req_body_is_json_schema') && (
                   <AceEditor
                     className="interface-editor"
@@ -1143,20 +1180,20 @@ class InterfaceEditForm extends Component {
             {this.props.form.getFieldValue('req_body_type') === 'file' &&
             this.state.hideTabs.req.body !== 'hide' ? (
               <Row className="interface-edit-item">
-                <Col className="interface-edit-item-other-body">
+                <Col span={24} className="interface-edit-item-other-body">
                   {getFieldDecorator('req_body_other', {
                     initialValue: this.state.req_body_other
-                  })(<TextArea placeholder="" autosize={true} />)}
+                  })(<TextArea placeholder="" autosize={true} onChange={event => this.handleBodyText('request', event.target.value)} />)}
                 </Col>
               </Row>
             ) : null}
             {this.props.form.getFieldValue('req_body_type') === 'raw' &&
             this.state.hideTabs.req.body !== 'hide' ? (
               <Row>
-                <Col>
+                <Col span={24}>
                   {getFieldDecorator('req_body_other', {
                     initialValue: this.state.req_body_other
-                  })(<TextArea placeholder="" autosize={{ minRows: 8 }} />)}
+                  })(<TextArea placeholder="" autosize={{ minRows: 8 }} onChange={event => this.handleBodyText('request', event.target.value)} />)}
                 </Col>
               </Row>
             ) : null}
@@ -1173,12 +1210,12 @@ class InterfaceEditForm extends Component {
             )}
             {getFieldDecorator('res_body_is_json_schema', {
               valuePropName: 'checked',
-              initialValue: this.state.res_body_is_json_schema || !projectMsg.is_json5
+              initialValue: initialSchemaMode(this.state.res_body_type, this.state.res_body_is_json_schema, projectMsg.is_json5)
             })(
               <Switch
                 checkedChildren="json-schema"
                 unCheckedChildren="json"
-                disabled={!projectMsg.is_json5}
+                disabled={!projectMsg.is_json5 || this.props.form.getFieldValue('res_body_type') !== 'json'}
               />
             )}
           </h2>
@@ -1186,7 +1223,7 @@ class InterfaceEditForm extends Component {
             {getFieldDecorator('res_body_type', {
               initialValue: this.state.res_body_type
             })(
-              <RadioGroup size="large" className="radioGroup">
+              <RadioGroup size="large" className="radioGroup" onChange={event => this.changeBodyType('response', event)}>
                 <RadioButton value="json">JSON</RadioButton>
                 <RadioButton value="raw">RAW</RadioButton>
               </RadioGroup>
@@ -1200,7 +1237,7 @@ class InterfaceEditForm extends Component {
                   this.props.form.getFieldValue('res_body_type') === 'json' ? 'block' : 'none'
               }}
             >
-              <Col>
+              <Col span={24}>
                 <Tabs size="large" defaultActiveKey="tpl" onChange={this.handleJsonType}>
                   <TabPane tab="模板" key="tpl" />
                   <TabPane tab="预览" key="preview" />
@@ -1228,13 +1265,12 @@ class InterfaceEditForm extends Component {
                   ) : (
                     <div style={{ display: this.state.jsonType === 'tpl' ? 'block' : 'none' }}>
                       <ResBodySchema
+                        onValidityChange={this.onResponseValidity}
                         onChange={text => {
                           this.setState({
                             res_body: text
                           });
-                          if (new Date().getTime() - this.startTime > 1000) {
-                            EditFormContext.props.changeEditStatus(true);
-                          }
+                          this.markDirty();
                         }}
                         isMock={true}
                         data={res_body_use_schema_editor}
@@ -1270,10 +1306,10 @@ class InterfaceEditForm extends Component {
                 display: this.props.form.getFieldValue('res_body_type') === 'raw' ? 'block' : 'none'
               }}
             >
-              <Col>
+              <Col span={24}>
                 {getFieldDecorator('res_body', {
                   initialValue: this.state.res_body
-                })(<TextArea style={{ minHeight: '150px' }} placeholder="" />)}
+                })(<TextArea style={{ minHeight: '150px' }} placeholder="" onChange={event => this.handleBodyText('response', event.target.value)} />)}
               </Col>
             </Row>
           </div>
@@ -1336,7 +1372,7 @@ class InterfaceEditForm extends Component {
             <Affix offsetBottom={0}>
               <Button
                 className="interface-edit-submit-button"
-                disabled={this.state.submitStatus}
+                disabled={this.state.submitStatus || this.props.saveDisabled}
                 size="large"
                 htmlType="submit"
               >
@@ -1352,6 +1388,6 @@ class InterfaceEditForm extends Component {
 
 export default Form.create({
   onValuesChange() {
-    EditFormContext.props.changeEditStatus(true);
+    if (EditFormContext) EditFormContext.markDirty();
   }
 })(InterfaceEditForm);

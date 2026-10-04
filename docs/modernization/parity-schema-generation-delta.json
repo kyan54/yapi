@@ -1,0 +1,70 @@
+{
+  "scope": "A SchemaEditor external data generation during node modal closing",
+  "status": "passed",
+  "previous_remote_commit": "a4287f24afa2913f3cb8f9fdbd449ae847674ad3",
+  "product_paths": [
+    "client/components/SchemaEditor.js"
+  ],
+  "fix": "Externally supplied input differing from local text advances node tree generation; controlled echo of own Apply retains generation and normal focus restore. Nested node closing dialogs retire with the old document.",
+  "precise_component_regression": {
+    "environment": "Real React/AntD/dialog/rc-motion in jsdom; explicit animationend events, not browser or production-route reproduction",
+    "candidate_passed": 6,
+    "baseline_expected_failed": 4,
+    "baseline_ordinary_close_and_apply_passed": 2,
+    "cases": [
+      "root Cancel then external data during leave-active",
+      "root Apply then external data during leave-active",
+      "nested Cancel then external data during leave-active",
+      "nested Apply then external data during leave-active",
+      "ordinary Cancel restores focus",
+      "ordinary Apply and controlled echo restores focus and publishes text"
+    ]
+  },
+  "browser_regression": {
+    "runtime": "Independent 4185 with B4 docs overlay",
+    "passed": 30,
+    "failed": 0,
+    "roles": [
+      "owner",
+      "developer",
+      "guest"
+    ],
+    "cancel_reopen_groups": 72,
+    "source_files_verified": 335,
+    "post_run_db_records": 9,
+    "viewport": "1920x1080",
+    "screenshot_visually_reviewed": true,
+    "scope_limit": "Existing browser cases verify ordinary lifecycle, API success/denial, immediate DB and refresh, full interface unmount; do not claim same-instance external data motion reproduced in browser."
+  },
+  "modernization": {
+    "passed": 358,
+    "skipped": 6,
+    "failed": 0
+  },
+  "shared_4175_modified": false,
+  "original_246_matrix_modified": false,
+  "integration_needed": true,
+  "production_reachability": "InterfaceEditForm passes state req_body_other/res_body through preserveFormatting normalization and receives local Apply text. Specific production external-replacement-during-close route was not demonstrated; this closes the reusable component external-data contract.",
+  "evidence": [
+    {
+      "file": "schema-generation-browser-results.json",
+      "sha256": "e6a36895b845e27ef8f372c5d8adae620ce2aeabcb97380dfe87c3fb884db16b"
+    },
+    {
+      "file": "schema-generation-source-sha256.json",
+      "sha256": "b8195bcc1ce5d76f28e4986796c10d75c4d26fd6dfd1b530a20f703f3a9d4ef7"
+    },
+    {
+      "file": "schema-generation-db-readback.json",
+      "sha256": "fc7cb97c9a91fd5c5b0854750e5310a7c9b608ccbb6557832f5d552dc98cf39a"
+    },
+    {
+      "file": "schema-generation-modernization.log",
+      "sha256": "10af4505df784535a1502219f2bc260fc1300c00b6d7f46e915e26aaae56f1d9"
+    },
+    {
+      "file": "schema-generation-baseline.log",
+      "sha256": "3f6b6f732bc93b6d75f8374dd77a3c187c0dfc049ebe00221917fbd6c55bc26f"
+    }
+  ]
+}

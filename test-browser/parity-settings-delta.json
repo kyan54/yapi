@@ -1,0 +1,1042 @@
+{
+  "scope": "C settings/import-export/members/wiki/activity/services",
+  "kind": "independent increment; never replace main246 matrix",
+  "oldCommit": "fd90eaf108c0382db133a6650e368e5d7d38734a",
+  "newBase": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
+  "sourceMatrixSha256": "50f7c03f1424b003fe98b4511840c29d3e19b208eb350895d21b4e4c9ae01516",
+  "ports": {
+    "old": 4188,
+    "new": 4189
+  },
+  "databases": {
+    "old": "parity_fast_settings_old_r2",
+    "new": "parity_fast_settings_new_r2"
+  },
+  "sourcePatches": [
+    "ProjectRequest/ProjectRequest.js",
+    "ProjectMock/index.js",
+    "server/controllers/group.js:addMember only, explicitly coordinated"
+  ],
+  "compoundCounts": {
+    "notrun": 37,
+    "passed": 18,
+    "failed": 3,
+    "blocked": 2
+  },
+  "atomicCounts": {
+    "passed": 63,
+    "failed": 8
+  },
+  "atomicExecutions": [
+    {
+      "title": "Wiki edit cancel reopen update and reload owner",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1726
+    },
+    {
+      "title": "Wiki edit cancel reopen update and reload owner",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1548
+    },
+    {
+      "title": "Wiki edit cancel reopen update and reload developer",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1196
+    },
+    {
+      "title": "Wiki edit cancel reopen update and reload developer",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1352
+    },
+    {
+      "title": "project activity renders real log and detail dialog owner",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1811
+    },
+    {
+      "title": "project activity renders real log and detail dialog owner",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1179
+    },
+    {
+      "title": "project activity renders real log and detail dialog developer",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1692
+    },
+    {
+      "title": "project activity renders real log and detail dialog developer",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1204
+    },
+    {
+      "title": "project members add role notification import cancel and delete",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 2397
+    },
+    {
+      "title": "project members add role notification import cancel and delete",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 3495
+    },
+    {
+      "title": "Wiki Markdown update and repeated reload preserve content owner",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1020
+    },
+    {
+      "title": "Wiki Markdown update and repeated reload preserve content owner",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1247
+    },
+    {
+      "title": "Wiki Markdown update and repeated reload preserve content developer",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1220
+    },
+    {
+      "title": "Wiki Markdown update and repeated reload preserve content developer",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1428
+    },
+    {
+      "title": "developer cannot create owner membership in isolated project",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1247
+    },
+    {
+      "title": "developer cannot create owner membership in isolated project",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1327
+    },
+    {
+      "title": "exports all installed formats owner",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1776
+    },
+    {
+      "title": "exports all installed formats owner",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 2746
+    },
+    {
+      "title": "exports all installed formats developer",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1197
+    },
+    {
+      "title": "exports all installed formats developer",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 2713
+    },
+    {
+      "title": "group role settings boundaries owner",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1032
+    },
+    {
+      "title": "group role settings boundaries owner",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1197
+    },
+    {
+      "title": "group role settings boundaries developer",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 737
+    },
+    {
+      "title": "group role settings boundaries developer",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 890
+    },
+    {
+      "title": "group role settings boundaries outsider",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 731
+    },
+    {
+      "title": "group role settings boundaries outsider",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 864
+    },
+    {
+      "title": "import every installed file format normal and duplicate",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 5222
+    },
+    {
+      "title": "import every installed file format normal and duplicate",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 8337
+    },
+    {
+      "title": "import smart merge preserves annotations and overwrite cancel confirm is scoped",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 3059
+    },
+    {
+      "title": "import smart merge preserves annotations and overwrite cancel confirm is scoped",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 4127
+    },
+    {
+      "title": "export filters category public visibility wiki and Unicode",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 1817
+    },
+    {
+      "title": "export filters category public visibility wiki and Unicode",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 3518
+    },
+    {
+      "title": "admin environment add rename nested values cancel delete and reload",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 2120
+    },
+    {
+      "title": "admin environment add rename nested values cancel delete and reload",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch1-results.json",
+      "durationMs": 2485
+    },
+    {
+      "title": "save failure must be an error and retry persists 请求配置 business",
+      "version": "old",
+      "status": "failed",
+      "evidence": "errors-final-results.json",
+      "durationMs": 6038
+    },
+    {
+      "title": "save failure must be an error and retry persists 全局mock脚本 business",
+      "version": "old",
+      "status": "failed",
+      "evidence": "errors-final-results.json",
+      "durationMs": 6090
+    },
+    {
+      "title": "save failure must be an error and retry persists 请求配置 network",
+      "version": "old",
+      "status": "failed",
+      "evidence": "errors-final-results.json",
+      "durationMs": 5939
+    },
+    {
+      "title": "save failure must be an error and retry persists 全局mock脚本 network",
+      "version": "old",
+      "status": "failed",
+      "evidence": "errors-final-results.json",
+      "durationMs": 5942
+    },
+    {
+      "title": "save failure must be an error and retry persists 请求配置 business",
+      "version": "new",
+      "status": "passed",
+      "evidence": "errors-verified-results.json",
+      "durationMs": 1636
+    },
+    {
+      "title": "save failure must be an error and retry persists 全局mock脚本 business",
+      "version": "new",
+      "status": "passed",
+      "evidence": "errors-verified-results.json",
+      "durationMs": 1412
+    },
+    {
+      "title": "save failure must be an error and retry persists 请求配置 rejected",
+      "version": "new",
+      "status": "passed",
+      "evidence": "errors-verified-results.json",
+      "durationMs": 1383
+    },
+    {
+      "title": "save failure must be an error and retry persists 全局mock脚本 rejected",
+      "version": "new",
+      "status": "passed",
+      "evidence": "errors-verified-results.json",
+      "durationMs": 1363
+    },
+    {
+      "title": "save failure must be an error and retry persists 请求配置 network",
+      "version": "new",
+      "status": "passed",
+      "evidence": "errors-verified-results.json",
+      "durationMs": 1369
+    },
+    {
+      "title": "save failure must be an error and retry persists 全局mock脚本 network",
+      "version": "new",
+      "status": "passed",
+      "evidence": "errors-verified-results.json",
+      "durationMs": 1363
+    },
+    {
+      "title": "CRUD admin group cancel create edit custom fields and delete confirmation",
+      "version": "old",
+      "status": "passed",
+      "evidence": "batch2-results.json",
+      "durationMs": 3310
+    },
+    {
+      "title": "CRUD admin group cancel create edit custom fields and delete confirmation",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch2-results.json",
+      "durationMs": 3232
+    },
+    {
+      "title": "project metadata booleans tags repeated save reload and scoped danger cancel",
+      "version": "old",
+      "status": "failed",
+      "evidence": "batch2-final-results.json",
+      "durationMs": 1400
+    },
+    {
+      "title": "project metadata booleans tags repeated save reload and scoped danger cancel",
+      "version": "new",
+      "status": "passed",
+      "evidence": "batch2-final-results.json",
+      "durationMs": 3643
+    },
+    {
+      "title": "existing synthetic token display cancel and services project switching owner",
+      "version": "old",
+      "status": "passed",
+      "evidence": "services-final-results.json",
+      "durationMs": 2781
+    },
+    {
+      "title": "existing synthetic token display cancel and services project switching owner",
+      "version": "new",
+      "status": "passed",
+      "evidence": "services-final-results.json",
+      "durationMs": 1928
+    },
+    {
+      "title": "existing synthetic token display cancel and services project switching developer",
+      "version": "old",
+      "status": "passed",
+      "evidence": "services-final-results.json",
+      "durationMs": 1282
+    },
+    {
+      "title": "existing synthetic token display cancel and services project switching developer",
+      "version": "new",
+      "status": "passed",
+      "evidence": "services-final-results.json",
+      "durationMs": 1173
+    },
+    {
+      "title": "services instructions narrow layout and generated output authorization",
+      "version": "old",
+      "status": "passed",
+      "evidence": "services-verified-results.json",
+      "durationMs": 1536
+    },
+    {
+      "title": "services instructions narrow layout and generated output authorization",
+      "version": "new",
+      "status": "passed",
+      "evidence": "services-verified-results.json",
+      "durationMs": 1685
+    },
+    {
+      "title": "guest cannot discover token tab",
+      "version": "old",
+      "status": "passed",
+      "evidence": "config-extra-results.json",
+      "durationMs": 1193
+    },
+    {
+      "title": "guest cannot discover token tab",
+      "version": "new",
+      "status": "passed",
+      "evidence": "config-extra-results.json",
+      "durationMs": 1093
+    },
+    {
+      "title": "both request scripts and global mock toggle save exact values across reload",
+      "version": "old",
+      "status": "passed",
+      "evidence": "config-scripts-final-results.json",
+      "durationMs": 1549
+    },
+    {
+      "title": "both request scripts and global mock toggle save exact values across reload",
+      "version": "new",
+      "status": "passed",
+      "evidence": "config-scripts-final-results.json",
+      "durationMs": 1794
+    },
+    {
+      "title": "group selected member roles duplicate and cancel deletion persist exact member admin",
+      "version": "new",
+      "status": "passed",
+      "evidence": "auth-fixed-results.json",
+      "durationMs": 4260
+    },
+    {
+      "title": "group selected member roles duplicate and cancel deletion persist exact member owner",
+      "version": "new",
+      "status": "passed",
+      "evidence": "auth-fixed-results.json",
+      "durationMs": 4392
+    },
+    {
+      "title": "group nonowner UI and direct member mutations denied developer",
+      "version": "old",
+      "status": "failed",
+      "evidence": "auth-verified-results.json",
+      "durationMs": 1152
+    },
+    {
+      "title": "group nonowner UI and direct member mutations denied developer",
+      "version": "new",
+      "status": "passed",
+      "evidence": "auth-verified-results.json",
+      "durationMs": 1427
+    },
+    {
+      "title": "group nonowner UI and direct member mutations denied outsider",
+      "version": "old",
+      "status": "failed",
+      "evidence": "auth-verified-results.json",
+      "durationMs": 1204
+    },
+    {
+      "title": "group nonowner UI and direct member mutations denied outsider",
+      "version": "new",
+      "status": "passed",
+      "evidence": "auth-verified-results.json",
+      "durationMs": 1199
+    },
+    {
+      "title": "Wiki live websocket conflict blocks second editor and cancel releases lock",
+      "version": "old",
+      "status": "passed",
+      "evidence": "wiki-accepted-results.json",
+      "durationMs": 1927
+    },
+    {
+      "title": "Wiki live websocket conflict blocks second editor and cancel releases lock",
+      "version": "new",
+      "status": "passed",
+      "evidence": "wiki-accepted-results.json",
+      "durationMs": 2271
+    },
+    {
+      "title": "malformed import error releases loading and valid retry persists",
+      "version": "old",
+      "status": "failed",
+      "evidence": "import-final-results.json",
+      "durationMs": 5894
+    },
+    {
+      "title": "malformed import error releases loading and valid retry persists",
+      "version": "new",
+      "status": "passed",
+      "evidence": "import-final-results.json",
+      "durationMs": 1910
+    },
+    {
+      "title": "Swagger URL empty gate and isolated network failure are visible and retryable",
+      "version": "old",
+      "status": "passed",
+      "evidence": "import-errors-results.json",
+      "durationMs": 980
+    },
+    {
+      "title": "Swagger URL empty gate and isolated network failure are visible and retryable",
+      "version": "new",
+      "status": "passed",
+      "evidence": "import-errors-results.json",
+      "durationMs": 1408
+    },
+    {
+      "title": "group selected member roles duplicate and cancel deletion persist exact member",
+      "version": "old",
+      "status": "passed",
+      "evidence": "import-errors-results.json",
+      "durationMs": 2427
+    }
+  ],
+  "compoundResults": [
+    {
+      "id": "group_members-01",
+      "assertion": "Add exact selected user with owner/dev/guest role and prevent duplicate user",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Owner/admin role cycles, exact selection, duplicate no-op and dev/guest denial covered; inherited project rights not exhaustively replayed."
+    },
+    {
+      "id": "group_members-02",
+      "assertion": "role changes persist and inherited project rights reflect change",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Owner/admin role cycles, exact selection, duplicate no-op and dev/guest denial covered; inherited project rights not exhaustively replayed."
+    },
+    {
+      "id": "group_members-03",
+      "assertion": "deletion Cancel keeps member, confirmation removes only intended member",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Targeted row cancel/reopen/confirm plus API persistence; admin and owner exercise on new."
+    },
+    {
+      "id": "group_members-04",
+      "assertion": "nonowners cannot mutate members, including direct requests",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Legacy dev/guest can add ordinary fixture user as owner; fixed new returns405 and membership unchanged.",
+      "legacyDefect": true
+    },
+    {
+      "id": "logs-01",
+      "assertion": "Filter log type and load more without duplicate/missing rows",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Owner/developer activity/detail dialog covered; filter pagination/link return/download compound remains."
+    },
+    {
+      "id": "logs-02",
+      "assertion": "expand/collapse change details with sanitized readable content",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Owner/developer activity/detail dialog covered; filter pagination/link return/download compound remains."
+    },
+    {
+      "id": "logs-03",
+      "assertion": "follow interface/user links and return to same context",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Owner/developer activity/detail dialog covered; filter pagination/link return/download compound remains."
+    },
+    {
+      "id": "logs-04",
+      "assertion": "download Mock/history data and verify generated content and permission",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Owner/developer activity/detail dialog covered; filter pagination/link return/download compound remains."
+    },
+    {
+      "id": "group_settings-01",
+      "assertion": "Edit group name/description/custom-field toggle and required custom-field name, save and reload",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Edit/reload custom field and danger flow covered; required-empty-field validation remains."
+    },
+    {
+      "id": "group_settings-02",
+      "assertion": "Cancel or close danger section causes no deletion",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Admin deletion cancel preserved synthetic group."
+    },
+    {
+      "id": "group_settings-03",
+      "assertion": "typed group-name confirmation only authorizes intended group deletion",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Wrong-name gate followed by exact-name deletion and missing-ID readback."
+    },
+    {
+      "id": "group_settings-04",
+      "assertion": "owner can edit but admin-only delete visibility remains and other roles cannot write",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Owner cannot see admin delete and dev/outsider group writes denied."
+    },
+    {
+      "id": "project_settings-01",
+      "assertion": "Edit project name/group/basepath/description/tags and save/reload",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Name/basepath/description/tag/booleans/repeated save and danger cancel/wrong-name covered; moving group/full role visibility and confirmed project deletion remain."
+    },
+    {
+      "id": "project_settings-02",
+      "assertion": "permission, strict Mock validation, JSON5 and notification toggles persist exact booleans",
+      "status": "failed",
+      "old": "failed",
+      "new": "notrun",
+      "detail": "Legacy repeated save reverts switch_notice to false. New boolean save/reload passes; full permission toggle compound still incomplete.",
+      "legacyDefect": true
+    },
+    {
+      "id": "project_settings-03",
+      "assertion": "project move and visibility controls follow role restrictions",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Name/basepath/description/tag/booleans/repeated save and danger cancel/wrong-name covered; moving group/full role visibility and confirmed project deletion remain."
+    },
+    {
+      "id": "project_settings-04",
+      "assertion": "danger Cancel preserves data and name-confirmed delete targets only current project",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Name/basepath/description/tag/booleans/repeated save and danger cancel/wrong-name covered; moving group/full role visibility and confirmed project deletion remain."
+    },
+    {
+      "id": "project_tags-01",
+      "assertion": "Add/edit/delete tags and descriptions and preserve selected tags on interface",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Inline tag create/description persisted; edit/delete/duplicates and interface tag modal unsaved-state interactions remain."
+    },
+    {
+      "id": "project_tags-02",
+      "assertion": "close or cancel tag modal does not persist edits unexpectedly",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Inline tag create/description persisted; edit/delete/duplicates and interface tag modal unsaved-state interactions remain."
+    },
+    {
+      "id": "project_tags-03",
+      "assertion": "save tag modal refreshes options without wiping unsaved interface fields",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Inline tag create/description persisted; edit/delete/duplicates and interface tag modal unsaved-state interactions remain."
+    },
+    {
+      "id": "project_tags-04",
+      "assertion": "duplicate/empty tags and removed selected tags behave consistently",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Inline tag create/description persisted; edit/delete/duplicates and interface tag modal unsaved-state interactions remain."
+    },
+    {
+      "id": "project_envs-01",
+      "assertion": "Add, select and rename environment",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Add/select/rename across reload."
+    },
+    {
+      "id": "project_envs-02",
+      "assertion": "edit domain and header name/value rows and save exact order/data",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Domain/header/cookie/global exact values; added environment deleted after round-trip."
+    },
+    {
+      "id": "project_envs-03",
+      "assertion": "deletion confirmation Cancel retains environment and confirmed deletion reconciles runners",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Configuration add/select/rename/nested values/delete covered; runner reconciliation and inline-modal propagation are delegated to B."
+    },
+    {
+      "id": "project_envs-04",
+      "assertion": "close/reopen inline runner environment modal and verify cancel/save propagation without stale selection",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Configuration add/select/rename/nested values/delete covered; runner reconciliation and inline-modal propagation are delegated to B."
+    },
+    {
+      "id": "project_requests-01",
+      "assertion": "Toggle and edit both scripts then save/reload exact source",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Both request and response scripts exact save/readback/reload; no toggle control exists on these tabs."
+    },
+    {
+      "id": "project_requests-02",
+      "assertion": "editor syntax errors are shown without unintended submission",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Both script sources and business/network failure retry covered; syntax marker and runner execution/network allowlist compound delegated to B."
+    },
+    {
+      "id": "project_requests-03",
+      "assertion": "authorized runner executes configured scripts and unconfigured runner displays actionable failure",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Both script sources and business/network failure retry covered; syntax marker and runner execution/network allowlist compound delegated to B."
+    },
+    {
+      "id": "project_requests-04",
+      "assertion": "script network default-deny and allowlist failures cannot appear as a successful request",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Both script sources and business/network failure retry covered; syntax marker and runner execution/network allowlist compound delegated to B."
+    },
+    {
+      "id": "project_token-01",
+      "assertion": "Guest has no token tab",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Guest fixture has no token tab."
+    },
+    {
+      "id": "project_token-02",
+      "assertion": "permitted users read/copy correct project's token",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Existing fixture values displayed, project switch and refresh cancellation only; clipboard read not performed."
+    },
+    {
+      "id": "project_token-03",
+      "assertion": "owner/admin refresh updates value and obsolete value loses intended capability",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "User explicitly excluded refreshing or generating persistent credentials; only existing synthetic token display/cancel tested."
+    },
+    {
+      "id": "project_token-04",
+      "assertion": "dev/nonmember direct refresh is denied and repeated refresh does not leave UI with an older returned value",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Direct refresh excluded to avoid generation; UI developer lacks refresh. Repeated refresh not executed."
+    },
+    {
+      "id": "project_mock-01",
+      "assertion": "Enable/edit/save global script and reload",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Enabled script saved/read back, then disabled and read back without clearing script."
+    },
+    {
+      "id": "project_mock-02",
+      "assertion": "disable prevents script effects",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Enable/disable configuration and save errors covered; execution behavior and combined execution-error compound delegated to B."
+    },
+    {
+      "id": "project_mock-03",
+      "assertion": "Mock request reflects script only under supported runner capability",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Enable/disable configuration and save errors covered; execution behavior and combined execution-error compound delegated to B."
+    },
+    {
+      "id": "project_mock-04",
+      "assertion": "save/execution failure leaves clear state and no false success",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Enable/disable configuration and save errors covered; execution behavior and combined execution-error compound delegated to B."
+    },
+    {
+      "id": "project_members-01",
+      "assertion": "Add selected user, change owner/dev/guest role and verify persisted rights",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Add guest/change dev/delete/cancel source import covered; all target roles/notification toggle/repeated-add paths remain."
+    },
+    {
+      "id": "project_members-02",
+      "assertion": "per-member email notification toggle follows owner/admin restriction",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Add guest/change dev/delete/cancel source import covered; all target roles/notification toggle/repeated-add paths remain."
+    },
+    {
+      "id": "project_members-03",
+      "assertion": "bulk import from selected project displays correct candidates and Cancel imports none",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Add guest/change dev/delete/cancel source import covered; all target roles/notification toggle/repeated-add paths remain."
+    },
+    {
+      "id": "project_members-04",
+      "assertion": "delete confirmation/repeated add cannot remove or duplicate wrong member",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Add guest/change dev/delete/cancel source import covered; all target roles/notification toggle/repeated-add paths remain."
+    },
+    {
+      "id": "wiki-01",
+      "assertion": "Display sanitized wiki and preserve normal headings/tables/images/links",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Edit/cancel/reload/lock covered; sanitized image/link payloads and project-switch repeated-notification combinations remain."
+    },
+    {
+      "id": "wiki-02",
+      "assertion": "owner/dev edit via WYSIWYG/Markdown, update and reload exact content",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Owner/dev WYSIWYG and Markdown save/reload."
+    },
+    {
+      "id": "wiki-03",
+      "assertion": "Cancel edit and reopen do not save draft and conflict prevents unauthorized overwrite",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Draft cancel/reopen plus live WebSocket conflict prevents second editor; cancel releases lock without changing desc/markdown."
+    },
+    {
+      "id": "wiki-04",
+      "assertion": "notification choice, repeated update and switching project prevent duplicate/stale updates",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Edit/cancel/reload/lock covered; sanitized image/link payloads and project-switch repeated-notification combinations remain."
+    },
+    {
+      "id": "imports-01",
+      "assertion": "Select each installed importer, target default category and synchronization mode",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Four importers, default category, three mode selectors exercised."
+    },
+    {
+      "id": "imports-02",
+      "assertion": "file picker and drag/drop process valid input and display malformed input errors",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Picker, malformed failure recovery, all formats and duplicate/merge covered; real drag/drop and navigation during pending import remain."
+    },
+    {
+      "id": "imports-03",
+      "assertion": "normal skips duplicates, smart merge retains intended manual edits, full overwrite changes only explicit scope",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Duplicate normal skip; smart annotation merge; overwrite cancel/confirm scoped."
+    },
+    {
+      "id": "imports-04",
+      "assertion": "repeated upload/cancel/navigation during import does not duplicate or falsely report completion",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Picker, malformed failure recovery, all formats and duplicate/merge covered; real drag/drop and navigation during pending import remain."
+    },
+    {
+      "id": "import_url-01",
+      "assertion": "Enable URL import and validate supplied URL and target category",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Empty URL/local connection refused visible and retry enabled; successful URL fixture, schema/auth failures, sanitized exact diff counts and pending navigation remain."
+    },
+    {
+      "id": "import_url-02",
+      "assertion": "display readable sanitized import differences and exact added/updated/skipped counts",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Empty URL/local connection refused visible and retry enabled; successful URL fixture, schema/auth failures, sanitized exact diff counts and pending navigation remain."
+    },
+    {
+      "id": "import_url-03",
+      "assertion": "URL/network/auth/schema failure is clear and no partial success is hidden",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Empty URL/local connection refused visible and retry enabled; successful URL fixture, schema/auth failures, sanitized exact diff counts and pending navigation remain."
+    },
+    {
+      "id": "import_url-04",
+      "assertion": "repeated trigger or navigation during fetch cannot apply to a newly selected project",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "Empty URL/local connection refused visible and retry enabled; successful URL fixture, schema/auth failures, sanitized exact diff counts and pending navigation remain."
+    },
+    {
+      "id": "exports-01",
+      "assertion": "Select every export format and verify filename/content/media type",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "All formats produce artifacts with recorded filename/media type; exact expected names/media types and complete empty/long-path/repeat compound remain."
+    },
+    {
+      "id": "exports-02",
+      "assertion": "category/API visibility filters limit output exactly and private APIs never leak",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Legacy outsider private export disclosure recorded; new denies. Category/public filters exact.",
+      "legacyDefect": true
+    },
+    {
+      "id": "exports-03",
+      "assertion": "include-wiki toggle affects supported HTML/Markdown output",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Wiki toggle HTML/Markdown generated output."
+    },
+    {
+      "id": "exports-04",
+      "assertion": "no-data, long Unicode paths and repeated export remain usable",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "notrun",
+      "detail": "All formats produce artifacts with recorded filename/media type; exact expected names/media types and complete empty/long-path/repeat compound remain."
+    },
+    {
+      "id": "services-01",
+      "assertion": "Tab remains discoverable once and configuration reflects selected project",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "One discoverable tab and two selected project configurations."
+    },
+    {
+      "id": "services-02",
+      "assertion": "copy/install/config/generation instructions render fully at narrow widths",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "800px wide instructions, no body overflow, actual horizontal wheel scroll for long code."
+    },
+    {
+      "id": "services-03",
+      "assertion": "generated service source/download links target permitted project",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Generated local output returns expected interface data; help URL correct."
+    },
+    {
+      "id": "services-04",
+      "assertion": "changing project clears old-project information and direct unauthorized output is denied",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Two-project switch removes prior token/project text; nonmember tokenless output denied."
+    }
+  ],
+  "verification": [
+    "group-unit-container.log:3/3",
+    "build-v2.log:frontend built without network",
+    "build-auth.log:backend patch built without network",
+    "old-db-readback.json",
+    "new-db-readback.json"
+  ],
+  "visualReview": {
+    "resolution": "1920x1080 baseline; additional 800x1080 services",
+    "reviewed": [
+      "environment-complete old/new",
+      "import-formats-complete old/new",
+      "wiki-owner old/new",
+      "members old/new",
+      "services-narrow old/new"
+    ],
+    "observations": [
+      "Same field ordering and readable labels; minor tab/spacing/font differences.",
+      "Import dropdown closure confirmed by visible-count assertion before final screenshot.",
+      "Services code remains horizontally scrollable at800px; screenshot initially clips long line until wheel."
+    ]
+  },
+  "limitations": [
+    "This stage does not claim all60 compounds passed. Pending portions are explicit per-ID.",
+    "Batch1 new runtime reused mac-search-bounds image; later saves/auth use isolated source builds from stated baseline plus local patch.",
+    "No external SSO/LDAP configured or tested; no third-party calls, credential refresh, sharedDB reset or financial-service access.",
+    "Old malformed JSON spinner and old group owner-admission defects are retained as failures, not copied into new."
+  ]
+}

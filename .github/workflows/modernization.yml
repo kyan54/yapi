@@ -1,0 +1,64 @@
+name: Modernization regression
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mongodb:
+        image: mongo:9.0.2
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
+          --health-interval 10s --health-timeout 5s --health-retries 12
+    env:
+      BABEL_DISABLE_CACHE: '1'
+      CI: 'true'
+      YAPI_TEST_MONGO_URI: mongodb://127.0.0.1:27017
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund
+      - name: Build isolated script runner
+        run: docker build -t yapi-script-runner:node24-v1 server/sandbox
+      - name: Start trusted test-only isolated runner
+        run: |
+          echo "YAPI_ISOLATED_RUNNER_SOCKET=$RUNNER_TEMP/yapi-runner.sock" >> "$GITHUB_ENV"
+          export YAPI_ISOLATED_RUNNER_SOCKET="$RUNNER_TEMP/yapi-runner.sock"
+          node server/sandbox/service.js > "$RUNNER_TEMP/yapi-runner.log" 2>&1 &
+          for attempt in $(seq 1 50); do test -S "$YAPI_ISOLATED_RUNNER_SOCKET" && exit 0; sleep 0.2; done
+          cat "$RUNNER_TEMP/yapi-runner.log"
+          exit 1
+      - run: npm test
+      - run: YAPI_SANDBOX_DOCKER_TEST=1 node --test scripts/sandbox/*.test.js
+      - run: npm run test:modernization
+      - run: npm run build-client
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config test-browser/playwright.config.cjs
+      - name: Verify five script parity requirements with isolated runner
+        run: npx playwright test --config test-browser/parity-collections-ci.config.cjs
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yapi-browser-evidence
+          path: |
+            playwright-report/
+            test-results/
+            test-browser/playwright-report/
+            test-browser/test-results/
+          retention-days: 7
+      - name: Upload production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: yapi-client-production
+          path: |
+            static/prd/
+            static/index.html
+          retention-days: 7

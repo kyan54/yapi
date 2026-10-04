@@ -55,6 +55,17 @@ const formItemLayout = {
 
 const Option = Select.Option;
 
+// Resolve guarded saves/refreshes before dispatch so stale errors never reach middleware.
+export async function scopedAction(action, meta) {
+  try {
+    const resolved = await action;
+    const payload = await resolved.payload;
+    return meta.isCurrent() ? { ...resolved, payload } : { type: 'PROJECT_SETTINGS_IGNORED' };
+  } catch (error) {
+    return meta.isCurrent() ? { type: 'PROJECT_SETTINGS_FAILED', error: true, payload: error } : { type: 'PROJECT_SETTINGS_IGNORED' };
+  }
+}
+
 @connect(
   state => {
     return {
@@ -65,10 +76,10 @@ const Option = Select.Option;
     };
   },
   {
-    updateProject,
+    updateProject: (params, meta) => scopedAction(updateProject(params), meta),
     delProject,
-    getProject,
-    fetchGroupMsg,
+    getProject: (id, meta) => meta ? scopedAction(getProject(id, meta), meta) : getProject(id),
+    fetchGroupMsg: (id, meta) => meta ? scopedAction(fetchGroupMsg(id, meta), meta) : fetchGroupMsg(id),
     upsetProject,
     fetchGroupList,
     setBreadcrumb
@@ -101,50 +112,76 @@ class ProjectMessage extends Component {
     setBreadcrumb: PropTypes.func
   };
 
-  // 确认修改
+  savePending = false;
+  saveGeneration = 0;
+  componentDidMount() { this.mounted = true; }
+  componentWillUnmount() { this.mounted = false; this.saveGeneration++; }
+  componentDidUpdate(previous) {
+    if (previous.projectId !== this.props.projectId) {
+      this.saveGeneration++;
+      this.savePending = false;
+      this.setState({ saving: false, saveError: '' });
+    }
+  }
+
+  // Acquire the guard before asynchronous form validation or React rerender.
   handleOk = e => {
     e.preventDefault();
+    if (this.savePending || !this.mounted) return;
+    this.savePending = true;
+    const generation = ++this.saveGeneration;
+    const projectId = this.props.projectId;
+    const isCurrent = () => this.mounted && generation === this.saveGeneration && projectId === this.props.projectId;
+    const release = () => {
+      if (isCurrent()) { this.savePending = false; this.setState({ saving: false }); }
+    };
+    const fail = (text, handled) => {
+      if (!isCurrent()) return;
+      this.setState({ saveError: text });
+      if (!handled) message.error(text);
+    };
+    this.setState({ saving: true, saveError: '' });
     const { form, updateProject, projectMsg, groupList } = this.props;
-    form.validateFields((err, values) => {
-      if (!err) {
-        let { tag } = this.tag.state;
-        // let tag = this.refs.tag;
-        tag = tag.filter(val => {
-          return val.name !== '';
-        });
-        let assignValue = Object.assign(projectMsg, values, { tag });
-
-        values.protocol = this.state.protocol.split(':')[0];
-        const group_id = assignValue.group_id;
-        const selectGroup = _.find(groupList, item => {
-          return item._id == group_id;
-        });
-
-        updateProject(assignValue)
-          .then(res => {
-            if (res.payload.data.errcode == 0) {
-              this.props.getProject(this.props.projectId);
-              message.success('修改成功! ');
-
-              // 如果如果项目所在的分组位置发生改变
-              this.props.fetchGroupMsg(group_id);
-              // this.props.history.push('/group');
-              let projectName = htmlFilter(assignValue.name);
-              this.props.setBreadcrumb([
-                {
-                  name: selectGroup.group_name,
-                  href: '/group/' + group_id
-                },
-                {
-                  name: projectName
-                }
-              ]);
+    try {
+      form.validateFields(async (err, values) => {
+        if (!isCurrent()) return;
+        if (err) { release(); return; }
+        try {
+          const tag = this.tag.state.tag.filter(val => val.name !== '');
+          const assignValue = Object.assign({}, projectMsg, values, { tag });
+          const group_id = assignValue.group_id;
+          const selectGroup = _.find(groupList, item => item._id == group_id);
+          const res = await updateProject(assignValue, { isCurrent });
+          if (!isCurrent()) return;
+          const result = res && res.payload && res.payload.data;
+          if (!res || res.error || !result || result.errcode !== 0) {
+            fail((result && result.errmsg) || '保存失败，请检查网络后重试', res && res.errorMessageHandled);
+            return;
+          }
+          message.success('修改成功! ');
+          Promise.resolve(this.props.fetchGroupMsg(group_id, { isCurrent })).catch(error =>
+            fail('保存成功，但刷新分组失败，请刷新页面', error && error.errorMessageHandled));
+          this.props.setBreadcrumb([
+            { name: selectGroup ? selectGroup.group_name : '', href: '/group/' + group_id },
+            { name: htmlFilter(assignValue.name) }
+          ]);
+          try {
+            const refreshed = await this.props.getProject(projectId, { isCurrent });
+            if (isCurrent() && (!refreshed || refreshed.error || !refreshed.payload ||
+              !refreshed.payload.data || refreshed.payload.data.errcode !== 0)) {
+              fail('保存成功，但刷新项目失败，请刷新页面', refreshed && refreshed.errorMessageHandled);
             }
-          })
-          .catch(() => {});
-        form.resetFields();
-      }
-    });
+          } catch (error) {
+            fail('保存成功，但刷新项目失败，请刷新页面', error && error.errorMessageHandled);
+          }
+        } catch (error) {
+          fail((error && error.message) || '保存失败，请检查网络后重试', error && error.errorMessageHandled);
+        } finally { release(); }
+      });
+    } catch (error) {
+      fail((error && error.message) || '保存失败，请检查网络后重试', error && error.errorMessageHandled);
+      release();
+    }
   };
 
   tagSubmit = tag => {
@@ -470,12 +507,15 @@ class ProjectMessage extends Component {
           </Form>
 
           <div className="btnwrap-changeproject">
+            {this.state.saveError && <Alert type="error" showIcon message={this.state.saveError} />}
             <Button
               className="m-btn btn-save"
               icon="save"
               type="primary"
               size="large"
               onClick={this.handleOk}
+              loading={this.state.saving}
+              disabled={this.state.saving}
             >
               保 存
             </Button>

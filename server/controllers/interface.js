@@ -1,6 +1,7 @@
 const interfaceModel = require('../models/interface.js');
 const interfaceCatModel = require('../models/interfaceCat.js');
 const interfaceCaseModel = require('../models/interfaceCase.js');
+const interfaceColModel = require('../models/interfaceCol.js');
 const followModel = require('../models/follow.js');
 const groupModel = require('../models/group.js');
 const _ = require('underscore');
@@ -10,10 +11,10 @@ const yapi = require('../yapi.js');
 const userModel = require('../models/user.js');
 const projectModel = require('../models/project.js');
 const jsondiffpatch = require('jsondiffpatch');
-const formattersHtml = jsondiffpatch.formatters.html;
+const formattersHtml = require('jsondiffpatch/formatters/html');
 const showDiffMsg = require('../../common/diff-view.js');
 const mergeJsonSchema = require('../../common/mergeJsonSchema');
-const { crossRequest } = require('../../common/postmanLib');
+const { crossRequest, decodeBinaryBody } = require('../../common/postmanLib');
 const createContext = require('../../common/createContext');
 const fs = require('fs-extra');
 const path = require('path');
@@ -112,7 +113,8 @@ function ensureDefaultContentType(values) {
         options,
         body.pre_script,
         body.after_script,
-        createContext(this.getUid(), projectId, interfaceId)
+        createContext(this.getUid(), projectId, interfaceId),
+        require('../sandbox/trusted-scope').create(this.getUid(), projectId)
       );
 
       ctx.body = yapi.commons.resReturn(result);
@@ -421,36 +423,34 @@ class interfaceController extends baseController {
     let result = await this.Model.getByPath(params.project_id, params.path, params.method, '_id res_body');
 
     if (result.length > 0) {
-      result.forEach(async item => {
-        params.id = item._id;
-        // console.log(this.schemaMap['up'])
-        let validParams = Object.assign({}, params)
-        let validResult = yapi.commons.validateParams(this.schemaMap['up'], validParams);
-        if (validResult.valid) {
-          let data = Object.assign({}, ctx);
-          data.params = validParams;
-
-          if(params.res_body_is_json_schema && params.dataSync === 'good'){
-            try{
-              let new_res_body = yapi.commons.json_parse(params.res_body)
-              let old_res_body = yapi.commons.json_parse(item.res_body)
-              data.params.res_body = JSON.stringify(mergeJsonSchema(old_res_body, new_res_body),null,2);
-            }catch(err){}
-          }
-          await this.up(data);
-        } else {
+      // Do not return an import success while writes are still in flight. Each
+      // target gets independent parameters and any validation/write error is
+      // propagated to the importer and scheduled-sync hash checkpoint.
+      for (const item of result) {
+        const validParams = Object.assign({}, params, { id: item._id });
+        const validResult = yapi.commons.validateParams(this.schemaMap['up'], validParams);
+        if (!validResult.valid) {
           return (ctx.body = yapi.commons.resReturn(null, 400, validResult.message));
         }
-      });
+        const data = Object.assign(Object.create(Object.getPrototypeOf(ctx)), ctx, { params: validParams });
+        if (params.res_body_is_json_schema && params.dataSync === 'good') {
+          try {
+            const newBody = yapi.commons.json_parse(params.res_body);
+            const oldBody = yapi.commons.json_parse(item.res_body);
+            data.params.res_body = JSON.stringify(mergeJsonSchema(oldBody, newBody), null, 2);
+          } catch (err) { /* Retain the original import fallback for invalid schemas. */ }
+        }
+        await this.up(data);
+        if (data.body && data.body.errcode) return (ctx.body = data.body);
+      }
     } else {
-      let validResult = yapi.commons.validateParams(this.schemaMap['add'], params);
-      if (validResult.valid) {
-        let data = {};
-        data.params = params;
-        await this.add(data);
-      } else {
+      const validResult = yapi.commons.validateParams(this.schemaMap['add'], params);
+      if (!validResult.valid) {
         return (ctx.body = yapi.commons.resReturn(null, 400, validResult.message));
       }
+      const data = Object.assign(Object.create(Object.getPrototypeOf(ctx)), ctx, { params });
+      await this.add(data);
+      if (data.body && data.body.errcode) return (ctx.body = data.body);
     }
     ctx.body = yapi.commons.resReturn(result);
     // return ctx.body = yapi.commons.resReturn(null, 400, 'path第一位必需为 /, 只允许由 字母数字-/_:.! 组成');
@@ -752,6 +752,10 @@ class interfaceController extends baseController {
     if (!interfaceData) {
       return (ctx.body = yapi.commons.resReturn(null, 400, '不存在的接口'));
     }
+    // A valid project token must never authorize an interface in another project.
+    if (this.$tokenAuth && Number(params.project_id) !== interfaceData.project_id) {
+      return (ctx.body = yapi.commons.resReturn(null, 400, '没有权限'));
+    }
     if (!this.$tokenAuth) {
       let auth = await this.checkAuth(interfaceData.project_id, 'project', 'edit');
       if (!auth) {
@@ -850,20 +854,17 @@ class interfaceController extends baseController {
     if (params.switch_notice === true) {
       let diffView = showDiffMsg(jsondiffpatch, formattersHtml, logData);
       let annotatedCss = fs.readFileSync(
-        path.resolve(
-          yapi.WEBROOT,
-          'node_modules/jsondiffpatch/dist/formatters-styles/annotated.css'
-        ),
+        require.resolve('jsondiffpatch/formatters/styles/annotated.css'),
         'utf8'
       );
       let htmlCss = fs.readFileSync(
-        path.resolve(yapi.WEBROOT, 'node_modules/jsondiffpatch/dist/formatters-styles/html.css'),
+        require.resolve('jsondiffpatch/formatters/styles/html.css'),
         'utf8'
       );
 
       let project = await this.projectModel.getBaseInfo(interfaceData.project_id);
 
-      let interfaceUrl = `${ctx.request.origin}/project/${
+      let interfaceUrl = `${(ctx.protocol + '://' + ctx.host)}/project/${
         interfaceData.project_id
       }/interface/api/${id}`;
 
@@ -889,7 +890,9 @@ class interfaceController extends baseController {
     }
 
     yapi.emitHook('interface_update', id).then();
-    await this.autoAddTag(params);
+    // The edit form does not submit project_id. Use the authorized stored owner,
+    // never a missing or caller-supplied project scope, for project tag updates.
+    await this.autoAddTag({ ...params, project_id: interfaceData.project_id });
 
     ctx.body = yapi.commons.resReturn(result);
     return 1;
@@ -960,37 +963,112 @@ class interfaceController extends baseController {
   }
   // 处理编辑冲突
   async solveConflict(ctx) {
+    const socket = ctx.websocket;
+    const id = Number(ctx.query.id);
+    const leaseMs = 45000;
+    const heartbeatMs = 15000;
+    const token = require('node:crypto').randomUUID();
+    let held = false;
+    let closed = false;
+    let timer;
+    let waitingForPong = false;
+    let renewing = false;
+    let projectId;
+    const authenticatedUid = this.getUid();
+    const refreshPrincipal = async () => {
+      const current = await this.userModel.findById(authenticatedUid);
+      if (!current || Number(current._id) !== authenticatedUid) return false;
+      // The socket keeps the authenticated ID, but account existence and role are live.
+      this.$user = current;
+      return true;
+    };
+    const send = data => {
+      try { if (!closed && socket.readyState === 1) socket.send(JSON.stringify(data)); } catch (_) {}
+    };
+    const release = async () => {
+      if (timer) clearInterval(timer);
+      if (!held) return;
+      held = false;
+      await this.Model.releaseEditLock(id, token);
+    };
+    const stop = async message => {
+      send({ errno: 409, errmsg: message, data: {} });
+      await release().catch(() => yapi.commons.log('Interface edit lease release failed; lease will expire.', 'error'));
+      if (socket.readyState === 1) socket.close();
+    };
+    socket.once('close', () => {
+      closed = true;
+      release().catch(() => yapi.commons.log('Interface edit lease release failed; lease will expire.', 'error'));
+    });
     try {
-      let id = parseInt(ctx.query.id, 10),
-        result,
-        userInst,
-        userinfo,
-        data;
-      if (!id) {
-        return ctx.websocket.send('id 参数有误');
+      if (!Number.isSafeInteger(id) || id < 1) {
+        send({ errno: 400, errmsg: '接口 id 无效', data: {} });
+        return;
       }
-      result = await this.Model.get(id);
-
-      if (result.edit_uid !== 0 && result.edit_uid !== this.getUid()) {
-        userInst = yapi.getInst(userModel);
-        userinfo = await userInst.findById(result.edit_uid);
-        data = {
-          errno: result.edit_uid,
-          data: { uid: result.edit_uid, username: userinfo.username }
-        };
-      } else {
-        this.Model.upEditUid(id, this.getUid()).then();
-        data = {
-          errno: 0,
-          data: result
-        };
+      const result = await this.Model.get(id);
+      if (!result) {
+        send({ errno: 404, errmsg: '接口不存在', data: {} });
+        return;
       }
-      ctx.websocket.send(JSON.stringify(data));
-      ctx.websocket.on('close', () => {
-        this.Model.upEditUid(id, 0).then();
+      projectId = result.project_id;
+      if (!(await refreshPrincipal()) || (await this.checkAuth(projectId, 'project', 'view')) !== true) {
+        send({ errno: 403, errmsg: '没有访问权限', data: {} });
+        return;
+      }
+      if ((await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+        // A guest can inspect a local draft, but cannot reserve a write lease.
+        send({ errno: 403, readOnly: true, errmsg: '没有编辑权限，保存将被拒绝。', data: result });
+        return;
+      }
+      if (closed) return;
+      const now = Date.now();
+      const claimed = await this.Model.claimEditLock(id, projectId, authenticatedUid, token, now, now + leaseMs);
+      if (!claimed) {
+        send({ errno: 423, data: { username: '其他窗口或用户' } });
+        return;
+      }
+      held = true;
+      if (closed) {
+        await release();
+        return;
+      }
+      send({ errno: 0, data: claimed });
+      socket.on('pong', async () => {
+        if (!held || closed || renewing) return;
+        waitingForPong = false;
+        renewing = true;
+        try {
+          if (!(await refreshPrincipal()) || (await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+            await stop('编辑权限已失效，请重新打开编辑页面。');
+            return;
+          }
+          const now = Date.now();
+          const renewed = await this.Model.renewEditLock(id, projectId, token, now, now + leaseMs);
+          if (!renewed || renewed.n !== 1) await stop('编辑锁已失效，请重新打开编辑页面。');
+        } catch (_) {
+          await stop('编辑锁续期失败，请重新打开编辑页面。');
+        } finally {
+          renewing = false;
+        }
       });
-    } catch (err) {
-      yapi.commons.log(err, 'error');
+      timer = setInterval(() => {
+        if (closed || !held) return;
+        // A connection without a pong cannot renew indefinitely after a partition.
+        if (waitingForPong || socket.readyState !== 1) {
+          release().catch(() => yapi.commons.log('Interface edit lease release failed; lease will expire.', 'error'));
+          socket.terminate();
+          return;
+        }
+        waitingForPong = true;
+        try { socket.ping(); } catch (_) {
+          release().catch(() => yapi.commons.log('Interface edit lease release failed; lease will expire.', 'error'));
+          socket.terminate();
+        }
+      }, heartbeatMs);
+      if (timer.unref) timer.unref();
+    } catch (_) {
+      await release().catch(() => {});
+      send({ errno: 500, errmsg: '无法确认编辑锁，请重新打开编辑页面。', data: {} });
     }
   }
 
@@ -1227,21 +1305,35 @@ class interfaceController extends baseController {
    */
   async upIndex(ctx) {
     try {
-      let params = ctx.request.body;
-      if (!params || !Array.isArray(params)) {
-        ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组');
+      const params = ctx.request.body;
+      if (!Array.isArray(params)) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组'));
       }
-      params.forEach(item => {
-        if (item.id) {
-          this.Model.upIndex(item.id, item.index).then(
-            res => {},
-            err => {
-              yapi.commons.log(err.message, 'error');
-            }
-          );
+      const targets = [];
+      const seen = new Set();
+      let projectId;
+      // Resolve every persisted owner and authorize the entire batch before writing.
+      for (const item of params) {
+        const id = item && Number(item.id);
+        if (!item || !Number.isSafeInteger(id) || id < 1 ||
+            !Number.isSafeInteger(item.index) || item.index < 0 || seen.has(id)) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '排序参数无效'));
         }
-      });
-
+        seen.add(id);
+        const target = await this.Model.get(id);
+        if (!target) {
+          return (ctx.body = yapi.commons.resReturn(null, 404, '排序目标不存在'));
+        }
+        if (projectId !== undefined && String(projectId) !== String(target.project_id)) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '排序目标必须属于同一项目'));
+        }
+        projectId = target.project_id;
+        if ((await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+          return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+        }
+        targets.push({ id, index: item.index });
+      }
+      await Promise.all(targets.map(item => this.Model.upIndex(item.id, item.index)));
       return (ctx.body = yapi.commons.resReturn('成功！'));
     } catch (e) {
       ctx.body = yapi.commons.resReturn(null, 400, e.message);
@@ -1260,21 +1352,35 @@ class interfaceController extends baseController {
    */
   async upCatIndex(ctx) {
     try {
-      let params = ctx.request.body;
-      if (!params || !Array.isArray(params)) {
-        ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组');
+      const params = ctx.request.body;
+      if (!Array.isArray(params)) {
+        return (ctx.body = yapi.commons.resReturn(null, 400, '请求参数必须是数组'));
       }
-      params.forEach(item => {
-        if (item.id) {
-          this.catModel.upCatIndex(item.id, item.index).then(
-            res => {},
-            err => {
-              yapi.commons.log(err.message, 'error');
-            }
-          );
+      const targets = [];
+      const seen = new Set();
+      let projectId;
+      // Resolve every persisted owner and authorize the entire batch before writing.
+      for (const item of params) {
+        const id = item && Number(item.id);
+        if (!item || !Number.isSafeInteger(id) || id < 1 ||
+            !Number.isSafeInteger(item.index) || item.index < 0 || seen.has(id)) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '排序参数无效'));
         }
-      });
-
+        seen.add(id);
+        const target = await this.catModel.get(id);
+        if (!target) {
+          return (ctx.body = yapi.commons.resReturn(null, 404, '排序目标不存在'));
+        }
+        if (projectId !== undefined && String(projectId) !== String(target.project_id)) {
+          return (ctx.body = yapi.commons.resReturn(null, 400, '排序目标必须属于同一项目'));
+        }
+        projectId = target.project_id;
+        if ((await this.checkAuth(projectId, 'project', 'edit')) !== true) {
+          return (ctx.body = yapi.commons.resReturn(null, 405, '没有权限'));
+        }
+        targets.push({ id, index: item.index });
+      }
+      await Promise.all(targets.map(item => this.catModel.upCatIndex(item.id, item.index)));
       return (ctx.body = yapi.commons.resReturn('成功！'));
     } catch (e) {
       ctx.body = yapi.commons.resReturn(null, 400, e.message);
@@ -1355,16 +1461,39 @@ class interfaceController extends baseController {
         return (ctx.body = yapi.commons.resReturn(null, 400, 'project_id 鍜?interface_id 涓嶈兘涓虹┖'));
       }
 
-      const auth = await this.checkAuth(projectId, 'project', 'view');
-      if (!auth) {
-        return (ctx.body = yapi.commons.resReturn(null, 40033, '娌℃湁鏉冮檺'));
+      let authorizedProjectId = projectId;
+      const source = await this.Model.get(interfaceId);
+      if (!source) return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+      if (body.case_id !== undefined || body.col_id !== undefined) {
+        const record = await this.caseModel.get(body.case_id);
+        const collection = record && await yapi.getInst(interfaceColModel).get(record.col_id);
+        if (!record || !collection || Number(record.col_id) !== Number(body.col_id) ||
+            Number(record.interface_id) !== interfaceId ||
+            Number(record.project_id) !== Number(collection.project_id) ||
+            projectId !== Number(collection.project_id) ||
+            await this.checkAuth(collection.project_id, 'project', 'edit') !== true) {
+          return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+        }
+        const sourceProject = await this.projectModel.get(source.project_id);
+        if (!sourceProject || (sourceProject.project_type !== 'public' &&
+            await this.checkAuth(source.project_id, 'project', 'view') !== true)) {
+          return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
+        }
+        authorizedProjectId = Number(collection.project_id);
+        if (body.auth_only === true) return (ctx.body = yapi.commons.resReturn({ authorized: true }));
+      } else if (Number(source.project_id) !== projectId ||
+          await this.checkAuth(projectId, 'project', 'view') !== true || body.auth_only) {
+        return (ctx.body = yapi.commons.resReturn(null, 403, 'Forbidden'));
       }
+
+      decodeBinaryBody(options);
 
       const result = await crossRequest(
         options,
         body.pre_script,
         body.after_script,
-        createContext(this.getUid(), projectId, interfaceId)
+        createContext(this.getUid(), authorizedProjectId, interfaceId),
+        require('../sandbox/trusted-scope').create(this.getUid(), authorizedProjectId)
       );
 
       ctx.body = yapi.commons.resReturn(result);

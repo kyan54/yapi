@@ -49,7 +49,7 @@ class logModel extends baseModel {
   }
 
   del(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       _id: id
     });
   }
@@ -79,12 +79,12 @@ class logModel extends baseModel {
     }
     return this.model
       .find(params)
-      .sort({ add_time: -1 })
+      .sort({ add_time: -1, _id: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .exec();
   }
-  listWithPagingByGroup(typeid, pidList, page, limit) {
+  listWithPagingByGroup(typeid, pidList, page, limit, includeGroup = true) {
     page = parseInt(page);
     limit = parseInt(limit);
     return this.model
@@ -94,28 +94,22 @@ class logModel extends baseModel {
             type: 'project',
             typeid: { $in: pidList }
           },
-          {
-            type: 'group',
-            typeid: typeid
-          }
+          ...(includeGroup ? [{ type: 'group', typeid: typeid }] : [])
         ]
       })
-      .sort({ add_time: -1 })
+      .sort({ add_time: -1, _id: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .exec();
   }
-  listCountByGroup(typeid, pidList) {
+  listCountByGroup(typeid, pidList, includeGroup = true) {
     return this.model.countDocuments({
       $or: [
         {
           type: 'project',
           typeid: { $in: pidList }
         },
-        {
-          type: 'group',
-          typeid: typeid
-        }
+        ...(includeGroup ? [{ type: 'group', typeid: typeid }] : [])
       ]
     });
   }
@@ -145,7 +139,7 @@ class logModel extends baseModel {
     }
     return this.model
       .find(params)
-      .sort({ add_time: -1 })
+      .sort({ add_time: -1, _id: -1 })
       .limit(1)
       .select('uid content type username typeid add_time')
       .exec();

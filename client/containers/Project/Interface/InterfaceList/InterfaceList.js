@@ -122,12 +122,46 @@ class InterfaceList extends Component {
     }, () => this.handleRequest(this.props));
   };
 
+  modalEpoch = 0;
+  modalPending = false;
+  disposed = false;
+
+  changeModal = visible => {
+    if (!visible && this.modalPending) return;
+    this.modalEpoch += 1;
+    this.modalPending = false;
+    this.setState({ visible, modalPending: false });
+  };
+
+  captureSubmission = () => {
+    const projectId = this.props.curProject._id;
+    const epoch = this.modalEpoch;
+    return () => !this.disposed && epoch === this.modalEpoch &&
+      String(this.props.curProject._id) === String(projectId);
+  };
+
+  setModalPending = pending => {
+    this.modalPending = pending;
+    this.setState({ modalPending: pending });
+  };
+
+  componentWillUnmount() {
+    this.disposed = true;
+    this.modalEpoch += 1;
+  }
+
   componentWillMount() {
     this.actionId = this.props.match.params.actionId;
     this.handleRequest(this.props);
   }
 
   componentWillReceiveProps(nextProps) {
+    if (String(nextProps.match.params.id) !== String(this.props.match.params.id) ||
+        nextProps.match.params.actionId !== this.props.match.params.actionId) {
+      this.modalEpoch += 1;
+      this.modalPending = false;
+      this.setState({ visible: false, modalPending: false });
+    }
     let _actionId = nextProps.match.params.actionId;
 
     if (this.actionId !== _actionId) {
@@ -138,12 +172,25 @@ class InterfaceList extends Component {
         },
         () => this.handleRequest(nextProps)
       );
+    } else if (String(nextProps.match.params.id) === String(this.props.match.params.id)) {
+      const category = !!_actionId;
+      const rowsChanged = category
+        ? nextProps.catTableList !== this.props.catTableList
+        : nextProps.totalTableList !== this.props.totalTableList;
+      const total = category ? nextProps.count : nextProps.totalCount;
+      const lastPage = Math.max(1, Math.ceil(Number(total) / limit));
+      if (rowsChanged && Number.isFinite(lastPage) && this.state.current > lastPage) {
+        this.setState({ current: lastPage }, () => this.handleRequest(nextProps));
+      }
     }
   }
 
   handleAddInterface = data => {
-    data.project_id = this.props.curProject._id;
-    axios.post('/api/interface/add', data).then(res => {
+    const projectId = this.props.curProject._id;
+    const epoch = this.modalEpoch;
+    data = { ...data, project_id: projectId };
+    return axios.post('/api/interface/add', data).then(res => {
+      if (this.disposed || epoch !== this.modalEpoch || String(this.props.curProject._id) !== String(projectId)) return;
       if (res.data.errcode !== 0) {
         return message.error(`${res.data.errmsg}, 你可以在左侧的接口列表中对接口进行删改`);
       }
@@ -253,6 +300,7 @@ class InterfaceList extends Component {
             <Select
               value={item + ''}
               className="select path"
+              variant="borderless"
               onChange={catid => this.changeInterfaceCat(record._id, catid)}
             >
               {this.props.catList.map(cat => {
@@ -277,6 +325,7 @@ class InterfaceList extends Component {
             <Select
               value={key + '-' + text}
               className="select"
+              variant="borderless"
               onChange={this.changeInterfaceStatus}
             >
               <Option value={key + '-done'}>
@@ -369,7 +418,7 @@ class InterfaceList extends Component {
           style={{ float: 'right' }}
           disabled={isDisabled}
           type="primary"
-          onClick={() => this.setState({ visible: true })}
+          onClick={() => this.changeModal(true)}
         >
           添加接口
         </Button>
@@ -378,6 +427,7 @@ class InterfaceList extends Component {
         </div>
         <Table
           className="table-interfacelist"
+          tableLayout="fixed"
           pagination={pageConfig}
           columns={columns}
           onChange={this.handleChange}
@@ -387,15 +437,20 @@ class InterfaceList extends Component {
           <Modal
             title="添加接口"
             visible={this.state.visible}
-            onCancel={() => this.setState({ visible: false })}
+            closable={!this.state.modalPending}
+            keyboard={!this.state.modalPending}
+            maskClosable={!this.state.modalPending}
+            onCancel={() => this.changeModal(false)}
             footer={null}
             className="addcatmodal"
           >
             <AddInterfaceForm
               catid={this.state.catid}
               catdata={cat}
-              onCancel={() => this.setState({ visible: false })}
+              onCancel={() => this.changeModal(false)}
               onSubmit={this.handleAddInterface}
+              onPendingChange={this.setModalPending}
+              captureSubmission={this.captureSubmission}
             />
           </Modal>
         )}

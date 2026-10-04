@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+
 
 import PropTypes from 'prop-types';
 
@@ -55,7 +55,7 @@ export default class EasyDragSort extends React.Component {
           if (React.isValidElement(item)) {
             return React.cloneElement(item, {
               draggable: onlyChild ? false : true,
-              ref: 'x' + index,
+
               'data-ref': 'x' + index,
               onDragStart: function() {
                 curDragIndex = index;
@@ -84,8 +84,7 @@ export default class EasyDragSort extends React.Component {
                 if (!el) {
                   return;
                 }
-                let ref = that.refs[el.getAttribute('data-ref')];
-                let dom = ReactDOM.findDOMNode(ref);
+                let dom = el;
                 if (dom) {
                   dom.draggable = target.getAttribute(onlyChild) ? true : false;
                 }

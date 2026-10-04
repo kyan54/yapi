@@ -1,0 +1,351 @@
+{
+  "format": "yapi.parity-settings.stage3-delta.v1",
+  "scope": "Only these C rows amend prior stage1 plus stage2 results; never overwrite main246 matrix.",
+  "sourceBase": "77f31666163620eab3ba563bcc7fe2ece01da0e3 plus this batch Wiki/TimeLine/log ordering fixes",
+  "rows": [
+    {
+      "id": "logs-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Real Wiki/API filtering, no-match then clear, load-more exact row count and unique IDs across pages; fixed same-second ordering and missing modern AutoComplete options."
+    },
+    {
+      "id": "logs-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Real stored Wiki HTML differences remain readable and have no active event/script elements; close and reopen preserve content."
+    },
+    {
+      "id": "logs-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Real interface and avatar user links open expected routes, mouse and Enter work, browser Back returns to same project activity context; fixed local icon overlay interception."
+    },
+    {
+      "id": "project_settings-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Name/group/basepath/description/tags changed together, saved/reloaded with exact values."
+    },
+    {
+      "id": "project_settings-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Admin public/private plus strict Mock/JSON5/notification true/false each saved twice, refreshed and nonmember read gate checked. Supersedes early false legacy failure caused by using aria-checked on legacy class-based Switch."
+    },
+    {
+      "id": "project_settings-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Owner moves only the selected project, developer direct move/public write denied without changing saved group or privacy; admin visibility and nonmember access verified."
+    },
+    {
+      "id": "project_settings-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Cancel and wrong-name confirmation preserve project; exact-name delete removes only current synthetic project and leaves neighbor intact."
+    },
+    {
+      "id": "project_token-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Owner/developer/admin real copy of two existing synthetic project tokens matches API and display in isolated Chromium clipboard; no token values logged and no refresh requests."
+    },
+    {
+      "id": "imports-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Stage1 duplicate file imports and overwrite cancel preserve scope; stage3 slow URL double trigger and navigation do not duplicate records or write newly selected project."
+    },
+    {
+      "id": "import_url-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Real Swagger URL overwrite preview with actual prior update history, cancel unchanged, confirmed exact one updated/existing count and neighbor preserved; normal repeated counts from stage2."
+    },
+    {
+      "id": "import_url-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Double trigger during real delayed isolated URL fetch then actual Wiki navigation and second-project navigation leave second project empty, first has at most one target interface."
+    },
+    {
+      "id": "exports-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "All four formats real downloads checked exact filename/media type, content and JSON/Swagger parsing, repeated for empty and long valid path with Unicode title."
+    },
+    {
+      "id": "wiki-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Old rapid double click sends two updates; new synchronous in-flight guard sends one. Notification true/false preserved with mail disabled, second project isolated; business/network failures keep draft and allow one successful retry."
+    },
+    {
+      "id": "imports-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Valid file-picker evidence from stage1 and actual DataTransfer drop payload here persist expected APIs. Old malformed drop leaves spinner stuck; new releases loading and valid retry persists distinct interface."
+    },
+    {
+      "id": "logs-04",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Both versions hide Mock download link under display:none and /api/project/download returns404. No clickable supported UI/download route; do not expose hidden legacy control to force pass."
+    },
+    {
+      "id": "exports-04",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "blocked",
+      "detail": "Empty/repeated exports, long allowed ASCII path and Unicode title pass all four formats. Both APIs reject raw and percent-encoded Unicode pathname with explicit existing allowed-character validation, so complete Unicode-path export branch remains blocked rather than falsely passed."
+    }
+  ],
+  "executions": [
+    {
+      "evidence": "logs-reviewed-results.json",
+      "title": "activity pagination filter detail cancel and interface link return",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "logs-reviewed-results.json",
+      "title": "activity pagination filter detail cancel and interface link return",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "log-safety-final-results.json",
+      "title": "activity diff readable sanitized content closes reopens and hidden download gate",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "log-safety-final-results.json",
+      "title": "activity diff readable sanitized content closes reopens and hidden download gate",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "wiki-fixed-results.json",
+      "title": "wiki notification choice repeated click makes one update and second project remains distinct",
+      "version": "old",
+      "status": "failed"
+    },
+    {
+      "evidence": "wiki-fixed-results.json",
+      "title": "wiki notification choice repeated click makes one update and second project remains distinct",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "wiki-retry-results.json",
+      "title": "wiki notification choice repeated click makes one update and second project remains distinct",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "wiki-retry-results.json",
+      "title": "Wiki business keeps draft and retries once",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "wiki-retry-results.json",
+      "title": "Wiki network keeps draft and retries once",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "project-final-results.json",
+      "title": "project move metadata permissions and scoped confirmed delete",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "project-final-results.json",
+      "title": "project move metadata permissions and scoped confirmed delete",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "visibility-results.json",
+      "title": "admin project visibility and exact boolean toggles persist across repeated saves",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "visibility-results.json",
+      "title": "admin project visibility and exact boolean toggles persist across repeated saves",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "token-copy-results.json",
+      "title": "existing synthetic project token copies exact displayed current value owner",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "token-copy-results.json",
+      "title": "existing synthetic project token copies exact displayed current value owner",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "token-copy-results.json",
+      "title": "existing synthetic project token copies exact displayed current value developer",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "token-copy-results.json",
+      "title": "existing synthetic project token copies exact displayed current value developer",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "token-copy-results.json",
+      "title": "existing synthetic project token copies exact displayed current value admin",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "token-copy-results.json",
+      "title": "existing synthetic project token copies exact displayed current value admin",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "export-valid-results.json",
+      "title": "export exact formats media filename repeat empty",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "export-valid-results.json",
+      "title": "export exact formats media filename repeat empty",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "export-valid-results.json",
+      "title": "export exact formats media filename repeat long unicode",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "export-valid-results.json",
+      "title": "export exact formats media filename repeat long unicode",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "import-final2-results.json",
+      "title": "import drag drop real file payload and malformed retry",
+      "version": "old",
+      "status": "failed"
+    },
+    {
+      "evidence": "import-final2-results.json",
+      "title": "import drag drop real file payload and malformed retry",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "import-final2-results.json",
+      "title": "URL pending repeated trigger navigation never writes newly selected project",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "import-final2-results.json",
+      "title": "URL pending repeated trigger navigation never writes newly selected project",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "url-diff-accepted-results.json",
+      "title": "URL overwrite preview cancel sanitized content and exact update count",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "url-diff-accepted-results.json",
+      "title": "URL overwrite preview cancel sanitized content and exact update count",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "tag-settings-accepted-results.json",
+      "title": "settings tag duplicate empty rename description delete persists exact rows",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "tag-settings-accepted-results.json",
+      "title": "settings tag duplicate empty rename description delete persists exact rows",
+      "version": "new",
+      "status": "passed"
+    }
+  ],
+  "executionCounts": {
+    "passed": 29,
+    "failed": 2
+  },
+  "cumulativeCompoundCounts": {
+    "passed": 38,
+    "failed": 6,
+    "blocked": 4,
+    "notrun": 12
+  },
+  "remainingNotrun": [
+    "project_tags-01",
+    "project_tags-02",
+    "project_tags-03",
+    "project_tags-04",
+    "project_envs-03",
+    "project_envs-04",
+    "project_requests-02",
+    "project_requests-03",
+    "project_requests-04",
+    "project_mock-02",
+    "project_mock-03",
+    "project_mock-04"
+  ],
+  "crossOwnerEvidence": {
+    "project_tags-01..04": "Settings add/duplicate/empty-name omission/rename/description/delete pass paired; interface tag modal and selected-tag/unsaved-field portions remain A coordination.",
+    "project_envs-03..04/project_requests-02..04/project_mock-02..04": "C saved configuration evidence exists; actual interface/collection Run execution must be combined with B."
+  },
+  "verification": {
+    "defaultModernization": "aggregate-final-candidate.log: 306 passed,6 skipped,0 failed (312 total)",
+    "baseline": "baseline-final.log full protected inventory passed",
+    "directDatabase": [
+      "old-stage3-db-readback.json",
+      "new-stage3-db-readback.json"
+    ],
+    "runtimeGuard": "guard-logs-reviewed.json verifies actual own reserved origin/proxy/app/configured DB/connected DB seeded marker"
+  },
+  "visualReview": "Actual1920x1080-or-larger captures inspected. Settings, group members, Wiki and timeline keep readable controls and layout. Timeline avatar overlay reproduced with normal click then corrected with local positioned Link; no force click.",
+  "limits": [
+    "Do not treat this isolated C branch as integrated latest-candidate or all246 pass.",
+    "Token regeneration remains prohibited and unchanged.",
+    "Mail disabled, no external SSO/LDAP configured, old runtime network isolated.",
+    "Unicode pathname branch and hidden download are explicit blocked rows."
+  ]
+}

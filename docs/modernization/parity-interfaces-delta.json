@@ -1,0 +1,1013 @@
+{
+  "scope": "A/interfaces/batches-1-22",
+  "base": "521f330f4fa38f856055a7d06e1c171cd2b6e189",
+  "old": "fd90eaf108c0382db133a6650e368e5d7d38734a",
+  "roles": [
+    "owner",
+    "developer",
+    "guest"
+  ],
+  "ports": {
+    "old": 4184,
+    "new": 4185
+  },
+  "databases": [
+    "parity_fast_interfaces_old",
+    "parity_fast_interfaces_new"
+  ],
+  "fixture": {
+    "generator": "scripts/modernization/ui-parity-fixture.cjs",
+    "date": "2026-10-03",
+    "interface_id": 901016,
+    "tag": [],
+    "note": "Dedicated synthetic DBs only. Baseline tag save errors retained separately; tag cleared equally to isolate bulk behavior.",
+    "seed_method": "makeFixture({date}) is an offline object generator. Its generated collections were inserted directly into task-created parity_fast_interfaces_* DBs (per-record legacy insert to avoid shell line limits), not via bindFixture/renderMongoScript whose ui_parity_* naming differs from the explicitly assigned prefix. No shared fixture or DB was reset. Missing legacy group records from the same initial shell truncation were subsequently inserted only if absent, under the existing task marker. All 14 parameter flows reran successfully with complete core group/project/interface fixtures.",
+    "identity_guard": "parity-interfaces.preflight.cjs verifies internal application/Mongo network, no socket mount, read-only config actual DB hostname/name, disabled mail, exact loopback proxy port, and _ui_parity_fixture marker synthetic/run/database/state/hash before suite mutations. Also verifies core fixture relations, exact six internal network participants/network ID, deployed proxy script SHA and read-only mount/start command, exact app working directory/start command, and rejects extra db keys (including connectString) or YAPI/Mongo/DB/NODE_OPTIONS/NODE_PATH environment overrides.",
+    "run": "interfaces_20261003",
+    "fixtureSha256": "df5dd7dea9fd9b4eba357a38fc29af43cce9bdbe31c8a90d7d3bfb96e82e2a2a",
+    "final_ids": {
+      "old": {
+        "rows": [
+          940633,
+          940640
+        ],
+        "paths": [
+          940647,
+          940654
+        ],
+        "typed": [
+          940661,
+          940668
+        ],
+        "projects": [
+          930085,
+          930088,
+          930091,
+          930094
+        ]
+      },
+      "new": {
+        "rows": [
+          940317,
+          940321
+        ],
+        "paths": [
+          940325,
+          940329
+        ],
+        "typed": [
+          940333,
+          940337
+        ],
+        "projects": [
+          930059,
+          930061,
+          930063,
+          930065
+        ]
+      }
+    },
+    "reviewable_proxy_sources": {
+      "old": "test-browser/fixtures/parity-interfaces/proxy-old.cjs",
+      "new": "test-browser/fixtures/parity-interfaces/proxy-new.cjs"
+    },
+    "tag_final_ids": {
+      "old": [
+        {
+          "project": 930190,
+          "id": 940934
+        },
+        {
+          "project": 930193,
+          "id": 940941
+        },
+        {
+          "project": 930196,
+          "id": 940948
+        }
+      ],
+      "new": [
+        {
+          "project": 930186,
+          "id": 940505
+        },
+        {
+          "project": 930190,
+          "id": 940510
+        },
+        {
+          "project": 930194,
+          "id": 940515
+        }
+      ]
+    }
+  },
+  "tests": {
+    "passed": 84,
+    "failed": 0,
+    "command": "PARITY_CHROMIUM_PATH=<installed-chromium> npx playwright test -c test-browser/parity-interfaces.config.cjs",
+    "prerequisite": "Seed only isolated synthetic DBs using generator; use untagged interface 901016. Never point to shared/user DBs.",
+    "unit_passed": 29,
+    "unit_command": "node --test test-modernization/interface-bulk-parameters.test.js test-modernization/interface-path-parameters.test.js test-modernization/interface-parity-preflight.test.js test-modernization/interface-sort-authorization.test.js",
+    "default_ci": "The four new *.test.js files are included by the existing test:modernization glob. The paired browser config is explicit and has Docker identity globalSetup; shared app.spec/config untouched.",
+    "breakdown": {
+      "parameters": 18,
+      "list_filters_geometry_and_nonmember_boundaries": 10,
+      "tag_modal_and_selection": 12,
+      "category_tree_and_sort_boundaries": 14,
+      "schema_observations_and_candidate_gaps": 18,
+      "creation_boundaries": 6,
+      "candidate_drag_transport_retry": 6
+    },
+    "interpretation": "84 observed-behavior tests pass, 6 old transport cases skipped. Legacy defect expectations and legacy Schema capability-only observations do not make original compounds passed.",
+    "default_suite": {
+      "total": 301,
+      "passed": 295,
+      "failed": 0,
+      "skipped": 6,
+      "skip_reason": "Existing optional Mongo integration tests; isolated paired browser/API/DB checks ran separately."
+    },
+    "skipped": 6,
+    "skip_reason": "Old-version transport regression explicitly notrun; candidate6 transport tests execute.",
+    "batch10_current_candidate": {
+      "new_browser_passed": 53,
+      "failed": 0,
+      "skipped": 0,
+      "default_passed": 310,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "New-only current candidate regression. Prior paired batch9 aggregate is historical, not a 106-test current run."
+    },
+    "batch11_current_candidate": {
+      "new_browser_passed": 59,
+      "failed": 0,
+      "default_passed": 310,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "New-only regression; six pending-create cases additional. Historical paired reports remain separate."
+    },
+    "batch12_current_candidate": {
+      "lease_browser_passed": 10,
+      "failed": 0,
+      "lease_unit_passed": 18,
+      "default_passed": 313,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "Controller-only refinement. Prior full59 is batch11, not rerun as current61."
+    },
+    "batch13_current_candidate": {
+      "pending_browser_passed": 9,
+      "role_browser_passed": 10,
+      "failed": 0,
+      "validation_unit_passed": 12,
+      "default_passed": 325,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "Two current targeted browser runs; not a new full64 aggregate."
+    },
+    "batch14_current_candidate": {
+      "new_full_regression_passed": 74,
+      "notification_paired_passed": 6,
+      "guest_pending_passed": 1,
+      "old_failed_save_observations": 2,
+      "failed": 0,
+      "save_unit_passed": 7,
+      "default_passed": 332,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "note": "Final current product full74 plus targeted notification3 new/3 old and guest1. Historical paired metadata report includes observed old failures, not parity success. No claim of one full78 run."
+    },
+    "batch15_current_candidate": {
+      "body_new_passed": 19,
+      "schema_preview_paired_passed": 6,
+      "default_total": 345,
+      "default_passed": 339,
+      "default_skipped": 6,
+      "default_failed": 0,
+      "unit_passed": 14,
+      "note": "Body paired38 report has three real legacy JSON/RAW draft-loss failures and two random optional Mock-field test failures; required-field corrected paired6 passes. Explicit legacy defect observation tests do not imply parity passed. Full97 current candidate regression passed with B fixed four-file overlay.",
+      "new_full_regression_passed": 97,
+      "new_full_regression_failed": 0
+    },
+    "batch16_current_candidate": {
+      "new_related_regression_passed": 38,
+      "old_observation_passed": 9,
+      "old_candidate_only_skipped": 4,
+      "default_total": 350,
+      "default_passed": 344,
+      "default_failed": 0,
+      "default_skipped": 6,
+      "form_unit_passed": 14,
+      "note": "Current scoped Body/notes/Schema controls regression, not a rerun of full97. Legacy empty/duplicate displayed-name divergence and missing remark dirty prompt remain failed observations."
+    },
+    "batch17": {
+      "new_related": "27/27 passed",
+      "schema_fields_paired": "6/6 passed",
+      "legacy_deep_tuple": "3/3 passed; tuple member edited through legacy advanced source",
+      "default": "355 total,349 passed,6 skipped",
+      "database": "153 exact synthetic records: old78/new75",
+      "runtime_source": "335 matched including separately authorized B4 overlay"
+    },
+    "batch18": {
+      "desktop_paired": "12/12 passed;1024 and1920 × owner/dev/guest",
+      "database": "12 exact synthetic records",
+      "runtime_source": "335 matched including B4 overlay"
+    },
+    "batch19": {
+      "paired": "18/18 passed;10 formatting buttons +4popup actions +existing preview ×3roles×2versions",
+      "final_content": "6/6 passed after saved-paragraph visual correction",
+      "database": "90 immediate per-save synthetic readbacks in18paired;6additional in final content",
+      "runtime_source": "335 matched including separately authorized B4 overlay"
+    },
+    "batch20": {
+      "paired": "54 total:48passed,5skipped,1old baseline noncollapsed selection failure;new27/27 passed",
+      "database": "120 immediate per-save synthetic readbacks",
+      "default": "355total349passed6skipped",
+      "runtime_source": "335 matched including B4 overlay"
+    },
+    "batch21": {
+      "paired_source": "12/12 passed;request/response ×3roles; old root-advanced alternative, new full-source tab",
+      "related_candidate": "49/49 passed",
+      "database": "12 immediate exact synthetic source readbacks; new owner/dev exact four-space text in request, DB and reopen",
+      "modernization": "358 total352 passed6 skipped; default33 total32 passed1 skipped",
+      "runtime_source": "335 matched including separately authorized B4 overlay"
+    },
+    "batch22": {
+      "view": "1920 paired12 runner passes, including3 old unsafe-HTML failed observations;1024 metadata6/6",
+      "unsaved": "new6/6;old repeated Back3 failed and native-warning3 failed observations; separate single Back/Forward6/6",
+      "clean_editor_lifecycle": "6/6 paired roles, three full switching cycles with one editor and correct record content",
+      "database": "39 exact synthetic records: old18/new21; bounded IDs only; Mongo $oid normalized to API string representation",
+      "runtime_source": "335 matched; View.scss only product diff; no router/global style changes"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "interface_bulk-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_bulk-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_bulk-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_bulk-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed"
+    },
+    {
+      "id": "interface_params-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Query/header/form rows add, edit, middle deletion, exact surviving order and values, errcode 0, visible success, API readback, refresh; guest writes denied and all original fields retained."
+    },
+    {
+      "id": "interface_params-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Rename before to after, save/reload exact metadata; remove placeholder, save/reload empty metadata; guest path/metadata mutation denied."
+    },
+    {
+      "id": "interface_params-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Form file/text and required/optional toggles, automatic multipart/urlencoded Content-Type, save errcode0, visible success, API readback and reload; guest type write rejected with original fields retained."
+    },
+    {
+      "id": "interface_params-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "roles": [
+        "owner",
+        "developer",
+        "guest"
+      ],
+      "checks": "Real drag reorder and rapid double-add/middle-delete for Query/Header/form rows; exact surviving values/order after successful save and reload; guest reordered query write rejected."
+    },
+    {
+      "id": "project_tags-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Cancel/X/Escape immediately do not write either version. Legacy retains discarded drafts and later saves them; candidate rebuilds from a cloned persisted snapshot on every open. Failed save keeps draft for retry on candidate; guest retry remains denied. Interface unsaved title/query preserved."
+    },
+    {
+      "id": "project_tags-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Owner/dev Tag modal save returns errcode0 and visible success, options refresh, interface unsaved title/query survive; guest failure denied and persisted tags unchanged."
+    },
+    {
+      "id": "project_tags-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Tag modal add/edit/delete names/descriptions and preserve selected interface tags; selected-tag save regression is separately recorded as failed legacy atomic."
+    },
+    {
+      "id": "project_tags-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Both accept duplicate names and filter empty names; deleting project alpha preserves selected interface alpha. Candidate successful interface save restores missing selected alpha; legacy returns40011 after DB mutation."
+    },
+    {
+      "id": "interface_tree-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Owner/dev category add/edit/delete, interface add/copy/delete use exact target IDs with cancel checks, visible outcomes/API errcode0/reload; guest add/edit/copy/delete denied with data retained."
+    },
+    {
+      "id": "interface_tree-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Owner/dev native category reorder and cross-category interface move persist. Guest move denied both; legacy guest reorder succeeds incorrectly, candidate denies with visible error and unchanged order."
+    },
+    {
+      "id": "interface_add-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Category-menu interface creation navigates to exact returned ID and clone stays in target category; guest creation denied."
+    },
+    {
+      "id": "interface_add-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Category name and description creation/editing persist and are visibly rendered; guest changes denied."
+    },
+    {
+      "id": "interface_add-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Owner tree and developer table entry, guest boundary: cancel/close/Escape/reopen no writes; delayed in-flight double-click creates two legacy records but one candidate record/request. Candidate network+503 failures preserve form and allow retry. Batch11 menu/list/category in-flight guards with explicit pending hint and disabled Cancel/X/Escape/mask; real SPA back/cross-project late completion does not navigate or close new draft. Network/503 same-form retry passes. Six new cases, exact scoped DB readback; legacy duplicate defect retained failed. Batch13 pending ownership starts before async validation; captured project/modal generation and disposed check suppress old validation callbacks. Three real-browser delayed validateFields Promise cases switch project then release old callback: zero stale POSTs, current draft still submits correctly;12 unit and10 role regressions pass."
+    },
+    {
+      "id": "interface_edit_meta-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Connection-owned atomic edit lease: rejected/same-user/guest closes cannot clear owner; simultaneous claim grants one; owner close permits next editor; disconnect/reconnect, live revocation, expired takeover/late close, legacy uid recovery and real crash/restart bounded expiry. Old rejected close clears owner and guest claims lock. Eight new browser scenarios pass; old paired observation confirms defect, seven candidate-only cases notrun. Batch12 reloads authenticated principal existence/current role before initial authorization and every renewal: real valid-admin renewal, demotion to nonmember and account deletion both release on next pong; ten current lease browser cases pass,18 unit tests."
+    },
+    {
+      "id": "interface_edit_meta-01",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Owner/dev/guest exact title/category/method/path/status/tag/custom/open/notification false and true payload, visible result and refresh/DB. Old owner/dev combined metadata returns40011 after writing; never counted as successful save. Notification-only enabled flow passes both."
+    },
+    {
+      "id": "interface_edit_meta-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Required title/path messages block request; malformed path and duplicate method/path visibly rejected; exact DB unchanged and refresh restored; guest denied."
+    },
+    {
+      "id": "interface_edit_meta-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Old owner/dev logical failure clears dirty and silently loses draft on Preview; old late-route variants notrun. New owner/dev logical/network503 errors retain dirty draft and retry; pending guard lasts until response, edits made while pending remain dirty, late response cannot modify another interface draft. Guest actual denied double-click emits one request, remains disabled while pending, preserves local dirty draft and no DB write."
+    }
+  ],
+  "legacy_defects": [
+    {
+      "id": "interface_bulk-02",
+      "detail": "Malformed nonempty lines silently discarded. Empty-only import then reopen throws value.forEach is not a function (owner and developer). New version does not reproduce crash; malformed line rejection added."
+    },
+    {
+      "detail": "Legacy tagged interface/up still returns40011 after core fixture repair on exact dedicated Tag projects; DB can change, but not counted as save success. Candidate valid-schema fixture succeeds. Initial raw-response synthetic fixture had inconsistent schema flag and was replaced with valid schema for final Tag coverage; no server change."
+    },
+    {
+      "id": "project_tags-02",
+      "detail": "Cancelled/closed/Escape drafts persist locally in legacy and are included by later explicit save. Candidate discards them."
+    },
+    {
+      "id": "interface_tree-04",
+      "detail": "Legacy guest category sorting succeeds; mixed-project batches and revoked sessions also mutate sorting. Explicit failed behavior expectations, not counted as correct behavior."
+    },
+    {
+      "id": "interface_add-04",
+      "detail": "Native delayed-response double-click creates2 records and returns2 API0 responses in both old owner/dev; new form prevents second request."
+    }
+  ],
+  "evidence": {
+    "directory": "/Users/hujinwu/Documents/Codex/2026-10-03/task-4/interfaces",
+    "browser": "batch9-aggregate-results.json",
+    "baseline_tagged_save": "baseline-results.json",
+    "legacy_empty": "legacy-empty-trace.zip",
+    "direct_db_readback": [
+      "old-db-final.json",
+      "new-db-final.json"
+    ],
+    "visual": "Both 1920x1080 stable modal screenshots manually viewed. Same 680px width; new modal shorter due header/footer spacing. Text/close/cancel/import readable, no clipping. Background scroll offsets differ; no whole-page visual parity claimed. Stable parameter screenshots normalized to scrollY=0 were captured separately; no whole-page equivalence claimed. List old/new owner screenshots manually reviewed: no row-selection/sort controls; category select layout differs and is pending local alignment. Final list layout restored single-line centered category arrow and borderless selectors; table row height aligned closely. Shared project navigation difference reported separately to integration owner. Final 1920x1080 typed/reordered Header screenshots manually viewed old/new: three rows readable without clipping; row alignment differs and scroll offsets differ, so no whole-page visual equivalence claimed.",
+    "candidate_source": "image-source-sha256.txt matches baseline client/server/common/exts before local fix",
+    "list_filters": "list-results.json",
+    "core_fixture_rerun": "final-suite-results.json: formal guarded suite 28/28 passed",
+    "list_db_readback": [
+      "old-list-db.json",
+      "new-list-db.json"
+    ],
+    "final_source": "final-image-source-sha256.txt: running candidate source matches worktree product bytes",
+    "tag_targeted": "tag-targeted-results.json (6/6 observed-behavior assertions; legacy defects remain failed matrix assertions)",
+    "tag_database": [
+      "old-tag-db-final.json",
+      "new-tag-db-final.json"
+    ],
+    "tag_before": [
+      "tag-overlay-before.png",
+      "tag-overlay-before-trace.zip",
+      "tag-legacy-save-failure.json",
+      "tag-legacy-save-failure-trace.zip"
+    ],
+    "tag_visual": "Final 1920x1080 owner Tag modal screenshots old/new manually viewed: same680px width, candidate shorter header/footer spacing; fields/buttons legible, popup overlay gone. Background scroll differs; no whole-page visual equivalence claimed.",
+    "tag_final_source": "tag-final-image-source-sha256.txt: all333 tracked client/server/common/exts product files match running candidate",
+    "batch7_visual": "Paired1920x1080 Tag duplicate/empty modal and category CRUD screenshots manually viewed. New Tag modal shorter but legible, no overlay. Tree indent/category header differs; shared project navigation difference already assigned integration owner. No whole-page visual equivalence claimed.",
+    "batch7_source": "batch7-image-source-sha256.txt",
+    "batch7_default_tests": "batch7-default-tests.log",
+    "batch7_db": [
+      "old-batch7-db.json",
+      "new-batch7-db.json"
+    ],
+    "batch7_fixture_ids": "batch7-fixture-ids.json",
+    "drop_errors": [
+      "drop-errors-results.json",
+      "drop-errors-db.json",
+      "drop-errors-source-sha256.json"
+    ],
+    "batch9_source": "batch9-source-sha256.json",
+    "batch9_default_tests": "batch9-default-tests.log",
+    "batch9_database": [
+      "old-batch9-db.json",
+      "new-batch9-db.json"
+    ],
+    "create_before": "create-rapid-before-results.json",
+    "schema_advanced_before": "schema-advanced-before-results.json",
+    "batch9_visual": "1920x1080 legacy/candidate schema screenshots manually viewed: candidate exposes full-schema tab, union type and tuple semantics; legacy displays tuple as a single Items row and union as string. Deep candidate rows accessible through13 levels; layouts/scroll differ, no whole-page equivalence claimed.",
+    "batch10": {
+      "report": "interfaces/batch10-new-results.json",
+      "screenshots": "interfaces/batch10-new-results",
+      "default": "interfaces/lock-default-tests.log",
+      "source_sha256": "interfaces/lock-source-sha256.json",
+      "legacy": "interfaces/lock-all-before-transport-fix.json",
+      "visual_review": "1920x1080 blocked-editor, initial-failure, disconnected draft screenshots inspected; layout readable, draft preserved. Initial historical proxy-close injection was replaced with actual native browser socket close."
+    },
+    "batch11": {
+      "report": "interfaces/batch11-new-results.json",
+      "screenshots": "interfaces/batch11-new-results/",
+      "probe": "interfaces/pending-probe-results.json",
+      "database": "interfaces/pending-final-db.json",
+      "source_sha256": "interfaces/pending-source-sha256.json",
+      "before": "interfaces/pending-category-before.json",
+      "visual_review": "1920x1080 pending category screenshot inspected: prompt readable, Cancel/Submit disabled, close icon absent, fields fit."
+    },
+    "batch12": {
+      "report": "interfaces/principal-final-results.json",
+      "before": "interfaces/principal-demote-before.json",
+      "database": "interfaces/principal-final-db.json",
+      "source_sha256": "interfaces/principal-source-sha256.json",
+      "default": "interfaces/principal-default-tests.log"
+    },
+    "batch13": {
+      "pending_report": "interfaces/validation-final-results.json",
+      "role_report": "interfaces/validation-role-results.json",
+      "before": "interfaces/validation-before-results.json",
+      "database": "interfaces/validation-final-db.json",
+      "default": "interfaces/validation-default-tests.log",
+      "source_sha256": "interfaces/validation-source-sha256.json"
+    },
+    "batch14": {
+      "full": "interfaces/batch14-new-results.json",
+      "paired": "interfaces/save-paired-results.json",
+      "notification": "interfaces/notification-results.json",
+      "old_failure": "interfaces/save-old-failure-results.json",
+      "guest": "interfaces/save-guest-results.json",
+      "database": [
+        "interfaces/save-old-db.json",
+        "interfaces/save-new-db.json",
+        "interfaces/save-guest-db.json"
+      ],
+      "before": "interfaces/save-failure-before-results.json",
+      "default": "interfaces/save-default-tests.log",
+      "source_sha256": "interfaces/save-source-sha256.json"
+    },
+    "batch15": {
+      "paired": "interfaces/body-final-results.json",
+      "preview": "interfaces/body-schema-final-results.json",
+      "before": "interfaces/body-schema-before-results.json",
+      "database": [
+        "interfaces/body-old-db.json",
+        "interfaces/body-new-db.json"
+      ],
+      "source_sha256": "interfaces/body-source-sha256.json",
+      "default": "interfaces/body-default-tests.log",
+      "overlay": "interfaces/docs-active-overlay-provenance.json",
+      "visual": "1920x1080 old/new RAW-reopen screenshots manually inspected. New RAW text stays intact; old request source becomes empty object schema. Rows fit without overlap. Different scroll positions recorded; no pixel-identical page claim.",
+      "full": "interfaces/batch15-new-results.json"
+    },
+    "batch16": {
+      "new": "interfaces/batch16-new-results.json",
+      "old": "interfaces/batch16-old-results.json",
+      "before": "interfaces/notes-return-before-results.json",
+      "before_screenshots": "interfaces/notes-new-results",
+      "get_before": "interfaces/body-get-before-results.json",
+      "get_paired": "interfaces/inactive-get-results.json",
+      "database": [
+        "interfaces/batch16-old-db.json",
+        "interfaces/batch16-new-db.json"
+      ],
+      "default": "interfaces/batch16-default-tests.log",
+      "source_sha256": "interfaces/batch16-source-sha256.json",
+      "visual_review": "1920x1080 saved-and-reverted remark screenshot inspected: original A visible after successful save/reload; editor and schema controls readable. Schema multiline/import old/new screenshots inspected; final report waits for old modal to close."
+    },
+    "batch17": [
+      "batch17-new-results.json",
+      "navigation-new-results.json",
+      "navigation-final-results.json (old4pass2baseline pagination failures only)",
+      "schema-fields-results.json",
+      "legacy-deep-results.json",
+      "batch17-old-db.json",
+      "batch17-new-db.json",
+      "batch17-source-sha256.json"
+    ],
+    "batch18": [
+      "layout-before-results.json",
+      "layout-final-results.json",
+      "layout-metrics.json",
+      "layout-old-db.json",
+      "layout-new-db.json",
+      "layout-source-sha256.json"
+    ],
+    "batch19": [
+      "content-before-results.json",
+      "legacy-content-css.json",
+      "batch19-results.json",
+      "batch19-db-readbacks.json",
+      "content-final-results.json",
+      "content-final-source-sha256.json"
+    ],
+    "batch20": [
+      "context-before-results.json",
+      "batch20-results.json",
+      "batch20-db-readbacks.json",
+      "batch20-source-sha256.json",
+      "batch20-default-tests.log"
+    ],
+    "batch21": [
+      "schema-source-before-results.json",
+      "schema-source-submit-results.json",
+      "batch21-final-results.json",
+      "batch21-final-source-sha256.json",
+      "batch21-modernization-final.log",
+      "batch21-final-default-tests.log"
+    ],
+    "batch22": [
+      "view-label-before-results.json",
+      "view-final-results.json",
+      "view-1024-results.json",
+      "unsaved-results.json",
+      "single-back-results.json",
+      "clean-mount-final-results.json",
+      "batch22-old-db.json",
+      "batch22-new-db.json",
+      "batch22-source-sha256.json"
+    ]
+  },
+  "remaining": "A executable gaps covered with precise dispositions in parity-interfaces-remaining-disposition.json. Absent full-schema tab, open-state filter, path link, row selection/bulk and sort remain blocked capabilities under original246 standard. Legacy defects remain failed; baseline typedSchema proof is explicitly identified rather than re-run. Parent integration and shared visual differences remain separate.",
+  "fixed_regressions": [
+    {
+      "id": "interface_params-02",
+      "before": "New form kept before after changing path to {after}; old UI updated correctly. Reproduced owner/developer.",
+      "after": "Synchronize path and req_params into form; reconcile against live unsaved metadata.",
+      "evidence": [
+        "path-before-results.json",
+        "path-before-trace.zip",
+        "path-before.png"
+      ]
+    },
+    {
+      "id": "interface_list-layout",
+      "before": "Legacy .path display:inline-block overrode AntD6 Select flex layout, wrapping category suffix arrow and increasing row height; old selection styling no longer applied.",
+      "after": "Owned .ant-select.path uses inline-flex and no extra right padding; category/status selects explicitly borderless.",
+      "validation": "All4 readable roles in both versions assert select height<=34px and arrow vertical center difference<8px; 1920x1080 owner screenshots manually compared."
+    },
+    {
+      "id": "project_tags-modal-overlay",
+      "before": "Candidate Tag option popup remained above opened modal and intercepted Cancel; old pointer workflow worked.",
+      "after": "Owned InterfaceEditForm controls Tag popup open and closes it when opening settings."
+    },
+    {
+      "id": "project_tags-02",
+      "before": "Both versions reused cancelled modal draft on reopen; future save could commit discarded names.",
+      "after": "Owned Edit remounts a fresh cloned persisted Tag snapshot on explicit open, while failure retains modal draft for retry. No ProjectTag/settings/shared component edits."
+    },
+    {
+      "id": "interface-sort-authorization",
+      "before": "Both versions accepted guest sorting. Index endpoints trusted target IDs without checking their persisted project owners and responded before writes completed.",
+      "after": "Only upIndex/upCatIndex load and authorize every target before writing, reject mixed projects, await all writes. Owned InterfaceMenu awaits requests and displays nonzero errcode. B-owned proxy unchanged.",
+      "validation": "12 default unit tests; real paired guest drag, owner/dev success, mixed-project and revoked-session zero-write API checks."
+    },
+    {
+      "id": "interface-tree-transport-error",
+      "before": "Rejected network/HTTP promises escaped onDrop without user feedback in all three drag branches.",
+      "after": "Catch transport failure with API errmsg or retry fallback; no success refresh after failure.",
+      "validation": "Six native pointer tests: each branch network abort and HTTP503, visible message, unchanged API/menu, restored real API success and reload; exact six fixture DB readbacks passed."
+    },
+    {
+      "id": "interface_add-04-inflight-double-submit",
+      "before": "Both versions sent two add requests and created two identical method/path records on native double-click while responses were held. Owner/developer reproduced.",
+      "after": "AddInterfaceForm synchronous in-flight guard and loading state; both owned Menu/List handlers return submission promise; finally releases guard and transport error preserves retryable form.",
+      "validation": "Paired7-method creation and cancel/close/Escape, duplicate rejection, delayed double-click. Candidate tree/list paths network abort+HTTP503 then same-form successful retry. Frontend interaction protection only; concurrent direct API uniqueness is outside this fix."
+    },
+    {
+      "id": "interface-body-modes-and-current-preview",
+      "before": "Explicit false was overwritten by project defaults; inactive schema editors could replace RAW text, RAW↔JSON source was stale, inactive fields leaked, Schema preview sent old hidden RAW source.",
+      "after": "Default only undefined and only active JSON; preserve mode preference and source on switches; clear inactive payload fields; strict project parser policy; preview uses current valid schema draft.",
+      "validation": "14 unit cases,19 new browser Body cases,6 corrected paired Schema preview cases,25 exact DB readbacks; overlay provenance recorded."
+    },
+    {
+      "id": "interface-inactive-schema-get",
+      "before": "Invalid request Schema validity prevented save after switching to GET although request body hidden.",
+      "after": "Gate request Schema validity and parsing by active method request_body; clear inactive payload. POST invalid active schema remains blocked."
+    },
+    {
+      "id": "interface-remark-observed-content",
+      "before": "Static initial markdown A comparison ignored B→A edit after B saved or pending, allowing older B save completion to clear dirty and navigation to lose visible A.",
+      "after": "Track each observed Markdown value; only real changes increment existing editRevision, including return to initial A. No initialization delay or revision reset.",
+      "validation": "Four real UI before failures/four after passes; actual Form initialization/success/pending tests; exact A database readback."
+    },
+    "Batch17: when moving the final row out of the last category page, clamp current page to the refreshed total and refetch. Owner/dev API0+visible20rows+DB+reload; guest denied remains same page. Five actual component tests.",
+    "Batch18 parent1024 regression: modern Table inline auto layout overrides legacy fixed CSS. Set tableLayout=fixed only on InterfaceList Table. Long-path before: document1319/table scroll955 vs viewport1024/client612; after both versions document1024/scroll612 and identical column widths.1920 aligned; screenshots visually inspected.",
+    "Batch19 parent rich-content preview: modern editor no longer supplies legacy .tui-editor-contents styles. Restore only .caseContainer > .tui-editor-contents lists/nesting, paragraphs, emphasis, quotes, code, table borders/header, images, tasks and links. Saved modern paragraph wrappers inherit cell color and compact list/cell margins. View.js DOMPurify sanitizer unchanged; no global reset/compat changes.",
+    "Batch20 remark direct right-click: public editor command synchronizes collapsed cursor to clicked cell, only mouse button2 in this mounted WW container. Noncollapsed selections and keyboard context untouched; handler removed at unmount. Three paired roles verify fresh direct right-click and wrong-table cursor, row/column/align/remove save/reload.",
+    "Batch20 HTML-only historical note initialization: initialValue interpreted HTML as Markdown; table edits serialized mixed raw HTML and GFM and lost rows after reopen. Use DOMPurify.sanitize + public setHTML only when stored Markdown is empty. Existing Markdown path unchanged; sanitized attributes and no false dirty prompt verified."
+  ],
+  "review_notes": [
+    {
+      "id": "interface_list-03",
+      "status": "notrun",
+      "classification": "not-applicable pending integration-owner review",
+      "reason": "Both baseline and candidate InterfaceList Table have no rowSelection or bulk-action configuration. Preserve original assertion; do not invent a new product feature or count as pass.",
+      "source": "client/containers/Project/Interface/InterfaceList/InterfaceList.js Table configuration",
+      "evidence": "list-results/*/list-filter-cleared.png; no tbody checkboxes and no sorter in owner/dev/guest screenshots/DOM on old/new. Filter-menu checkboxes are not row-selection controls."
+    },
+    {
+      "id": "interface_list-01",
+      "status": "notrun",
+      "reason": "status/tag filters passed for owner/dev/guest/public nonmember; private nonmember denied. Both versions lack public/open-state filter control; original compound wording retained pending owner disposition, not promoted."
+    },
+    {
+      "id": "schema_json-full-tab",
+      "status": "notrun",
+      "reason": "Legacy lacks full-schema JSON tab; root advanced source is a separate paired path. Do not count legacy capability observations as completed JSON-tab tests."
+    },
+    "Batch15 runtime includes exact B commit 1b08f0701a743b75b1b6b1af6feeb7d071557744 documentation schema-mode/description-edits/outbound/semantic-change four-file overlay; 335 hashes match A source plus that overlay. B product files are not in A commit; integration must include B commit.",
+    "Batch21 correction: source compaction was in client render and final submit normalize, not server canonicalization. Both client paths now preserve valid unchanged strict JSON text; implicit type/JSON5 normalization and invalid rejection retained.",
+    "Batch22 removes erroneous schema_json-03-batch21 mapping: batch21 source refs/formatting supports01, not first-invalid03.03 remains candidate passed / legacy unavailable per existing precise record. Strict01 legacy full-tab switching remains blocked; alternative root advanced source is separate.",
+    "1024 old long description produces extreme vertical wrapping; candidate remains readable.1920 View labels now match100px. Shared tabs/tree/SchemaTable expand-glyph visual differences visible in screenshots are outside this local product patch."
+  ],
+  "atomic_additions": [
+    {
+      "id": "interface_list-01-status-tag-owner",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "role": "owner",
+      "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
+    },
+    {
+      "id": "interface_list-01-status-tag-developer",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "role": "developer",
+      "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
+    },
+    {
+      "id": "interface_list-01-status-tag-guest",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "role": "guest",
+      "checks": "unfinished filter, review tag combine, status reset, tag reset, exact visible rows and API errcode0; source DB records retained"
+    },
+    {
+      "id": "interface_list-01-status-tag-public-nonmember",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "public nonmember status/tag combine-reset with API success and 3 visible records"
+    },
+    {
+      "id": "interface_list-private-nonmember-boundary",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "private nonmember project/list APIs reject and UI shows no table or add controls"
+    },
+    {
+      "id": "project_tags-01-interface-selection",
+      "scenario": "project_tags-01",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Real alpha-to-beta selection change and interface save. Legacy returns40011/error even though tag persists; candidate errcode0/visible success/API read/reload all pass. Guest write denied and alpha retained. Interface-modal add/edit/delete now covered; C settings evidence remains independent."
+    },
+    {
+      "id": "interface_tree-05-cancel",
+      "scenario": "interface_tree-05",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Category add cancel/reopen and interface/category delete-confirm cancellation preserve records. Browser Back/Close/Escape portions still notrun."
+    },
+    {
+      "id": "interface_add-01-title-path-methods",
+      "scenario": "interface_add-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Required title/path,101-character rejection,7 method choices each saved to exact category with API0/visible result/reload; guest all denied. Category starts preselected; missing-category edge not covered."
+    },
+    {
+      "id": "schema_json-03-first-invalid",
+      "scenario": "schema_json-03",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "passed",
+      "checks": "Candidate owner/dev/guest: first invalid edit blocks save with zero POST, cancel leaving preserves draft, confirm drops draft, recover/save/reload exact JSON and guest denial. Legacy has no full-schema tab."
+    },
+    {
+      "id": "schema_visual-03-depth-tuple",
+      "scenario": "schema_visual-03",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "passed",
+      "checks": "Candidate depth13 accessible and edited; tuple middle delete/add preserves untouched boolean/string members, union/unknown keywords preserved, collapse/reopen/save/reload, guest denial. Legacy only initial UI/source observations; edits not complete."
+    },
+    {
+      "id": "schema_visual-02-advanced-source",
+      "scenario": "schema_visual-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Paired owner/dev/guest root advanced source edit/cancel/reopen/recover/save/API0/visible result/reload; unknown keywords retained and guest denied. Invalid legacy closes/discards draft; candidate remains open with error. Other visual02 controls remain incomplete."
+    },
+    {
+      "id": "interface_body-01-batch15",
+      "scenario": "interface_body-01",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Owner/dev/guest RAW/file/form and JSON→RAW→JSON roundtrip; historical RAW true flags normalized; active text and hidden rows/flags verified, save errcode0/visible result/API read/reload/DB. Old RAW reopen mutates visible request source and RAW-phase edits disappear on return to JSON. Invalid request body then switch to GET is still a pending edge."
+    },
+    {
+      "id": "interface_body-02-batch15",
+      "scenario": "interface_body-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "JSON5 on/off × roles; explicitfalse preserved even with JSON5 disabled, malformed save sends zero POST, strict JSON rejects JSON5 comments when disabled, correction/save/reload/guest deny. Old disabled setting overwrites explicitfalse with schema mode."
+    },
+    {
+      "id": "interface_body-03-batch15",
+      "scenario": "interface_body-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Current unsaved advanced Schema preview payload exact and deterministic required field visible, 6 paired cases pass. Candidate invalid full-schema source prevents preview request with explicit error; raw JSON parser error and correction tested. Legacy no full-schema source control."
+    },
+    {
+      "id": "interface_body-04-batch15",
+      "scenario": "interface_body-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "F9 on request/response, blur/refocus, browser Back cleanup and reopen focus tested paired; all roles F9 and owner navigation. Screenshots1920x1080."
+    },
+    {
+      "id": "interface-body-inactive-get",
+      "scenario": "interface_body-01",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "passed",
+      "checks": "Owner/dev/guest invalid request JSON or full Schema then method GET: candidate saves active GET payload with empty hidden source/rows and false schema flag, API0 or guest denial, reload and DB. Ordinary JSON old3 passed; old full-schema control unavailable, notrun. Candidate pre-fix full Schema validity blocked GET; source text ordinary JSON already passed."
+    },
+    {
+      "id": "interface-remark-wysiwyg-markdown",
+      "scenario": "interface_edit_meta-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Three roles: WYSIWYG→Markdown→WYSIWYG preserves headings/bold/code/list; save/reopen API and DB exact; guest denied. New first remark edit prompts/cancel preserves. Old first remark edit leaves without prompt and draft disappears."
+    },
+    {
+      "id": "interface-remark-original-after-save",
+      "scenario": "interface_edit_meta-04",
+      "status": "notrun",
+      "old": "notrun",
+      "new": "passed",
+      "checks": "ReviewA followup: owner/dev × save B pending/completed then real UI change back to initial A. Four before failures; after all four keep navigation prompt even after old B response, Save A persists exact markdown/HTML and reload, initial identical editor load does not prompt. Old candidate-specific4 skipped."
+    },
+    {
+      "id": "schema-sample-require-multiline",
+      "scenario": "schema_visual-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three paired roles sample JSON import cancel/reopen/invalid-recover; require-all sets root and nested required; multiline description preserves newline through save/API0/visible result/DB/reload; guest denied."
+    },
+    {
+      "id": "schema-invalid-rename-display",
+      "scenario": "schema_visual-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Three paired roles empty/duplicate rename: old input keeps empty/beta while stored alpha remains; new alerts and resets alpha. Candidate Escape cancels draft. Valid gamma rename updates required and preserves minLength/extension; API0/guest deny/reload and exact DB."
+    },
+    {
+      "id": "interface_tree-02-batch17",
+      "scenario": "interface_tree-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three roles search title/path/clear, expand/select route+highlight, Back and table title link; path is static in both versions."
+    },
+    {
+      "id": "interface_tree-05-batch17",
+      "scenario": "interface_tree-05",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Back closes current category edit draft in candidate; old modal survives route change."
+    },
+    {
+      "id": "interface_list-04-batch17",
+      "scenario": "interface_list-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "21 rows page2 move last row: old owner/dev blank page after API0; candidate returns page1 with20 rows; guest denial retains page2.1920 screenshots visually reviewed."
+    },
+    {
+      "id": "schema_visual-01-batch17",
+      "scenario": "schema_visual-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three paired roles add/delete/type/title multiline cancel/reopen/mock/require-all toggle; API0 or guest denial, exact DB and reload."
+    },
+    {
+      "id": "schema_visual-03-batch17",
+      "scenario": "schema_visual-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Legacy three roles now exercise13-level description and tuple member advanced-source edits, preserve other tuple members/unknown keywords and exact DB. Legacy lacks individual visual tuple member control; candidate prior visual coverage retained."
+    },
+    {
+      "id": "interface-list-desktop-layout-batch18",
+      "scenario": "interface_list-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "1024/1920 ×3roles: status/tag combine-reset; status/category actual dropdown mutation API0 or guest denial, visible result, exact12 DB readbacks and reload. Long path does not hide tag. No global compat/styles changed."
+    },
+    {
+      "id": "interface-remark-toolbar-preview-batch19",
+      "scenario": "interface_edit_meta-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three paired roles actual bold/italic/strike/quote/UL/OL/task/inline-code/codeblock/HR; heading2/link/local-data-image/table popup apply; link/image cancel+reopen; API0 owner/dev or guest denied, every save immediate desc/markdown DB exact, reload. Existing and saved nested UL/OL17px, disc/decimal, code background/table borders/header white visually checked1920."
+    },
+    {
+      "id": "remark-structure-context-batch20",
+      "scenario": "interface_edit_meta-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Table insert/delete row+col, alignment left/center/right, delete table, list indent/outdent/reindent, local1px image file, direct right-click correct target, noncollapsed/keyboard context, owner/dev API0 and guest denial.120 immediate DB readbacks. Old noncollapsed selection collapses; candidate preserved. Candidate-only sanitizer case skipped old.1920 direct-target screenshot visually reviewed."
+    },
+    {
+      "id": "schema_json-01-batch21",
+      "scenario": "schema_json-01",
+      "status": "blocked",
+      "old": "blocked",
+      "new": "passed",
+      "checks": "Request/response ×3roles actual root advanced source(old alternative) and full Schema tab(new); $defs/$ref, oneOf/allOf, nested extension, four-space formatting survives candidate visual switch/save payload/exact DB/reload; guest denied unchanged. Old has no dedicated full tab; not claiming same-control coverage. Strict compound old visual/full-JSON switching is blocked by absent full tab; root advanced alternative passed separately."
+    },
+    {
+      "id": "interface_view-01-batch22",
+      "scenario": "interface_view-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three roles ×old/new ×1920/1024: metadata, creator link, complete basepath+path copy twice and clipboard, refresh. Restore local100px label flex basis; screenshots visually reviewed."
+    },
+    {
+      "id": "interface_view-02-batch22",
+      "scenario": "interface_view-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Path/header/query/form rows retain flags/examples/descriptions/file types; schema content; exact DB and refresh."
+    },
+    {
+      "id": "interface_view-03-batch22",
+      "scenario": "interface_view-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Expand/collapse/reexpand nested schema, constraints and long description visible;1920 layout readable.1024 candidate wraps readable; legacy narrow description column produces very tall row, documented visual limitation. Shared expand glyph styling not changed."
+    },
+    {
+      "id": "interface_view-04-batch22",
+      "scenario": "interface_view-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Both readable semantic HTML after local styling; legacy leaves2 dangerous attributes, candidate strips both without executing payloads."
+    },
+    {
+      "id": "rich_editor-04-batch22",
+      "scenario": "rich_editor-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three paired roles repeat clean first/second interface switches3cycles; exactlyone toolbar/editor with correct note; no false dirty modal; first record exact DB unchanged."
+    },
+    {
+      "id": "unsaved-01-batch22",
+      "scenario": "unsaved-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Three paired roles dirty tab Cancel retains draft; save/discard and repeated navigation checks; candidate native warning tracks dirty state."
+    },
+    {
+      "id": "unsaved-02-batch22",
+      "scenario": "unsaved-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "checks": "Separate single Back Cancel/Confirm/Forward six paired tests pass; exact record title retained after discard."
+    },
+    {
+      "id": "unsaved-03-batch22",
+      "scenario": "unsaved-03",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Three roles legacy second Back bypasses prompt; candidate one prompt, Cancel restores draft and Confirm leaves correctly."
+    },
+    {
+      "id": "unsaved-04-batch22",
+      "scenario": "unsaved-04",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "checks": "Legacy no native reload warning; candidate dismiss reload/close retains draft; save/discard removes warning; guest save denied."
+    }
+  ]
+}

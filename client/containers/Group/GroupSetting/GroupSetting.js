@@ -6,36 +6,17 @@ import { fetchNewsData } from '../../../reducer/modules/news.js';
 import {
   changeGroupMsg,
   fetchGroupList,
-  setCurrGroup,
   fetchGroupMsg,
-  updateGroupList,
   deleteGroup
 } from '../../../reducer/modules/group.js';
 const { TextArea } = Input;
 import { trim } from '../../../common.js';
-import _ from 'underscore';
+import { withRouter } from 'react-router-dom';
+import { actionData, resourceId, routeGroupId } from '../navigation';
 import './GroupSetting.scss';
 const confirm = Modal.confirm;
 
-@connect(
-  state => {
-    return {
-      groupList: state.group.groupList,
-      currGroup: state.group.currGroup,
-      curUserRole: state.user.role
-    };
-  },
-  {
-    changeGroupMsg,
-    fetchGroupList,
-    setCurrGroup,
-    fetchGroupMsg,
-    fetchNewsData,
-    updateGroupList,
-    deleteGroup
-  }
-)
-class GroupSetting extends Component {
+export class GroupSetting extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -44,7 +25,8 @@ class GroupSetting extends Component {
       showDangerOptions: false,
       custom_field1_name: '',
       custom_field1_enable: false,
-      custom_field1_rule: false
+      custom_field1_rule: false,
+      loadError: ''
     };
   }
 
@@ -53,20 +35,22 @@ class GroupSetting extends Component {
     curUserRole: PropTypes.string,
     changeGroupMsg: PropTypes.func,
     fetchGroupList: PropTypes.func,
-    setCurrGroup: PropTypes.func,
     fetchGroupMsg: PropTypes.func,
     fetchNewsData: PropTypes.func,
-    updateGroupList: PropTypes.func,
     deleteGroup: PropTypes.func,
-    groupList: PropTypes.array
+    groupList: PropTypes.array,
+    location: PropTypes.object,
+    history: PropTypes.object,
+    match: PropTypes.object
   };
 
   initState(props) {
+    const customField = props.currGroup.custom_field1 || {};
     this.setState({
       currGroupName: props.currGroup.group_name,
       currGroupDesc: props.currGroup.group_desc,
-      custom_field1_name: props.currGroup.custom_field1.name,
-      custom_field1_enable: props.currGroup.custom_field1.enable
+      custom_field1_name: customField.name,
+      custom_field1_enable: customField.enable
     });
   }
 
@@ -101,9 +85,17 @@ class GroupSetting extends Component {
     });
   };
 
-  componentWillMount() {
-    // console.log('custom_field1',this.props.currGroup.custom_field1)
+  componentDidMount() {
+    this.mounted = true;
     this.initState(this.props);
+  }
+
+  componentWillUnmount() {
+    this.mounted = false;
+  }
+
+  isCurrentGroup(id) {
+    return this.mounted && resourceId(routeGroupId(this.props)) === resourceId(id);
   }
 
   // 点击“查看危险操作”按钮
@@ -120,41 +112,45 @@ class GroupSetting extends Component {
     if (this.state.custom_field1_rule) {
       return;
     }
-    const res = await this.props.changeGroupMsg({
-      group_name: this.state.currGroupName,
-      group_desc: this.state.currGroupDesc,
-      custom_field1: {
-        name: this.state.custom_field1_name,
-        enable: this.state.custom_field1_enable
-      },
-      id: this.props.currGroup._id
-    });
-
-    if (!res.payload.data.errcode) {
+    this.setState({ loadError: '' });
+    try {
+      actionData(await this.props.changeGroupMsg({
+        group_name: this.state.currGroupName,
+        group_desc: this.state.currGroupDesc,
+        custom_field1: {
+          name: this.state.custom_field1_name,
+          enable: this.state.custom_field1_enable
+        },
+        id
+      }));
+      if (!this.isCurrentGroup(id)) return;
+      const groups = actionData(await this.props.fetchGroupList());
+      if (!this.isCurrentGroup(id)) return;
+      if (!Array.isArray(groups)) throw new Error('分组列表格式错误');
+      actionData(await this.props.fetchGroupMsg(id, { isCurrent: () => this.isCurrentGroup(id) }));
+      if (!this.isCurrentGroup(id)) return;
       message.success('修改成功！');
-      await this.props.fetchGroupList(this.props.groupList);
-      this.props.updateGroupList(this.props.groupList);
-      const currGroup = _.find(this.props.groupList, group => {
-        return +group._id === +id;
-      });
-      this.props.setCurrGroup(currGroup);
-      this.props.fetchGroupMsg(this.props.currGroup._id);
-      this.props.fetchNewsData(this.props.currGroup._id, 'group', 1, 10);
+      this.props.fetchNewsData(id, 'group', 1, 10);
+    } catch (error) {
+      if (this.isCurrentGroup(id)) this.setState({ loadError: error.message || '分组保存失败' });
     }
   };
 
-  // 删除分组
-
+  // 删除后由新路由选择分组，不读取尚未提交的 Redux props。
   deleteGroup = async () => {
-    const that = this;
-    const { currGroup } = that.props;
-    const res = await this.props.deleteGroup({ id: currGroup._id });
-    if (!res.payload.data.errcode) {
+    const id = this.props.currGroup._id;
+    this.setState({ loadError: '' });
+    try {
+      actionData(await this.props.deleteGroup({ id }));
+      if (!this.isCurrentGroup(id)) return;
+      const groups = actionData(await this.props.fetchGroupList());
+      if (!this.isCurrentGroup(id)) return;
+      if (!Array.isArray(groups)) throw new Error('分组列表格式错误');
+      const next = groups.find(group => resourceId(group._id) && resourceId(group._id) !== resourceId(id));
       message.success('删除成功');
-      await that.props.fetchGroupList();
-      const currGroup = that.props.groupList[0] || { group_name: '', group_desc: '' };
-      that.setState({ groupList: that.props.groupList });
-      that.props.setCurrGroup(currGroup);
+      this.props.history.replace(next ? `/group/${next._id}` : '/group');
+    } catch (error) {
+      if (this.isCurrentGroup(id)) this.setState({ loadError: error.message || '分组删除失败' });
     }
   };
 
@@ -193,19 +189,17 @@ class GroupSetting extends Component {
     });
   };
 
-  componentWillReceiveProps(nextProps) {
-    // 切换分组时，更新分组信息并关闭删除分组操作
-    if (this.props.currGroup._id !== nextProps.currGroup._id) {
-      this.initState(nextProps);
-      this.setState({
-        showDangerOptions: false
-      });
+  componentDidUpdate(prevProps) {
+    if (prevProps.currGroup._id !== this.props.currGroup._id) {
+      this.initState(this.props);
+      this.setState({ showDangerOptions: false, loadError: '' });
     }
   }
 
   render() {
     return (
       <div className="m-panel card-panel card-panel-s panel-group">
+        {this.state.loadError && <Alert type="error" message={this.state.loadError} />}
         <Row type="flex" justify="space-around" className="row" align="middle">
           <Col span={4} className="label">
             分组名：
@@ -303,4 +297,19 @@ class GroupSetting extends Component {
   }
 }
 
-export default GroupSetting;
+export default connect(
+  state => {
+    return {
+      groupList: state.group.groupList,
+      currGroup: state.group.currGroup,
+      curUserRole: state.user.role
+    };
+  },
+  {
+    changeGroupMsg,
+    fetchGroupList,
+    fetchGroupMsg,
+    fetchNewsData,
+    deleteGroup
+  }
+)(withRouter(GroupSetting));

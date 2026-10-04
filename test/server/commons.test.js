@@ -43,8 +43,8 @@ test('verifyPath', t=>{
     t.true(verifyPath('/a:b/t/.api/k_-/tt/'))
 })
 
-test('sandbox', t=>{
-    t.deepEqual(sandbox({
+;(process.env.YAPI_ISOLATED_RUNNER_SOCKET ? test : test.skip)('sandbox (requires isolated runner)', async t=>{
+    t.deepEqual(await sandbox({
         a: 1
     }, 'a=2'), {a : 2});
 })

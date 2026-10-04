@@ -1,7 +1,7 @@
 import React, { PureComponent as Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
-import { Icon, Modal, Input, message,Spin,  Row, Menu, Col, Popover, Tooltip } from 'antd';
+import { Icon, Modal, Input, message, Spin, Alert, Button, Row, Menu, Col, Popover, Tooltip } from 'antd';
 import { autobind } from 'core-decorators';
 import axios from 'axios';
 import { withRouter } from 'react-router-dom';
@@ -12,11 +12,9 @@ import GuideBtns from '../../../components/GuideBtns/GuideBtns.js';
 import { fetchNewsData } from '../../../reducer/modules/news.js';
 import {
   fetchGroupList,
-  setCurrGroup,
-  setGroupList,
-  fetchGroupMsg
+  setCurrGroup
 } from '../../../reducer/modules/group.js';
-import _ from 'underscore';
+import { actionData, resourceId, routeGroupId } from '../navigation';
 
 import './GroupList.scss';
 
@@ -30,48 +28,32 @@ const tip = (
   </div>
 );
 
-@connect(
-  state => ({
-    groupList: state.group.groupList,
-    currGroup: state.group.currGroup,
-    curUserRole: state.user.role,
-    curUserRoleInGroup: state.group.currGroup.role || state.group.role,
-    studyTip: state.user.studyTip,
-    study: state.user.study
-  }),
-  {
-    fetchGroupList,
-    setCurrGroup,
-    setGroupList,
-    fetchNewsData,
-    fetchGroupMsg
-  }
-)
-@withRouter
-export default class GroupList extends Component {
+export class GroupList extends Component {
   static propTypes = {
     groupList: PropTypes.array,
     currGroup: PropTypes.object,
     fetchGroupList: PropTypes.func,
     setCurrGroup: PropTypes.func,
-    setGroupList: PropTypes.func,
     match: PropTypes.object,
     history: PropTypes.object,
+    location: PropTypes.object,
     curUserRole: PropTypes.string,
     curUserRoleInGroup: PropTypes.string,
     studyTip: PropTypes.number,
     study: PropTypes.bool,
-    fetchNewsData: PropTypes.func,
-    fetchGroupMsg: PropTypes.func
+    fetchNewsData: PropTypes.func
   };
 
   state = {
     addGroupModalVisible: false,
+    addingGroup: false,
     newGroupName: '',
     newGroupDesc: '',
     currGroupName: '',
     currGroupDesc: '',
     groupList: [],
+    loading: true,
+    loadError: '',
     owner_uids: []
   };
 
@@ -79,38 +61,89 @@ export default class GroupList extends Component {
     super(props);
   }
 
-  async componentWillMount() {
-    const groupId = !isNaN(this.props.match.params.groupId)
-      ? parseInt(this.props.match.params.groupId)
-      : 0;
-    await this.props.fetchGroupList();
-    let currGroup = false;
-    if (this.props.groupList.length && groupId) {
-      for (let i = 0; i < this.props.groupList.length; i++) {
-        if (this.props.groupList[i]._id === groupId) {
-          currGroup = this.props.groupList[i];
-        }
-      }
-    } else if (!groupId && this.props.groupList.length) {
-      this.props.history.push(`/group/${this.props.groupList[0]._id}`);
-    }
-    if (!currGroup) {
-      currGroup = this.props.groupList[0] || { group_name: '', group_desc: '' };
-      this.props.history.replace(`${currGroup._id}`);
-    }
-    this.setState({ groupList: this.props.groupList });
-    this.props.setCurrGroup(currGroup);
+  componentDidMount() {
+    this.mounted = true;
+    this.loadGroupList();
   }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.groupList !== this.props.groupList) {
+      this.groups = this.props.groupList;
+      this.setState({ groupList: this.groups });
+    }
+    if (routeGroupId(prevProps) !== routeGroupId(this.props)) {
+      this.pendingGroupId = null;
+      this.selectRouteGroup();
+    }
+  }
+
+  componentWillUnmount() {
+    this.mounted = false;
+    this.selectionVersion++;
+  }
+
+  selectionVersion = 0;
+  listVersion = 0;
+  groups = null;
+
+  loadGroupList = async () => {
+    const version = ++this.listVersion;
+    this.setState({ loading: true, loadError: '' });
+    try {
+      const groups = actionData(await this.props.fetchGroupList());
+      if (!this.mounted || version !== this.listVersion) return;
+      if (!Array.isArray(groups)) throw new Error('分组列表格式错误');
+      this.groups = groups;
+      this.setState({ groupList: groups });
+      await this.selectRouteGroup();
+    } catch (error) {
+      if (this.mounted && version === this.listVersion) {
+        this.setState({ loading: false, loadError: error.message || '分组加载失败' });
+      }
+    }
+  };
+
+  selectRouteGroup = async () => {
+    const version = ++this.selectionVersion;
+    if (!this.groups) return;
+    const requested = routeGroupId(this.props);
+    const id = resourceId(requested);
+    if (!requested) {
+      const first = this.groups.find(group => resourceId(group._id));
+      this.setState({ loading: false, loadError: '' });
+      if (first) this.props.history.replace(`/group/${first._id}`);
+      return;
+    }
+    if (!id) {
+      this.setState({ loading: false, loadError: '无效的分组 ID' });
+      return;
+    }
+    const isCurrent = () => this.mounted && version === this.selectionVersion &&
+      resourceId(routeGroupId(this.props)) === id;
+    this.setState({ loading: true, loadError: '' });
+    try {
+      // A direct URL is authoritative even if this group is absent from the list.
+      const group = actionData(await this.props.setCurrGroup({ _id: id }, { isCurrent }));
+      if (!isCurrent()) return;
+      if (!group || resourceId(group._id) !== id) throw new Error('分组信息格式错误');
+      this.setState({ loading: false });
+    } catch (error) {
+      if (isCurrent()) this.setState({ loading: false, loadError: error.message || '分组加载失败' });
+    }
+  };
 
   @autobind
   showModal() {
+    this.modalVersion = (this.modalVersion || 0) + 1;
     this.setState({
       addGroupModalVisible: true
     });
   }
   @autobind
   hideModal() {
+    this.modalVersion = (this.modalVersion || 0) + 1;
     this.setState({
+      newGroupDesc: '',
       newGroupName: '',
       group_name: '',
       owner_uids: [],
@@ -119,21 +152,27 @@ export default class GroupList extends Component {
   }
   @autobind
   async addGroup() {
+    if (this.addingGroup) return;
+    this.addingGroup = true;
+    const version = this.modalVersion;
+    this.setState({ addingGroup: true });
     const { newGroupName: group_name, newGroupDesc: group_desc, owner_uids } = this.state;
-    const res = await axios.post('/api/group/add', { group_name, group_desc, owner_uids });
-    if (!res.data.errcode) {
-      this.setState({
-        newGroupName: '',
-        group_name: '',
-        owner_uids: [],
-        addGroupModalVisible: false
-      });
-      await this.props.fetchGroupList();
-      this.setState({ groupList: this.props.groupList });
-      this.props.fetchGroupMsg(this.props.currGroup._id);
-      this.props.fetchNewsData(this.props.currGroup._id, 'group', 1, 10);
-    } else {
-      message.error(res.data.errmsg);
+    try {
+      const res = await axios.post('/api/group/add', { group_name, group_desc, owner_uids });
+      if (!this.mounted) return;
+      if (!res.data.errcode) {
+        if (version === this.modalVersion) this.hideModal();
+        await this.loadGroupList();
+        const id = resourceId(routeGroupId(this.props));
+        if (this.mounted && id) this.props.fetchNewsData(id, 'group', 1, 10);
+      } else {
+        message.error(res.data.errmsg);
+      }
+    } catch (error) {
+      if (this.mounted) message.error('创建分组失败，请重试');
+    } finally {
+      this.addingGroup = false;
+      if (this.mounted) this.setState({ addingGroup: false });
     }
   }
   @autobind
@@ -141,20 +180,14 @@ export default class GroupList extends Component {
     const { currGroupName: group_name, currGroupDesc: group_desc } = this.state;
     const id = this.props.currGroup._id;
     const res = await axios.post('/api/group/up', { group_name, group_desc, id });
+    if (!this.mounted) return;
     if (res.data.errcode) {
       message.error(res.data.errmsg);
     } else {
-      await this.props.fetchGroupList();
-
-      this.setState({ groupList: this.props.groupList });
-      const currGroup = _.find(this.props.groupList, group => {
-        return +group._id === +id;
-      });
-
-      this.props.setCurrGroup(currGroup);
-      // this.props.setCurrGroup({ group_name, group_desc, _id: id });
-      this.props.fetchGroupMsg(this.props.currGroup._id);
-      this.props.fetchNewsData(this.props.currGroup._id, 'group', 1, 10);
+      await this.loadGroupList();
+      if (this.mounted && resourceId(routeGroupId(this.props)) === resourceId(id)) {
+        this.props.fetchNewsData(id, 'group', 1, 10);
+      }
     }
   }
   @autobind
@@ -168,14 +201,14 @@ export default class GroupList extends Component {
 
   @autobind
   selectGroup(e) {
-    const groupId = e.key;
-    //const currGroup = this.props.groupList.find((group) => { return +group._id === +groupId });
-    const currGroup = _.find(this.props.groupList, group => {
-      return +group._id === +groupId;
-    });
-    this.props.setCurrGroup(currGroup);
-    this.props.history.replace(`${currGroup._id}`);
-    this.props.fetchNewsData(groupId, 'group', 1, 10);
+    const id = resourceId(e.key);
+    if (!id || id === this.pendingGroupId || id === resourceId(routeGroupId(this.props))) return;
+    if (!this.groups || !this.groups.some(group => resourceId(group._id) === id)) return;
+    // Invalidate the old request immediately, including before the router commits.
+    this.selectionVersion++;
+    this.pendingGroupId = id;
+    this.props.history.replace(`/group/${id}`);
+    this.props.fetchNewsData(id, 'group', 1, 10);
   }
 
   @autobind
@@ -193,19 +226,11 @@ export default class GroupList extends Component {
       this.setState({ groupList });
     } else {
       this.setState({
-        groupList: groupList.filter(group => new RegExp(v, 'i').test(group.group_name))
+        groupList: groupList.filter(group => group.group_name.toLowerCase().includes(v.toLowerCase()))
       });
     }
   }
 
-  componentWillReceiveProps(nextProps) {
-    // GroupSetting 组件设置的分组信息，通过redux同步到左侧分组菜单中
-    if (this.props.groupList !== nextProps.groupList) {
-      this.setState({
-        groupList: nextProps.groupList
-      });
-    }
-  }
 
   render() {
     const { currGroup } = this.props;
@@ -235,7 +260,11 @@ export default class GroupList extends Component {
               />
             </div>
           </div>
-          {this.state.groupList.length === 0 && <Spin style={{
+          {this.state.loadError && <Alert type="error" message={this.state.loadError}
+            action={<Button onClick={this.loadGroupList}>重试</Button>} />}
+          {!this.state.loading && !this.state.loadError && this.state.groupList.length === 0 &&
+            <div role="status">暂无分组</div>}
+          {this.state.loading && <Spin style={{
             marginTop: 20,
             display: 'flex',
             justifyContent: 'center'
@@ -282,6 +311,7 @@ export default class GroupList extends Component {
             title="添加分组"
             visible={this.state.addGroupModalVisible}
             onOk={this.addGroup}
+            confirmLoading={this.state.addingGroup}
             onCancel={this.hideModal}
             className="add-group-modal"
           >
@@ -317,3 +347,19 @@ export default class GroupList extends Component {
     );
   }
 }
+
+export default connect(
+  state => ({
+    groupList: state.group.groupList,
+    currGroup: state.group.currGroup,
+    curUserRole: state.user.role,
+    curUserRoleInGroup: state.group.currGroup.role || state.group.role,
+    studyTip: state.user.studyTip,
+    study: state.user.study
+  }),
+  {
+    fetchGroupList,
+    setCurrGroup,
+    fetchNewsData
+  }
+)(withRouter(GroupList));

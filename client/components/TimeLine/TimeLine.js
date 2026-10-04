@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import React, { PureComponent as Component } from 'react';
 import { Timeline, Spin, Row, Col, Tag, Avatar, Button, Modal, AutoComplete } from 'antd';
 import PropTypes from 'prop-types';
@@ -9,15 +10,13 @@ import { Link } from 'react-router-dom';
 import { fetchNewsData, fetchMoreNews } from '../../reducer/modules/news.js';
 import { fetchInterfaceList } from '../../reducer/modules/interface.js';
 import ErrMsg from '../ErrMsg/ErrMsg.js';
-const jsondiffpatch = require('jsondiffpatch/dist/jsondiffpatch.umd.js');
-const formattersHtml = jsondiffpatch.formatters.html;
-import 'jsondiffpatch/dist/formatters-styles/annotated.css';
-import 'jsondiffpatch/dist/formatters-styles/html.css';
+const jsondiffpatch = require('jsondiffpatch/with-text-diffs');
+const formattersHtml = require('jsondiffpatch/formatters/html');
+import 'jsondiffpatch/formatters/styles/annotated.css';
+import 'jsondiffpatch/formatters/styles/html.css';
 import './TimeLine.scss';
 import { timeago } from '../../../common/utils.js';
 
-// const Option = AutoComplete.Option;
-const { Option, OptGroup } = AutoComplete;
 
 const AddDiffView = props => {
   const { title, content, className } = props;
@@ -29,7 +28,7 @@ const AddDiffView = props => {
   return (
     <div className={className}>
       <h3 className="title">{title}</h3>
-      <div dangerouslySetInnerHTML={{ __html: content }} />
+      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content || '') }} />
     </div>
   );
 };
@@ -152,25 +151,20 @@ class TimeTree extends Component {
       other: '其他'
     };
 
-    const children = this.state.apiList.map(item => {
-      let methodColor = variable.METHOD_COLOR[item.method ? item.method.toLowerCase() : 'get'];
-      return (
-        <Option title={item.title} value={item._id + ''} path={item.path} key={item._id}>
-          {item.title}{' '}
-          <Tag
-            style={{ color: methodColor ? methodColor.color : '#cfefdf', backgroundColor: methodColor ? methodColor.bac : '#00a854', border: 'unset' }}
-          >
-            {item.method}
-          </Tag>
-        </Option>
-      );
+    const apiOptions = this.state.apiList.map(item => {
+      const methodColor = variable.METHOD_COLOR[item.method ? item.method.toLowerCase() : 'get'];
+      return {
+        title: item.title,
+        value: String(item._id),
+        path: item.path,
+        label: <span>{item.title}{' '}<Tag style={{ color: methodColor ? methodColor.color : '#cfefdf', backgroundColor: methodColor ? methodColor.bac : '#00a854', border: 'unset' }}>{item.method}</Tag></span>
+      };
     });
-
-    children.unshift(
-      <Option value="" key="all">
-        选择全部
-      </Option>
-    );
+    apiOptions.unshift({ value: '', title: '选择全部', path: '', label: '选择全部' });
+    const filterOptions = [
+      { label: 'other', options: [{ value: 'wiki', title: 'wiki', path: '', label: 'wiki' }] },
+      { label: 'api', options: apiOptions }
+    ];
 
     if (data && data.length) {
       data = data.map((item, i) => {
@@ -182,7 +176,7 @@ class TimeTree extends Component {
         return (
           <Timeline.Item
             dot={
-              <Link to={`/user/profile/${item.uid}`}>
+              <Link to={`/user/profile/${item.uid}`} style={{ position: 'relative', zIndex: 1, display: 'block' }}>
                 <Avatar src={`/api/user/avatar?uid=${item.uid}`} />
               </Link>
             }
@@ -190,11 +184,11 @@ class TimeTree extends Component {
           >
             <div className="logMesHeade">
               <span className="logoTimeago">{timeago(item.add_time)}</span>
-              {/*<span className="logusername"><Link to={`/user/profile/${item.uid}`}><Icon type="user" />{item.username}</Link></span>*/}
+              {/*<span className="logusername"><Link to={`/user/profile/${item.uid}`} style={{ position: 'relative', zIndex: 1, display: 'block' }}><Icon type="user" />{item.username}</Link></span>*/}
               <span className="logtype">{logType[item.type]}动态</span>
               <span className="logtime">{formatTime(item.add_time)}</span>
             </div>
-            <span className="logcontent" dangerouslySetInnerHTML={{ __html: item.content }} />
+            <span className="logcontent" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content || '') }} />
             <div style={{ padding: '10px 0 0 10px' }}>
               {interfaceDiff && <Button onClick={() => this.openDiff(item.data)}>改动详情</Button>}
             </div>
@@ -250,24 +244,14 @@ class TimeTree extends Component {
                 style={{ width: '100%' }}
                 placeholder="Select Api"
                 optionLabelProp="title"
-                filterOption={(inputValue, options) => {
-                  if (options.props.value == '') return true;
-                  if (
-                    options.props.path.indexOf(inputValue) !== -1 ||
-                    options.props.title.indexOf(inputValue) !== -1
-                  ) {
-                    return true;
-                  }
-                  return false;
+                options={filterOptions}
+                filterOption={(inputValue, option) => {
+                  const data = option && (option.props || option);
+                  if (!data || data.options) return false;
+                  return data.value === '' || (data.path || '').includes(inputValue) ||
+                    (data.title || '').includes(inputValue);
                 }}
               >
-                {/* {children} */}
-                <OptGroup label="other">
-                  <Option value="wiki" path="" title="wiki">
-                    wiki
-                  </Option>
-                </OptGroup>
-                <OptGroup label="api">{children}</OptGroup>
               </AutoComplete>
             </Col>
           </Row>

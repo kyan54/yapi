@@ -75,9 +75,12 @@ export default class MockCol extends Component {
   };
 
   handleOk = async caseData => {
-    if (!caseData) {
+    if (!caseData || this.savingCase) {
       return null;
     }
+    this.savingCase = true;
+    this.setState({ savingCase: true });
+    try {
     const { caseData: currcase } = this.state;
     const interface_id = this.props.match.params.actionId;
     const project_id = this.props.match.params.id;
@@ -92,12 +95,23 @@ export default class MockCol extends Component {
     await axios.post('/api/plugin/advmock/case/save', caseData).then(async res => {
       if (res.data.errcode === 0) {
         message.success(this.state.isAdd ? '添加成功' : '保存成功');
-        await this.props.fetchMockCol(interface_id);
         this.setState({ caseDesModalVisible: false });
+        try {
+          const refreshed = await this.props.fetchMockCol(interface_id);
+          if (refreshed && refreshed.payload && refreshed.payload.errcode !== 0) throw Error('refresh failed');
+        } catch (_) {
+          message.error('期望已保存，但列表加载失败，请刷新页面');
+        }
       } else {
         message.error(res.data.errmsg);
       }
     });
+    } catch (_) {
+      message.error('保存期望失败，请重试');
+    } finally {
+      this.savingCase = false;
+      this.setState({ savingCase: false });
+    }
   };
 
   deleteCase = async id => {
@@ -257,9 +271,10 @@ export default class MockCol extends Component {
           <CaseDesModal
             visible={caseDesModalVisible}
             isAdd={isAdd}
+            saving={this.state.savingCase}
             caseData={caseData}
             onOk={this.handleOk}
-            onCancel={() => this.setState({ caseDesModalVisible: false })}
+            onCancel={() => !this.savingCase && this.setState({ caseDesModalVisible: false })}
             ref={this.saveFormRef}
           />
         )}

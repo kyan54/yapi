@@ -6,8 +6,7 @@ import { Link } from 'react-router-dom';
 import {
   addProject,
   fetchProjectList,
-  delProject,
-  changeUpdateModal
+  delProject
 } from '../../../reducer/modules/project';
 import ProjectCard from '../../../components/ProjectCard/ProjectCard.js';
 import ErrMsg from '../../../components/ErrMsg/ErrMsg.js';
@@ -30,8 +29,7 @@ import './ProjectList.scss';
     fetchProjectList,
     addProject,
     delProject,
-    changeUpdateModal,
-    setBreadcrumb
+      setBreadcrumb
   }
 )
 class ProjectList extends Component {
@@ -48,7 +46,6 @@ class ProjectList extends Component {
     fetchProjectList: PropTypes.func,
     addProject: PropTypes.func,
     delProject: PropTypes.func,
-    changeUpdateModal: PropTypes.func,
     projectList: PropTypes.array,
     userInfo: PropTypes.object,
     tableLoading: PropTypes.bool,
@@ -82,25 +79,31 @@ class ProjectList extends Component {
     this.props.fetchProjectList(this.props.currGroup._id, this.props.currPage);
   };
 
-  componentWillReceiveProps(nextProps) {
-    this.props.setBreadcrumb([{ name: '' + (nextProps.currGroup.group_name || '') }]);
+  componentDidMount() {
+    this.mounted = true;
+    this.updateGroup();
+  }
 
-    // 切换分组
-    if (this.props.currGroup !== nextProps.currGroup && nextProps.currGroup._id) {
-      this.props.fetchProjectList(nextProps.currGroup._id, this.props.currPage);
+  componentDidUpdate(prevProps) {
+    if (prevProps.currGroup._id !== this.props.currGroup._id) this.updateGroup();
+    else if (prevProps.currGroup.group_name !== this.props.currGroup.group_name) {
+      this.props.setBreadcrumb([{ name: this.props.currGroup.group_name || '' }]);
     }
+    if (prevProps.projectList !== this.props.projectList) {
+      this.setState({ projectData: this.props.projectList.map((item, key) => ({ ...item, key })) });
+    }
+  }
 
-    // 切换项目列表
-    if (this.props.projectList !== nextProps.projectList) {
-      // console.log(nextProps.projectList);
-      const data = nextProps.projectList.map((item, index) => {
-        item.key = index;
-        return item;
-      });
-      this.setState({
-        projectData: data
-      });
-    }
+  componentWillUnmount() {
+    this.mounted = false;
+  }
+
+  updateGroup() {
+    const id = this.props.currGroup._id;
+    this.props.setBreadcrumb([{ name: this.props.currGroup.group_name || '' }]);
+    if (id) this.props.fetchProjectList(id, this.props.currPage, {
+      isCurrent: () => this.mounted && this.props.currGroup._id === id
+    });
   }
 
   render() {
@@ -127,7 +130,7 @@ class ProjectList extends Component {
     const Follow = () => {
       return followProject.length ? (
         <Row>
-          <h3 className="owner-type">我的关注</h3>
+          <Col span={24}><h3 className="owner-type">我的关注</h3></Col>
           {followProject.map((item, index) => {
             return (
               <Col xs={8} lg={6} xxl={4} key={index}>
@@ -141,7 +144,7 @@ class ProjectList extends Component {
     const NoFollow = () => {
       return noFollow.length ? (
         <Row style={{ borderBottom: '1px solid #eee', marginBottom: '15px' }}>
-          <h3 className="owner-type">我的项目</h3>
+          <Col span={24}><h3 className="owner-type">我的项目</h3></Col>
           {noFollow.map((item, index) => {
             return (
               <Col xs={8} lg={6} xxl={4} key={index}>
@@ -192,7 +195,7 @@ class ProjectList extends Component {
               </Col>);
           }) : <ErrMsg type="noProject" />} */}
           {this.props.currGroup.type === 'private' ? (
-            <OwnerSpace />
+            <Col span={24}><OwnerSpace /></Col>
           ) : projectData.length ? (
             projectData.map((item, index) => {
               return (

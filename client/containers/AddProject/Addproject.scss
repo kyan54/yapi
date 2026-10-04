@@ -29,3 +29,27 @@
   top: -.08rem;
   color: #919191;
 }
+
+// Keep the two-line permission choice aligned within this page only.
+.add-project-page {
+  .ant-radio-wrapper.radio {
+    align-items: flex-start;
+    vertical-align: top;
+  }
+
+  .ant-radio-wrapper.radio > .ant-radio {
+    align-self: flex-start;
+    margin-top: 3px;
+  }
+
+  .ant-radio-label {
+    line-height: 22px;
+  }
+
+  .radio-desc {
+    display: block;
+    margin-left: 0;
+    top: 0;
+    padding-top: 6px;
+  }
+}

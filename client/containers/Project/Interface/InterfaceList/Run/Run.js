@@ -41,6 +41,11 @@ export default class Run extends Component {
   };
 
   saveCase = async (colId, caseName) => {
+    if (this.savingCase) return;
+    if (!colId || !caseName.trim()) return message.error('请选择集合并填写用例名称');
+    this.savingCase = true;
+    this.setState({ savingCase: true });
+    try {
     const project_id = this.props.match.params.id;
     const interface_id = this.props.currInterface._id;
     const {
@@ -78,6 +83,12 @@ export default class Run extends Component {
       message.success('添加成功');
       this.setState({ saveCaseModalVisible: false });
     }
+    } catch (_) {
+      message.error('保存用例失败，请重试');
+    } finally {
+      this.savingCase = false;
+      this.setState({ savingCase: false });
+    }
   };
 
   render() {
@@ -104,7 +115,8 @@ export default class Run extends Component {
         <AddColModal
           visible={this.state.saveCaseModalVisible}
           caseName={currInterface.title}
-          onCancel={() => this.setState({ saveCaseModalVisible: false })}
+          saving={this.state.savingCase}
+          onCancel={() => !this.savingCase && this.setState({ saveCaseModalVisible: false })}
           onOk={this.saveCase}
         />
       </div>

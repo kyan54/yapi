@@ -34,10 +34,11 @@ const getStorage = async (id)=>{
       let storage = global.storageCreator(id);
       let data = await storage.getItem();
       return {
+        _sandboxData: data,
         getItem: (name)=> data[name],
         setItem: (name, value)=>{
           data[name] = value;
-          storage.setItem(name, value)
+          return storage.setItem(name, value)
         }
       }
     }else{
@@ -59,7 +60,25 @@ const getStorage = async (id)=>{
   }
 }
 
+const MAX_FILE_BYTES = 512 * 1024;
+function decodeBinaryBody(options) {
+  if (!options.binary && !options.file) return null;
+  const binary = options.binary;
+  if (options.file !== 'single-file' || !binary || typeof binary !== 'object' ||
+      Object.keys(binary).some(key => !['base64', 'size'].includes(key)) ||
+      !Number.isSafeInteger(binary.size) || binary.size < 0 || binary.size > MAX_FILE_BYTES ||
+      typeof binary.base64 !== 'string' || binary.base64.length > Math.ceil(MAX_FILE_BYTES / 3) * 4 ||
+      binary.base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(binary.base64) ||
+      Object.keys(options.headers || {}).some(key => key.toLowerCase() === 'content-type' && /^multipart\//i.test(options.headers[key])) ||
+      options.data !== undefined) throw new Error('文件数据无效或超过 512 KiB，请重新选择文件');
+  const bytes = isNode ? Buffer.from(binary.base64, 'base64') : Uint8Array.from(atob(binary.base64), char => char.charCodeAt(0));
+  const canonical = isNode ? bytes.toString('base64') : btoa(atob(binary.base64));
+  if (bytes.length !== binary.size || canonical !== binary.base64) throw new Error('文件数据长度或编码无效');
+  return bytes;
+}
+
 function normalizeRequestOptions(options, isBrowserRequest) {
+  const binaryBody = decodeBinaryBody(options);
   let contentTypeItem;
   options = Object.assign({}, options, {
     headers: Object.assign({}, options && options.headers)
@@ -82,6 +101,12 @@ function normalizeRequestOptions(options, isBrowserRequest) {
       delete options.headers[key];
     }
   });
+
+  if (binaryBody !== null) {
+    options.data = binaryBody;
+    if (!contentTypeItem) options.headers['Content-Type'] = 'application/octet-stream';
+    return options;
+  }
 
   if (
     contentTypeItem === 'application/x-www-form-urlencoded' &&
@@ -230,67 +255,11 @@ function handleCurrDomain(domains, case_env) {
   return currDomain;
 }
 
-function sandboxByNode(sandbox = {}, script) {
-  const vm = require('vm');
-  script = new vm.Script(script);
-  const context = new vm.createContext(sandbox);
-  script.runInContext(context, {
-    timeout: 10000
-  });
-  return sandbox;
-}
-
-async function sandbox(context = {}, script) {
+async function sandbox(context = {}, script, networkScope) {
   if (isNode) {
-    try {
-      context.context = context;
-      context.console = console;
-      context.Promise = Promise;
-      context.setTimeout = setTimeout;
-      context = sandboxByNode(context, script);
-    } catch (err) {
-      err.message = `Script: ${script}
-      message: ${err.message}`;
-      throw err;
-    }
-  } else {
-    context = sandboxByBrowser(context, script);
+    return await require('../server/utils/sandbox')(context, script, networkScope);
   }
-  if (context.promise && typeof context.promise === 'object' && context.promise.then) {
-    try {
-      await context.promise;
-    } catch (err) {
-      err.message = `Script: ${script}
-      message: ${err.message}`;
-      throw err;
-    }
-  }
-  return context;
-}
-
-function sandboxByBrowser(context = {}, script) {
-  if (!script || typeof script !== 'string') {
-    return context;
-  }
-  let beginScript = '';
-  for (var i in context) {
-    beginScript += `var ${i} = context.${i};`;
-  }
-  try {
-    eval(beginScript + script);
-  } catch (err) {
-    let message = `Script:
-                   ----CodeBegin----:
-                   ${beginScript}
-                   ${script}
-                   ----CodeEnd----
-                  `;
-    err.message = `Script: ${message}
-    message: ${err.message}`;
-
-    throw err;
-  }
-  return context;
+  throw new Error('ISOLATED_RUNNER_REQUIRED: 请切换到服务端请求方式并配置隔离 runner');
 }
 
 /**
@@ -300,10 +269,26 @@ function sandboxByBrowser(context = {}, script) {
  * @param {*} afterScript 
  * @param {*} commonContext  璐熻矗浼犻€掍竴浜涗笟鍔′俊鎭紝crossRequest 涓嶅叧娉ㄥ叿浣撲紶浠€涔堬紝鍙礋璐ｅ綋涓棿浜?
  */
-async function crossRequest(defaultOptions, preScript, afterScript, commonContext = {}) {
+async function crossRequest(defaultOptions, preScript, afterScript, commonContext = {}, networkScope) {
+  decodeBinaryBody(defaultOptions);
   let options = Object.assign({}, defaultOptions);
   const taskId = options.taskId || Math.random() + '';
   const useServerProxy = !isNode && commonContext.requestMode !== 'browser';
+  const hasScript = Boolean(preScript || afterScript);
+  if (!isNode && !useServerProxy && hasScript) {
+    throw new Error('ISOLATED_RUNNER_REQUIRED: 请切换到服务端请求方式并配置隔离 runner');
+  }
+  const caseScope = commonContext.caseId !== undefined || commonContext.colId !== undefined
+    ? { case_id: commonContext.caseId, col_id: commonContext.colId } : {};
+  if (!isNode && !useServerProxy && Object.keys(caseScope).length) {
+    const authorization = await axios.post('/api/interface/proxy', {
+      options, project_id: commonContext.projectId, interface_id: commonContext.interfaceId,
+      ...caseScope, auth_only: true
+    });
+    if (!authorization.data || authorization.data.errcode !== 0) {
+      throw new Error((authorization.data && authorization.data.errmsg) || 'Forbidden');
+    }
+  }
   let urlObj = URL.parse(options.url, true),
     query = {};
   query = Object.assign(query, urlObj.query);
@@ -336,7 +321,8 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     storage: await getStorage(taskId)
   };
 
-  Object.assign(context, commonContext);
+  const { caseId: collectionCaseId, colId: collectionId, ...scriptContext } = commonContext;
+  Object.assign(context, scriptContext);
 
   context.utils = Object.freeze({
     _: _,
@@ -359,8 +345,17 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     scriptEnable = yapi.WEBCONFIG.scriptEnable === true;
   } catch (err) {}
 
+  if (isNode && hasScript && !scriptEnable) {
+    throw new Error('SCRIPT_EXECUTION_DISABLED: 服务端未启用请求脚本');
+  }
+  if (isNode && hasScript) {
+    // A post-only script must not send its target when isolation is known to
+    // be unconfigured. This is not a liveness guarantee or a request rollback.
+    require('../server/utils/sandbox').getConfiguredSocket();
+  }
+
   if (preScript && scriptEnable && !useServerProxy) {
-    context = await sandbox(context, preScript);
+    context = await sandbox(context, preScript, networkScope);
     defaultOptions.url = options.url = URL.format({
       protocol: urlObj.protocol,
       host: urlObj.host,
@@ -382,10 +377,13 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     try {
       const proxyResult = await axios.post('/api/interface/proxy', {
         options,
-        pre_script: scriptEnable ? preScript : '',
-        after_script: scriptEnable ? afterScript : '',
+        // The browser has no server configuration. The authenticated server
+        // retains scriptEnable and isolated-runner capability decisions.
+        pre_script: preScript || '',
+        after_script: afterScript || '',
         project_id: commonContext.projectId,
-        interface_id: commonContext.interfaceId
+        interface_id: commonContext.interfaceId,
+        ...caseScope
       });
 
       if (proxyResult.data && proxyResult.data.errcode === 0) {
@@ -411,7 +409,7 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     context.responseHeader = data.res.header;
     context.responseStatus = data.res.status;
     context.runTime = data.runTime;
-    context = await sandbox(context, afterScript);
+    context = await sandbox(context, afterScript, networkScope);
     data.res.body = context.responseData;
     data.res.header = context.responseHeader;
     data.res.status = context.responseStatus;
@@ -546,3 +544,5 @@ exports.handleContentType = handleContentType;
 exports.crossRequest = crossRequest;
 exports.handleCurrDomain = handleCurrDomain;
 exports.checkNameIsExistInArray = checkNameIsExistInArray;
+exports.decodeBinaryBody = decodeBinaryBody;
+exports.MAX_FILE_BYTES = MAX_FILE_BYTES;

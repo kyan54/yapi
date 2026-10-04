@@ -1,0 +1,69 @@
+{
+  "scope": "A / SchemaEditor modal focus only",
+  "status": "passed",
+  "baseline_remote_commit": "d354df5f08a101797c2aac2e154c4092b9825dce",
+  "final_shared_runtime": "ea05941a038b5b13b8302800a1f9ec31bb4a3031",
+  "shared_runtime_modified": false,
+  "candidate": "Independent 4185 A branch with authorized B4 docs overlay; not the final 4175 integrated runtime",
+  "product_paths": [
+    "client/components/SchemaEditor.js"
+  ],
+  "browser": {
+    "passed": 30,
+    "failed": 0,
+    "roles": [
+      "owner",
+      "developer",
+      "guest"
+    ],
+    "focus_cancel_reopen_groups": 72,
+    "new_focus_cases": 6,
+    "existing_schema_cases": 24,
+    "viewport": "1920x1080",
+    "save_proof": "API errcode, visible success/denial, immediate DB readback and reload; 3 role fixtures",
+    "navigation_proof": "3 roles, close then switch interface, new title focus remains, first record unchanged",
+    "bounded_post_run_db_records": 9
+  },
+  "unit": {
+    "modernization": {
+      "passed": 352,
+      "skipped": 6,
+      "failed": 0
+    },
+    "default": {
+      "passed": 32,
+      "skipped": 1,
+      "failed": 0
+    },
+    "note": "Four related jsdom modal tests disable CSS motion and wait for close; real browser tests retain animation."
+  },
+  "runtime_source_files_verified": 335,
+  "fix": "Keep modal mounted through close/focus lifecycle, release closed draft afterClose, preserve fresh reopen and external replacement behavior.",
+  "remaining": [
+    "Parent must cherry-pick and revalidate final integrated runtime.",
+    "Rich-text popup Escape/focus and project list filter keyboard findings remain separately owned.",
+    "No promotion of original 246 compound matrix or untested role/layout combinations."
+  ],
+  "evidence": [
+    {
+      "file": "schema-focus-release-results.json",
+      "sha256": "c4167799ef0c67ea030b83bcf2bbab08cca3dc41ddb7ecbadb70c6b54c8b5643"
+    },
+    {
+      "file": "schema-focus-release-source-sha256.json",
+      "sha256": "a77e256d85ee3188aaf1a7d4eb2c32333454d6ca591c47b78aa7809c0d12c9de"
+    },
+    {
+      "file": "schema-focus-release-db-readback.json",
+      "sha256": "bfefb2d29a5d2ca0161cbbf7a434b1c57001d483bb7cfabeffe471140dd402f4"
+    },
+    {
+      "file": "schema-focus-modernization-release.log",
+      "sha256": "8e2dd9e34b310a2a4abe548675c3d85a226239909491e33b6779fdc16e0cf34e"
+    },
+    {
+      "file": "schema-focus-default-tests.log",
+      "sha256": "9a8926ba1f9b0b4aac8df77bbdebc4918833ff4edd580d70d005e89bee10bea5"
+    }
+  ]
+}

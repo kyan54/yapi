@@ -1,0 +1,60 @@
+{
+  "format": "yapi.parity.followup.v1",
+  "base": "cb1bb11deac65a5e13e5c0fded4c503a6a3100c8",
+  "scope": "Docs HTTP method schema activation plus ordinary missing-output local verification",
+  "productRuleSource": "client/constants/variable.js HTTP_METHOD",
+  "inactiveRequestMethods": [
+    "GET",
+    "HEAD",
+    "OPTIONS"
+  ],
+  "activeRequestMethods": [
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE"
+  ],
+  "legacyUnknownMethod": "preserve existing schema flag behavior",
+  "docsValidation": {
+    "realMongoTests": 3,
+    "passed": 3,
+    "failed": 0,
+    "path": "real Interface.up -> actual Mongoose schema/cast -> legacy-write -> unique disposable B Mongo database",
+    "cases": [
+      "historical GET malformed request schema metadata update succeeds and retains exact inactive bytes",
+      "GET request schema flag/body clear persists",
+      "valid POST schema changed to invalid rejects without write",
+      "existing active POST malformed schema still rejects metadata",
+      "inactive request schema never produces annotation paths or outbound schema; response behavior unchanged"
+    ]
+  },
+  "localVariables": {
+    "id": "runner_variables-04",
+    "status": "passed",
+    "new": "passed",
+    "old": "notrun",
+    "before": "actual echo receives missing= and report code0 falsely says success",
+    "after": "zero proxy requests; errcode0 report-save; refresh and direct synthetic DB show report code400 MISSING_CASE_OUTPUT; actual 1920 screenshot visually inspected",
+    "evidence": [
+      "missing-previous-before.json",
+      "missing-previous-before.png",
+      "missing-previous-after.json",
+      "missing-previous-after.png",
+      "missing-previous-after-db.json"
+    ],
+    "remaining": "CI scene separately verifies no neighbor prior-run report leak and direct echo counter; not accepted until actual CI"
+  },
+  "validation": {
+    "basicPassed": 32,
+    "basicSkipped": 1,
+    "modernizationPassed": 357,
+    "modernizationSkipped": 8,
+    "failed": 0,
+    "scriptsExecutedOnMac": false
+  },
+  "limitations": [
+    "Initial new Mongo test failed solely on test DB name exceeding Mongo 63-byte limit; final name is bounded and connection always closes.",
+    "Two prior schema-type unit fixtures changed GET to POST so they still exercise active request schema, with explicit new GET inactive coverage.",
+    "No primary matrix update; parent owns overall acceptance."
+  ]
+}

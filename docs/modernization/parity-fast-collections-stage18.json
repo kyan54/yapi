@@ -1,0 +1,54 @@
+{
+  "format": "yapi.parity.followup.v1",
+  "base": "17a2a272f7d47fea44acb91781c3d9b8fb7e5780",
+  "scope": "ModalPostman preview-only missing-output handling",
+  "productFiles": [
+    "client/components/ModalPostman/index.js"
+  ],
+  "behavior": "Only preview catches MISSING_CASE_OUTPUT and displays the existing not-yet-run warning; insert preserves expression. Shared utils and execution rejection remain unchanged.",
+  "pairedPreview": {
+    "old": "passed",
+    "new": "passed",
+    "actions": [
+      "open missing prior-output expression",
+      "visible warning",
+      "cancel preserves expression",
+      "reopen warning",
+      "insert preserves expression",
+      "save errcode0"
+    ],
+    "pageErrors": 0,
+    "viewport": "1920x1080",
+    "visualInspection": "Both screenshots inspected: same three-column dialog, expression row, yellow warning, cancel/insert actions; no clipped warning or controls.",
+    "evidence": [
+      "variable-preview-old.json",
+      "variable-preview-after.json",
+      "variable-preview-old-cancel.png",
+      "variable-preview-cancel.png",
+      "variable-preview-old-insert.png",
+      "variable-preview-insert.png"
+    ]
+  },
+  "newExecution": {
+    "status": "passed",
+    "proxyRequests": 0,
+    "savedReportCode": 400,
+    "visibleMessage": "MISSING_CASE_OUTPUT",
+    "refreshAndDirectDbReadback": true,
+    "evidence": [
+      "variable-preview-execute.png",
+      "variable-preview-db.json"
+    ]
+  },
+  "validation": {
+    "basicPassed": 32,
+    "basicSkipped": 1,
+    "modernizationPassed": 361,
+    "modernizationSkipped": 8,
+    "failed": 0,
+    "productionBuild": "passed",
+    "ciDedicatedCount": 11,
+    "ciChange": "existing missing-output scene also opens/cancels/reopens/inserts preview; latest actual CI result still pending",
+    "macScriptExecution": false
+  }
+}

@@ -73,11 +73,21 @@ class exportSwaggerController extends baseController {
 
         if (!pid) {
             ctx.body = yapi.commons.resReturn(null, 200, 'pid 不为空');
+            return;
         }
         let curProject;
         let tp = '';
         try {
             curProject = await this.projectModel.get(pid);
+            if (!curProject) {
+                ctx.body = yapi.commons.resReturn(null, 404, '项目不存在');
+                return;
+            }
+            if (!this.$tokenAuth && curProject.project_type === 'private' &&
+                !await this.checkAuth(curProject._id, 'project', 'view')) {
+                ctx.body = yapi.commons.resReturn(null, 400, '没有权限');
+                return;
+            }
             ctx.set('Content-Type', 'application/octet-stream');
             const list = await this.handleListClass(pid, status);
 

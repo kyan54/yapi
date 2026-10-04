@@ -1,0 +1,293 @@
+{
+  "format": "yapi.baseline-changes.v1",
+  "note": "Reviewed modernization exception list. Original legacy-baseline.json remains unchanged. Null dependency target means intentional removal. File exceptions are narrow authorized edit boundaries, not evidence that behavior passed.",
+  "protectedFileChanges": {
+    "server/models/avatar.js": {
+      "baselineSha256": "0d9f726123686958c2d53232b1f42afacda198ef36539330519dfb1669a03810",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/models/base.js": {
+      "baselineSha256": "59e5afe9f08089338d3ce78a170132d762756fa3b7d6193c506ec81b9e760115",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/models/follow.js": {
+      "baselineSha256": "a8fddbc7b65c0c61c58cc21bd18147dffb892ce8605975f8161b1e99d2b553a9",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/models/group.js": {
+      "baselineSha256": "f8f7fc48598e9b7021b058c4a3929bc888dac56dbcd77df863f8e5c8cbd745f5",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts. Search now applies database-side personal-group and project visibility before a bounded ten-result navigation projection; verified against more than ten hidden hits, inherited rights and revocation."
+    },
+    "server/models/interface.js": {
+      "baselineSha256": "b2e7676c92f8d8567b3b2962466715ea0c6c3f757d303452a7691029cfb21b26",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts. Search now applies database-side personal-group and project visibility before a bounded ten-result navigation projection; verified against more than ten hidden hits, inherited rights and revocation. Parent explicitly authorized A collaboration-lock scope: connection-specific expiring leases, atomic claim/renew and token compare-and-set release; guest write-lock denial, rejected/same-user/late closes cannot release another lease. No other controller/model methods or B-owned proxy changes."
+    },
+    "server/models/interfaceCase.js": {
+      "baselineSha256": "5ca43416c9414d93aa2383a7d2aaf9dfb19ced5241bc96071843ee2119844c7b",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/models/interfaceCat.js": {
+      "baselineSha256": "23592057f398588cdd8a4feacd381c4e36449d346d0429f66a3e5bd399eae92c",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/models/interfaceCol.js": {
+      "baselineSha256": "513befc2582e644b0b46a81027b4613ab5dd4008d5dfdfa10ff8e3bca467429b",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/models/log.js": {
+      "baselineSha256": "21cbb5afd343af470d72cb25f9d108d847905fe9128027cc80d2b8fbcc20098d",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/models/project.js": {
+      "baselineSha256": "1710d7e1d48c5f98c75414fc0be08637f66291d1b8cacc45ecd74702c16c6c94",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts. Search now applies database-side personal-group and project visibility before a bounded ten-result navigation projection; verified against more than ten hidden hits, inherited rights and revocation."
+    },
+    "server/models/storage.js": {
+      "baselineSha256": "4045c0a1d20872efeda4189d2a07a7c00ca5305e9e45733b9d734a76757c707a",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/models/token.js": {
+      "baselineSha256": "c7f793443a75c32936df2e058b784bc3d082011eb3fa81e213bd4199388cf3c1",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/models/user.js": {
+      "baselineSha256": "dffc7f9a428627ccb96ed4978b6ae62f62d5b91da3453be9b2a2185392b1257e",
+      "reason": "Replace removed Mongoose APIs while preserving schemas, numeric IDs, lazy query and legacy write-result contracts."
+    },
+    "server/utils/mongoose-auto-increment.js": {
+      "baselineSha256": "c2ee06987c42a9c991307fe647da6836e76526504d6940060eb5c0b458fcb2e1",
+      "reason": "Promise-based Mongoose 9 middleware and atomic, indexed numeric counter allocation with legacy counter-state preservation."
+    },
+    "server/controllers/interface.js": {
+      "baselineSha256": "784538c1166287b13f4c0be506f21cb69a26a25b9b7be22a01f6fc539e46cc98",
+      "reason": "Check project-token scope against actual interface ownership; await every import add/update and propagate errors before reporting success. Authorize upIndex/upCatIndex against every persisted target project before any batch write, reject mixed-project targets, and await sorting writes; proxy remains separately owned. Parent explicitly authorized A collaboration-lock scope: connection-specific expiring leases, atomic claim/renew and token compare-and-set release; guest write-lock denial, rejected/same-user/late closes cannot release another lease. No other controller/model methods or B-owned proxy changes."
+    },
+    "server/controllers/documentation.js": {
+      "baselineSha256": null,
+      "reason": "New authenticated documentation proposal, review and revision transport with per-project authorization; does not replace unrelated legacy controllers."
+    },
+    "server/controllers/open.js": {
+      "baselineSha256": "658a59224e28370f5d59382897b2a27b6167318e5f884c64c8bbe185b3b0af24",
+      "reason": "Replace deprecated request client with bounded Axios Swagger import fetch while retaining authenticated import flow."
+    },
+    "exts/yapi-plugin-wiki/controller.js": {
+      "baselineSha256": "1285859200eb0aa5c7d2ea25f879b98d7a8351e7d2477ceefbdcda4b552c19e2",
+      "reason": "Resolve actual project/interface/record before read/write ACL; reject forged IDs and capture authenticated scheduled-job owner."
+    },
+    "exts/yapi-plugin-import-swagger/run.js": {
+      "baselineSha256": "feb266090545252bd7a4f640a9247e94045a157027741add851ac6491e5bab61",
+      "reason": "Scope Swagger parser state per invocation to preserve concurrent v2/v3 imports."
+    },
+    "exts/yapi-plugin-wiki/wikiPage/Editor.js": {
+      "baselineSha256": "6a2b6a0c803e8e783d90ed5e7f9d2fa13fa2ee5332b98da44544b720b40468a1",
+      "reason": "Replace bundled legacy editor with maintained TUI and sanitize stored HTML in React19-compatible wiki views."
+    },
+    "exts/yapi-plugin-wiki/wikiPage/View.js": {
+      "baselineSha256": "6ecbae9ed8d86322cf374d63168a651b4d6d82352e918c5973f5a9d1a40226bf",
+      "reason": "Replace bundled legacy editor with maintained TUI and sanitize stored HTML in React19-compatible wiki views."
+    },
+    "server/controllers/interfaceCol.js": {
+      "baselineSha256": "b53557299e3c31e90060320496c27e042a401e854040e9088f3a40e173b8db70",
+      "reason": "Verify authenticated collection and interface project access before minting isolated HTTP broker scope; never trust client-supplied scope. Collection writes now authorize live destination ownership and preflight source visibility; direct case reads validate collection and source project access. Synthetic cross-project browser probes document intentional legacy security differences."
+    },
+    "server/middleware/mockServer.js": {
+      "baselineSha256": "1c9145c82518e3570e21c90d584b3b40495e3ba33f1f32cf6271911aa6b001c8",
+      "reason": "Koa3 strict response-header compatibility: omit absent CORS origin/requested headers and vary reflected origins; preserve actual Mock request handling."
+    },
+    "exts/yapi-plugin-advanced-mock/advMockModel.js": {
+      "baselineSha256": "ae0adceaff799987c5b3db6eb2935e81c2276b9764927b6014c24edcb01b5158",
+      "reason": "Migrate removed Mongoose update/remove APIs using legacy-result-preserving helpers; scope plugin writes to verified target identity."
+    },
+    "exts/yapi-plugin-advanced-mock/caseModel.js": {
+      "baselineSha256": "419d4e3a8e1c6a35a6cf6d14391a926d2b291c4c648e48f18e033dcf40de3895",
+      "reason": "Migrate removed Mongoose update/remove APIs using legacy-result-preserving helpers; scope plugin writes to verified target identity."
+    },
+    "exts/yapi-plugin-swagger-auto-sync/syncModel.js": {
+      "baselineSha256": "a998089c0f2ca8729fcdacff75c4fdb6abbbb8a9681e71dee098fa784df8a646",
+      "reason": "Migrate removed Mongoose update/remove APIs using legacy-result-preserving helpers; scope plugin writes to verified target identity."
+    },
+    "exts/yapi-plugin-wiki/wikiModel.js": {
+      "baselineSha256": "6fa08065de6186032e04cb0714832c4cccd8adaaf8447ee866d663b48f35ff23",
+      "reason": "Migrate removed Mongoose update/remove APIs using legacy-result-preserving helpers; scope plugin writes to verified target identity."
+    },
+    "exts/yapi-plugin-advanced-mock/controller.js": {
+      "baselineSha256": "481f1cbb33d4c06ab48368c1e789d64b83ee33588874fba946ba633d3fe1765c",
+      "reason": "Resolve actual project/interface/record before read/write ACL; reject forged IDs and capture authenticated scheduled-job owner."
+    },
+    "exts/yapi-plugin-swagger-auto-sync/controller/syncController.js": {
+      "baselineSha256": "566905fc135d4839ca2b9e68f6ace73a97f5228d8c1256b6ab9a96e2d5a9352d",
+      "reason": "Resolve actual project/interface/record before read/write ACL; reject forged IDs and capture authenticated scheduled-job owner."
+    },
+    "exts/yapi-plugin-swagger-auto-sync/interfaceSyncUtils.js": {
+      "baselineSha256": "11d015c0a94b6e11a7a6b0ce141b6f85a486f71f0387746a4c438f70b1828354",
+      "reason": "Preserve actual scheduled Swagger imports with validated cron, normalized timer keys, safe async failure propagation and current hash/timestamp persistence."
+    },
+    "exts/yapi-plugin-statistics/statisMockModel.js": {
+      "baselineSha256": "26f44ac028a3934f108bf0cfd68c112b3874b0c2be74ade94ca07fcc4bcb5689",
+      "reason": "Use the supported Mongoose 9 aggregation cursor directly while preserving date boundaries, sort order, grouping and count results."
+    },
+    "exts/yapi-plugin-statistics/statisticsClientPage/StatisChart.js": {
+      "baselineSha256": "39bf7265e74df43e4c52b5d7f08f9cd1aa90deca53c0aacd30f1797dab7c1ddd",
+      "reason": "Stop perpetual loading on failed statistics responses, provide retry, and ignore unmounted or superseded requests without changing chart data semantics."
+    },
+    "exts/yapi-plugin-statistics/controller.js": {
+      "baselineSha256": "ce406e77bdd48af441153815b21189ae93110ae4e23370cb58b0314d4989db11",
+      "reason": "Intentional security correction: enforce the existing admin-only statistics policy on every endpoint before querying cross-project or operating-system data; replace ineffective negation comparison."
+    },
+    "exts/yapi-plugin-statistics/statisticsClientPage/index.js": {
+      "baselineSha256": "07b4a53e78e4ef4736bb74d034febd1e16dcf32cf03b62056cdef84bb5439c9e",
+      "reason": "Show an explicit admin-only refusal on direct non-admin navigation and do not request protected statistics; preserve administrator page layout and data sources."
+    },
+    "exts/yapi-plugin-export-data/controller.js": {
+      "baselineSha256": "2351d9d33f62e32b2c9a509d36a560d25288fa3ad361350aa57ad335845a894a",
+      "reason": "Deny private-project export to nonmembers before reading interfaces or Wiki; preserve project view roles, public exports and authenticated project-token scope. Verified with real paired browser requests and controller regression tests."
+    },
+    "exts/yapi-plugin-export-swagger2-data/controller.js": {
+      "baselineSha256": "eacf166ba9b7b9565cb3c8d2cc8354c0ee06449f9c7f2d57e0869b8ab52fa80e",
+      "reason": "Deny private-project export to nonmembers before reading interfaces or Wiki; preserve project view roles, public exports and authenticated project-token scope. Verified with real paired browser requests and controller regression tests."
+    },
+    "server/controllers/project.js": {
+      "baselineSha256": "d857f2153fa9a3ad8a8e3bb8fc7f2419c60150c282d4c7d855e4546d8f3b3da8",
+      "reason": "Search checks live project visibility and returns only navigation labels/IDs, never environment or member payloads. Member addition requires existing owner/admin danger rights; real independent-role browser tests verify no denied writes and legitimate owner admission."
+    },
+    "server/controllers/group.js": {
+      "baselineSha256": "50cbbd60c6da38fef6fb326880e2a585af1b2b3a83a8be7ebcdcc4119d8977e0",
+      "reason": "Require existing owner or administrator danger authorization before admitting group members, preventing developer or guest privilege escalation while preserving legitimate membership management."
+    },
+    "exts/yapi-plugin-advanced-mock/MockCol/MockCol.js": {
+      "baselineSha256": "e72783ce31d367ad9270867b4285e3cb8df2b0d53ca3d3fa56f9df34888dfa55",
+      "reason": "Prevent duplicate expectation writes on repeated confirmation; keep modal pending and errors visible until the save finishes."
+    },
+    "exts/yapi-plugin-advanced-mock/MockCol/CaseDesModal.js": {
+      "baselineSha256": "a67503bd3c1a689dbcde94a56b20faf1f4669c92ac87d5fdca974f44132866bf",
+      "reason": "Prevent duplicate expectation writes on repeated confirmation; keep modal pending and errors visible until the save finishes."
+    },
+    "exts/yapi-plugin-advanced-mock/AdvMock.js": {
+      "baselineSha256": "3707646731dd6e8f92a195b71fcb8a2e0cacca2951268fea2e58d7b68e4bc4c7",
+      "reason": "Initialize the advanced Mock editor from fetched persisted data, preserving disabled script drafts when React batches state updates."
+    },
+    "exts/yapi-plugin-wiki/wikiPage/index.js": {
+      "baselineSha256": "6a60d07f3ab39918a83e06886ab840e41e5435df09e7b1d4957c5be576f40367",
+      "reason": "Prevent concurrent Wiki update requests and duplicate notifications with an in-flight guard; retain the editing session and draft after failed saves so a deliberate retry remains possible."
+    },
+    "server/controllers/log.js": {
+      "baselineSha256": "d0004b3b9224d814fe59b45fb67f62d86116c1746a9a7d2dfe5878fbfcdfdfd9",
+      "reason": "Authorize live project log reads and import history before snapshots or counts; filter group history and pagination to currently visible projects and authorized group activity, preserving public and guest reads."
+    },
+    "exts/yapi-plugin-swagger-auto-sync/swaggerAutoSync/swaggerAutoSync.js": {
+      "baselineSha256": "e4bd147a72808687a8e28ba56c7244d0aae1b4a010886a92ba9ded2f27b08b63",
+      "reason": "Restore saved Swagger form values using the route project ID; enforce source edit UI gates, validate business responses, guard duplicate saves, retain committed refresh receipts, and show failed local sync execution status from authorized activity history."
+    },
+    "server/controllers/user.js": {
+      "baselineSha256": "7414d8c3dda443bdad983a218b37d5c0c592b4e11c919b7ff131f9bb9aae1137",
+      "reason": "Explicit owner authorization: enforce the existing administrator-only user-management boundary at user/list before reading paginated records or total counts. Member selection remains on unchanged user/search; default real API regressions cover owner/dev/guest, anonymous/invalid sessions, admin pagination and member search. Explicit owner approval also covers avatar canonical-base64 validation and actual decoded-byte measurement at the unchanged inclusive 200000-byte PNG/JPEG limit; other user actions remain unchanged."
+    }
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-i18n": "4.2.0",
+    "axios": "1.20.0",
+    "deep-extend": "0.6.0",
+    "deref": null,
+    "fs-extra": "11.4.1",
+    "json-schema-faker": "0.6.3",
+    "json-schema-ref-parser": null,
+    "json5": "2.2.3",
+    "jsondiffpatch": "0.7.6",
+    "jsonwebtoken": "9.0.3",
+    "jsrsasign": "11.1.5",
+    "koa": "3.2.1",
+    "koa-bodyparser": null,
+    "koa-multer": null,
+    "koa-mysql-session": null,
+    "koa-session-minimal": null,
+    "koa-websocket": "7.0.0",
+    "markdown-it": "15.0.2",
+    "markdown-it-anchor": "10.0.0",
+    "markdown-it-table-of-contents": "1.2.0",
+    "moment": "2.31.0",
+    "mongodb": null,
+    "mongoose": "9.10.3",
+    "mongoose-auto-increment": null,
+    "nodemailer": "10.0.13",
+    "request": null,
+    "safeify": null,
+    "sha.js": "2.4.12",
+    "swagger-client": "3.38.2",
+    "underscore": "1.13.8",
+    "vm2": null,
+    "@modelcontextprotocol/server": "2.2.0",
+    "@toast-ui/editor": "3.2.2",
+    "ajv-draft-04": "1.0.0",
+    "ajv-formats": "3.0.1",
+    "dompurify": "3.4.16",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "antd": "6.6.5",
+    "anujs": null,
+    "assets-webpack-plugin": null,
+    "ava": null,
+    "babel": null,
+    "babel-core": null,
+    "babel-loader": "10.1.1",
+    "babel-plugin-transform-decorators-legacy": null,
+    "babel-plugin-transform-object-rest-spread": null,
+    "babel-plugin-transform-runtime": null,
+    "babel-plugin-webpack-alias": null,
+    "babel-preset-es2015": null,
+    "babel-preset-react": null,
+    "babel-preset-stage-3": null,
+    "babel-register": null,
+    "compression-webpack-plugin": null,
+    "css-loader": "7.1.5",
+    "extract-text-webpack-plugin": null,
+    "json-schema-editor-visual": null,
+    "less": "4.9.1",
+    "less-loader": "12.3.3",
+    "react": "19.3.0",
+    "react-dnd": null,
+    "react-dnd-html5-backend": null,
+    "react-dom": "19.3.0",
+    "react-redux": "9.3.0",
+    "react-router-dom": "7.18.4",
+    "react-scripts": null,
+    "reactabular-dnd": null,
+    "reactabular-table": null,
+    "recharts": "3.10.1",
+    "redux": "5.0.1",
+    "rewire": "9.0.1",
+    "sass-loader": "16.0.8",
+    "style-loader": "4.0.0",
+    "table-resolver": null,
+    "webpack": "5.111.1",
+    "ykit": null,
+    "ykit-config-antd": null,
+    "ykit-config-es6": null,
+    "@ant-design/icons": "6.3.4",
+    "@babel/core": "7.29.7",
+    "@babel/plugin-proposal-decorators": "7.29.7",
+    "@babel/plugin-transform-class-properties": "7.29.7",
+    "@babel/preset-env": "7.29.7",
+    "@babel/preset-react": "7.29.7",
+    "@babel/register": "8.0.6",
+    "@modelcontextprotocol/client": "2.2.0",
+    "@playwright/test": "1.63.0",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "assert": "2.1.0",
+    "buffer": "6.0.3",
+    "html-webpack-plugin": "5.6.8",
+    "jsdom": "30.1.1",
+    "mini-css-extract-plugin": "2.10.2",
+    "mongoose-baseline": "npm:mongoose@5.7.5",
+    "path-browserify": "1.0.1",
+    "process": "0.11.10",
+    "react-router": "7.18.4",
+    "stream-browserify": "3.0.0",
+    "util": "0.12.5",
+    "webpack-cli": "6.0.1",
+    "webpack-dev-server": "5.2.6"
+  }
+}

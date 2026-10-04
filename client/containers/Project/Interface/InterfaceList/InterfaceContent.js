@@ -8,6 +8,7 @@ import { Prompt } from 'react-router';
 import { fetchInterfaceData } from '../../../../reducer/modules/interface.js';
 import { withRouter } from 'react-router-dom';
 import Run from './Run/Run.js';
+import DocumentationAssistant from 'client/components/DocumentationAssistant/DocumentationAssistant';
 const plugin = require('client/plugin.js');
 
 const TabPane = Tabs.TabPane;
@@ -156,6 +157,7 @@ class Content extends Component {
             return '离开页面会丢失当前编辑的内容，确定要离开吗？';
           }}
         />
+        <div style={{ float: 'right', paddingTop: 8 }}><DocumentationAssistant key={this.props.match.params.actionId} projectId={this.props.match.params.id} interfaceId={this.props.match.params.actionId} sourceDocument={this.props.curdata} onChanged={() => this.props.fetchInterfaceData(this.props.match.params.actionId)} /></div>
         {tabs}
         {tabContent}
         {this.state.visible && (

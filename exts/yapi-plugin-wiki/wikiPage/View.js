@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Button } from 'antd';
@@ -23,7 +24,7 @@ const WikiView = props => {
       </div>
       <div
         className="tui-editor-contents"
-        dangerouslySetInnerHTML={{ __html: desc }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(desc || '') }}
       />
     </div>
   );

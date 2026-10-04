@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Table } from 'antd';
+import { Alert, Table } from 'antd';
 import json5 from 'json5';
 import PropTypes from 'prop-types';
 import { schemaTransformToTable } from '../../../common/schema-transformTo-table.js';
@@ -116,6 +116,9 @@ class SchemaTable extends Component {
       product = json5.parse(this.props.dataSource);
     } catch (e) {
       product = null;
+    }
+    if (typeof product === 'boolean') {
+      return <div data-testid="boolean-schema-preview"><Alert type="info" message={`JSON Schema: ${product}`} description={product ? '允许任意 JSON 值。' : '不允许任何 JSON 值。'} /></div>;
     }
     if (!product) {
       return null;

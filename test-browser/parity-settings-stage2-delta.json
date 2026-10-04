@@ -1,0 +1,273 @@
+{
+  "format": "yapi.parity-settings.stage2-delta.v1",
+  "base_result": "test-browser/parity-settings-delta.json",
+  "candidate": "c73a61f5bba44ef11e1bfe6562d6d7088eb7962b plus dedicated changeMemberEmailNotice fix",
+  "scope": "Only listed IDs replace C prior rows. All other statuses unchanged; no whole matrix completion claim.",
+  "counts": {
+    "executions": 29,
+    "passed": 27,
+    "failed": 2
+  },
+  "rows": [
+    {
+      "id": "group_settings-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Required custom field blocks save without POST; corrected name/description and enabled/disabled state persist after reload."
+    },
+    {
+      "id": "group_members-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Owner/dev/guest exact selected additions, cancel/reopen and repeated additions preserve only intended membership."
+    },
+    {
+      "id": "group_members-02",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Live group role owner/dev/guest changes update inherited project role and danger-write rights in separate context."
+    },
+    {
+      "id": "project_members-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Exact selected user cycles owner/dev/guest; actual project danger writes allowed only for owner."
+    },
+    {
+      "id": "project_members-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Selected source bulk import canceled with no membership writes; reopened second source imports its exact candidates."
+    },
+    {
+      "id": "project_members-04",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Repeated add reports existing once; delete dismissed without write, then confirmed delete persists exact remaining member."
+    },
+    {
+      "id": "import_url-01",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Empty URL gate from stage1 plus real isolated Swagger URL creates exact tagged category and required query fields, repeated upload preserves one interface."
+    },
+    {
+      "id": "import_url-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Stage1 connection-refused plus real isolated401 and invalid nonJSON responses show error, write no interfaces, release loading and valid retry succeeds."
+    },
+    {
+      "id": "wiki-01",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Old executes stored onload synthetic DOM attribute; new removes executable image/link attributes while preserving heading/table/local image/link. Intentional security improvement."
+    },
+    {
+      "id": "project_members-02",
+      "status": "failed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Old unauthorized developer alters another member notice despite disabled UI. New function denies405 with unchanged readback; owner/admin and authenticated self preference work, absent/cross-project member writes denied."
+    }
+  ],
+  "executions": [
+    {
+      "evidence": "group-final-results.json",
+      "title": "group required custom field blocks save and corrected enabled disabled states persist",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "group-final-results.json",
+      "title": "group required custom field blocks save and corrected enabled disabled states persist",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "group-final-results.json",
+      "title": "group exact selected owner add cancel reopen duplicate",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "group-final-results.json",
+      "title": "group exact selected owner add cancel reopen duplicate",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "group-final-results.json",
+      "title": "group exact selected dev add cancel reopen duplicate",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "group-final-results.json",
+      "title": "group exact selected dev add cancel reopen duplicate",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "group-final-results.json",
+      "title": "group exact selected guest add cancel reopen duplicate",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "group-final-results.json",
+      "title": "group exact selected guest add cancel reopen duplicate",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "group-final-results.json",
+      "title": "group role changes alter inherited project rights on next request",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "group-final-results.json",
+      "title": "group role changes alter inherited project rights on next request",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "role-final-results.json",
+      "title": "project member role cycle repeat add and delete confirmation",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "role-final-results.json",
+      "title": "project member role cycle repeat add and delete confirmation",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "bulk-results.json",
+      "title": "bulk project member import selected source cancel reopen exact candidates",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "bulk-results.json",
+      "title": "bulk project member import selected source cancel reopen exact candidates",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "wiki-final-results.json",
+      "title": "wiki preserves headings tables local images links and removes executable attributes",
+      "version": "old",
+      "status": "failed"
+    },
+    {
+      "evidence": "wiki-final-results.json",
+      "title": "wiki preserves headings tables local images links and removes executable attributes",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "notice-fixed-results.json",
+      "title": "project member notification owner UI and unauthorized other-member API gate",
+      "version": "old",
+      "status": "failed"
+    },
+    {
+      "evidence": "notice-fixed-results.json",
+      "title": "project member notification owner UI and unauthorized other-member API gate",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "notice-boundary-results.json",
+      "title": "notification self preference admin permission absent and cross project no writes",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "url-working-results.json",
+      "title": "URL import local success category fields exact count and repeat",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "url-working-results.json",
+      "title": "URL import local success category fields exact count and repeat",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "url-working-results.json",
+      "title": "URL failure /auth shows error without writes and retries",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "url-working-results.json",
+      "title": "URL failure /auth shows error without writes and retries",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "url-working-results.json",
+      "title": "URL failure /invalid shows error without writes and retries",
+      "version": "old",
+      "status": "passed"
+    },
+    {
+      "evidence": "url-working-results.json",
+      "title": "URL failure /invalid shows error without writes and retries",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "refresh-results.json",
+      "title": "save succeeds but refresh network keeps draft and reports refresh failure 请求配置",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "refresh-results.json",
+      "title": "save succeeds but refresh business keeps draft and reports refresh failure 请求配置",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "refresh-results.json",
+      "title": "save succeeds but refresh network keeps draft and reports refresh failure 全局mock脚本",
+      "version": "new",
+      "status": "passed"
+    },
+    {
+      "evidence": "refresh-results.json",
+      "title": "save succeeds but refresh business keeps draft and reports refresh failure 全局mock脚本",
+      "version": "new",
+      "status": "passed"
+    }
+  ],
+  "direct_db_evidence": [
+    "old-stage2-db-readback.json",
+    "new-stage2-db-readback.json"
+  ],
+  "verification": [
+    "baseline-check.log",
+    "default-ci-tests.log"
+  ],
+  "limitations": [
+    "Request/environment/Mock execution integration remains coordinated with B.",
+    "Token regeneration untouched.",
+    "Settings guard preloader/proxy scripts are test-only; actual servers constrained to internal network and loopback proxy.",
+    "New notification function deployed as exact file overlay then own server restarted; image otherwise refresh-safe."
+  ]
+}

@@ -69,7 +69,7 @@ class VariablesSelect extends Component {
       let isArrayParams = clickValue.lastIndexOf(']') === clickValue.length - 1;
       let key = isArrayParams ? deleteLastArr(clickValue) : deleteLastObject(clickValue);
       this.setState({
-        expandedKeys: [key],
+        expandedKeys: this.expansionPath(key),
         selectedKeys: [CanSelectPathPrefix + clickValue]
       });
       // this.props.click(clickValue);
@@ -82,6 +82,21 @@ class VariablesSelect extends Component {
     }
   }
 
+  expansionPath = key => {
+    // Rendered ancestry preserves literal dots/brackets in property names.
+    if (this.nodeAncestors && this.nodeAncestors[key]) return this.nodeAncestors[key];
+    const keys = [];
+    while (key && key !== '$') {
+      keys.unshift(key);
+      const arrayParent = key.replace(/\[\d+\]$/, '');
+      const parent = arrayParent !== key ? arrayParent : deleteLastObject(key);
+      // Malformed or literal bracket suffixes must never stall the walk.
+      if (parent.length >= key.length) break;
+      key = parent;
+    }
+    return keys;
+  };
+
   handleSelect = key => {
     this.setState({
       selectedKeys: [key]
@@ -91,7 +106,7 @@ class VariablesSelect extends Component {
       this.props.click(key);
     } else {
       this.setState({
-        expandedKeys: [key]
+        expandedKeys: Array.from(new Set([...this.state.expandedKeys, ...this.expansionPath(key)]))
       });
     }
   };
@@ -101,7 +116,8 @@ class VariablesSelect extends Component {
   };
 
   render() {
-    const pathSelctByTree = (data, elementKeyPrefix = '$', deepLevel = 0) => {
+    this.nodeAncestors = Object.create(null);
+    const pathSelctByTree = (data, elementKeyPrefix = '$', deepLevel = 0, ancestors = []) => {
       let keys = Object.keys(data);
       let TreeComponents = keys.map((key, index) => {
         let item = data[key],
@@ -127,9 +143,11 @@ class VariablesSelect extends Component {
         }
         if (item && typeof item === 'object') {
           const isDisable = Array.isArray(item) && item.length === 0;
+          const expandedPath = [...ancestors, elementKeyPrefix];
+          this.nodeAncestors[elementKeyPrefix] = expandedPath;
           return (
             <TreeNode key={elementKeyPrefix} disabled={isDisable} title={casename || key}>
-              {pathSelctByTree(item, elementKeyPrefix, deepLevel + 1)}
+              {pathSelctByTree(item, elementKeyPrefix, deepLevel + 1, expandedPath)}
             </TreeNode>
           );
         }

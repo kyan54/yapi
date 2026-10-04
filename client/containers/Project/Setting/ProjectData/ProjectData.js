@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import React, { PureComponent as Component } from 'react';
 import {
   Upload,
@@ -150,15 +151,31 @@ class ProjectData extends Component {
     if (this.state.selectCatid) {
       this.setState({ showLoading: true });
       const reader = new FileReader();
-      reader.readAsText(info.file);
-      reader.onload = async res => {
-        res = await importDataModule[this.state.curImportType].run(res.target.result);
-        if (this.state.dataSync === 'merge') {
-          this.showConfirm(res);
-        } else {
-          await this.handleAddInterface(res);
+      const failRead = text => {
+        message.error(text);
+        this.setState({ showLoading: false });
+      };
+      reader.onerror = () => failRead('文件读取失败，请重新选择文件');
+      reader.onabort = () => failRead('文件读取已取消，请重新选择文件');
+      reader.onload = async event => {
+        try {
+          const result = await importDataModule[this.state.curImportType].run(event.target.result);
+          if (!result || !Array.isArray(result.apis)) {
+            this.setState({ showLoading: false });
+            return;
+          }
+          if (this.state.dataSync === 'merge') await this.showConfirm(result);
+          else await this.handleAddInterface(result);
+        } catch (error) {
+          message.error('数据导入失败，请检查文件格式');
+          this.setState({ showLoading: false });
         }
       };
+      try {
+        reader.readAsText(info.file);
+      } catch (error) {
+        failRead('文件读取失败，请重新选择文件');
+      }
     } else {
       message.error('请选择上传的默认分类');
     }
@@ -192,7 +209,7 @@ class ProjectData extends Component {
             {domainData.map((item, index) => {
               return (
                 <div key={index} className="postman-dataImport-show-diff">
-                  <span className="logcontent" dangerouslySetInnerHTML={{ __html: item.content }} />
+                  <span className="logcontent" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content || '') }} />
                 </div>
               );
             })}

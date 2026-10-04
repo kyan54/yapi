@@ -1,0 +1,46 @@
+{
+  "format": "yapi.parity.scope-delta.v2",
+  "base": "3c340587861000105c55db312f73f190cb54f742",
+  "scope": "B file transfer and advanced Mock priority; original246 assertions retained",
+  "complete": false,
+  "rows": [
+    {
+      "id": "runner-01",
+      "status": "passed",
+      "old": "failed",
+      "new": "passed",
+      "detail": "Prior paired method/path/query/header/JSON/raw/form evidence plus new exact binary single-file transport. Browser and server send 0,9,524288 bytes with exact SHA256 and Content-Type; over-limit and missing file emit visible errors with zero outgoing requests; forged size/encoding/limit proxy requests errcode400. Form-file upload is explicitly unsupported in old/new UI, accepted nonapplicable subitem by parent; no multipart feature added."
+    },
+    {
+      "id": "mock_advanced-03",
+      "status": "passed",
+      "old": "passed",
+      "new": "passed",
+      "detail": "Actual UI creates one- and two-condition expectations, request matches most specific; editing broad to three conditions changes winner; disable/reload/delete falls back to next match. Delete cancel preserves both; API errcode0 and scoped Mongo readback confirm persistence. Manual reorder has no control in either version and is accepted nonapplicable subitem."
+    }
+  ],
+  "binaryContract": {
+    "encoding": "options.file=single-file and options.binary={base64,size}; no options.data",
+    "maxBytes": 524288,
+    "emptyFile": "supported (size0/base64empty)",
+    "validation": "safe integer declared size, strict canonical base64, exact decoded byte count, bounded encoded length; reject multipart and mixed data before request",
+    "privacy": "No local path or filename transmitted or persisted; only explicitly selected File bytes",
+    "scope": "Existing project/interface/case ACL and sandbox network scope unchanged"
+  },
+  "validation": {
+    "basicPassed": 32,
+    "modernizationPassed": 318,
+    "modernizationSkipped": 6,
+    "fileBrowser": "file-stage8-final.json new1pass contains six byte/hash roundtrips plus size/missing/forged errors",
+    "ordinaryBodyRegression": "file-stage8-body-regression.json new1pass JSON/raw/form",
+    "mockPaired": "mock-priority-paired.json old1pass/new1pass",
+    "oldFileDefect": "file-paired-before.json old/new failed before fix, actual empty body despite200",
+    "visual": "1920x1080 actual file validation review and old/new Mock table review. New tab typography/spacing and row background differ from old, controls readable; no pixel-equality claim."
+  },
+  "evidenceRoot": "/Users/hujinwu/Documents/Codex/2026-10-03/task-5/collections",
+  "limitations": [
+    "No custom script execution used; separate runner prerequisites remain.",
+    "Browser file transport still requires target CORS as normal.",
+    "Test image contains exact C ffecc5e environment overlay only for combined UI; C code absent from B branch."
+  ]
+}

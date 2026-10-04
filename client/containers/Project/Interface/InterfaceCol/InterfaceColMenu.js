@@ -4,7 +4,6 @@ import { withRouter } from 'react-router';
 import PropTypes from 'prop-types';
 import {
   fetchInterfaceColList,
-  fetchInterfaceCaseList,
   setColData,
   fetchCaseList,
   fetchCaseData
@@ -55,7 +54,6 @@ const ColModalForm = Form.create()(props => {
   },
   {
     fetchInterfaceColList,
-    fetchInterfaceCaseList,
     fetchCaseData,
     // fetchInterfaceListMenu,
     fetchCaseList,
@@ -69,7 +67,6 @@ export default class InterfaceColMenu extends Component {
     match: PropTypes.object,
     interfaceColList: PropTypes.array,
     fetchInterfaceColList: PropTypes.func,
-    fetchInterfaceCaseList: PropTypes.func,
     // fetchInterfaceListMenu: PropTypes.func,
     fetchCaseList: PropTypes.func,
     fetchCaseData: PropTypes.func,
@@ -91,6 +88,7 @@ export default class InterfaceColMenu extends Component {
     editColId: 0,
     filterValue: '',
     importInterVisible: false,
+    importSession: 0,
     importInterIds: [],
     importColId: 0,
     expands: null,
@@ -107,7 +105,18 @@ export default class InterfaceColMenu extends Component {
     this.getList();
   }
 
+  componentWillUnmount() {
+    this.menuDisposed = true;
+    this.menuGeneration = (this.menuGeneration || 0) + 1;
+    this.copyingCase = null;
+  }
+
   componentWillReceiveProps(nextProps) {
+    if (this.props.match.params.id !== nextProps.match.params.id ||
+        (this.props.location && nextProps.location && this.props.location.pathname !== nextProps.location.pathname)) {
+      this.menuGeneration = (this.menuGeneration || 0) + 1;
+      this.copyingCase = null;
+    }
     if (this.props.interfaceColList !== nextProps.interfaceColList) {
       this.setState({
         list: nextProps.interfaceColList
@@ -240,26 +249,41 @@ export default class InterfaceColMenu extends Component {
       content: '温馨提示：建议不要删除'
     });
   };
-  caseCopy = async caseId=> {
-    let that = this;
-    let caseData = await that.props.fetchCaseData(caseId);
-    let data = caseData.payload.data.data;
-    data = JSON.parse(JSON.stringify(data));
-    data.casename=`${data.casename}_copy`
-    delete data._id 
-    const res = await axios.post('/api/col/add_case',data);
-      if (!res.data.errcode) {
-        message.success('克隆用例成功');
-        let colId = res.data.data.col_id;
-        let projectId=res.data.data.project_id;
-        await this.getList();
-        this.props.history.push('/project/' + projectId + '/interface/col/' + colId);
-        this.setState({
-          visible: false
-        });
-      } else {
-        message.error(res.data.errmsg);
-      }
+  caseCopy = async caseId => {
+    if (this.copyingCase || this.menuDisposed) return;
+    const operation = { generation: this.menuGeneration || 0, projectId: this.props.match.params.id,
+      path: this.props.location && this.props.location.pathname };
+    this.copyingCase = operation;
+    const current = () => !this.menuDisposed && this.copyingCase === operation &&
+      (this.menuGeneration || 0) === operation.generation &&
+      this.props.match.params.id === operation.projectId &&
+      (!this.props.location || this.props.location.pathname === operation.path) &&
+      (!this.props.history.location || this.props.history.location.pathname === operation.path) &&
+      (typeof window === 'undefined' || window.location.pathname === operation.path);
+    let committed = false;
+    try {
+      const source = await axios.get('/api/col/case?caseid=' + caseId);
+      if (!current()) return;
+      if (source.data.errcode !== 0) return message.error(source.data.errmsg || '读取用例失败');
+      const data = { ...source.data.data, casename: source.data.data.casename + '_copy' };
+      delete data._id;
+      const res = await axios.post('/api/col/add_case', data);
+      if (!current()) return;
+      if (res.data.errcode !== 0) return message.error(res.data.errmsg || '克隆用例失败');
+      committed = true;
+      message.success('克隆用例成功');
+      // Read locally first: a late Redux fetch must not replace another route's tree.
+      const refreshed = await axios.get('/api/col/list?project_id=' + operation.projectId);
+      if (!current()) return;
+      if (refreshed.data.errcode !== 0) throw new Error('refresh');
+      this.props.setColData({ interfaceColList: refreshed.data.data });
+      this.setState({ list: refreshed.data.data });
+      this.props.history.push('/project/' + operation.projectId + '/interface/col/' + res.data.data.col_id);
+    } catch (_) {
+      if (current()) message.error(committed ? '用例已克隆，但列表加载失败，请刷新页面' : '克隆用例失败，请重试');
+    } finally {
+      if (this.copyingCase === operation) this.copyingCase = null;
+    }
   };
   showDelCaseConfirm = caseId => {
     let that = this;
@@ -311,11 +335,16 @@ export default class InterfaceColMenu extends Component {
     const groupId = this.props.curProject.group_id;
     await this.props.fetchProjectList(groupId);
     // await this.props.fetchInterfaceListMenu(projectId)
-    this.setState({ importInterVisible: true, importColId: colId });
+    this.setState(previous => ({ importInterVisible: true, importSession: previous.importSession + 1, importColId: colId, importInterIds: [], selectedProject: this.props.match.params.id }));
   };
 
   handleImportOk = async () => {
-    const project_id = this.state.selectedProject || this.props.match.params.id;
+    if (this.importSaving) return;
+    if (!this.state.importInterIds || !this.state.importInterIds.length) return message.error('请选择要导入的接口');
+    this.importSaving = true;
+    this.setState({ importSaving: true });
+    try {
+    const project_id = this.props.match.params.id;
     const { importColId, importInterIds } = this.state;
     const res = await axios.post('/api/col/add_case_list', {
       interface_list: importInterIds,
@@ -332,9 +361,16 @@ export default class InterfaceColMenu extends Component {
     } else {
       message.error(res.data.errmsg);
     }
+    } catch (_) {
+      message.error('导入接口失败，请重试');
+    } finally {
+      this.importSaving = false;
+      this.setState({ importSaving: false });
+    }
   };
   handleImportCancel = () => {
-    this.setState({ importInterVisible: false });
+    if (this.importSaving) return;
+    this.setState({ importInterVisible: false, importInterIds: [], selectedProject: undefined });
   };
 
   filterCol = e => {
@@ -350,34 +386,45 @@ export default class InterfaceColMenu extends Component {
   };
 
   onDrop = async e => {
-    // const projectId = this.props.match.params.id;
+    if (this.reorderingTree) return;
     const { interfaceColList } = this.props;
-    const dropColIndex = e.node.props.pos.split('-')[1];
-    const dropColId = interfaceColList[dropColIndex]._id;
-    const id = e.dragNode.props.eventKey;
-    const dragColIndex = e.dragNode.props.pos.split('-')[1];
-    const dragColId = interfaceColList[dragColIndex]._id;
-
-    const dropPos = e.node.props.pos.split('-');
-    const dropIndex = Number(dropPos[dropPos.length - 1]);
-    const dragPos = e.dragNode.props.pos.split('-');
-    const dragIndex = Number(dragPos[dragPos.length - 1]);
-
-    if (id.indexOf('col') === -1) {
-      if (dropColId === dragColId) {
-        // 同一个测试集合下的接口交换顺序
-        let caseList = interfaceColList[dropColIndex].caseList;
-        let changes = arrayChangeIndex(caseList, dragIndex, dropIndex);
-        axios.post('/api/col/up_case_index', changes).then();
+    const dragKey = String(e.dragNode.key), dropKey = String(e.node.key);
+    const locate = key => {
+      const [kind, value] = key.split('_');
+      const id = Number(value);
+      const colIndex = interfaceColList.findIndex(col => kind === 'col'
+        ? col._id === id : col.caseList.some(item => item._id === id));
+      if (colIndex < 0) return null;
+      const col = interfaceColList[colIndex];
+      return { kind, id, col, colIndex, caseIndex: col.caseList.findIndex(item => item._id === id) };
+    };
+    const source = locate(dragKey), target = locate(dropKey);
+    if (!source || !target || dragKey === dropKey) return;
+    this.reorderingTree = true;
+    const projectId = this.props.match.params.id;
+    const write = async (url, body) => {
+      const result = await axios.post(url, body);
+      if (result.data.errcode !== 0) throw new Error(result.data.errmsg || '排序失败');
+    };
+    try {
+      if (source.kind === 'case') {
+        if (source.col._id === target.col._id) {
+          if (target.kind !== 'case') return;
+          await write('/api/col/up_case_index', arrayChangeIndex(source.col.caseList, source.caseIndex, target.caseIndex));
+        } else {
+          await write('/api/col/up_case', { id: source.id, col_id: target.col._id });
+        }
+      } else {
+        if (source.colIndex === target.colIndex) return;
+        await write('/api/col/up_col_index', arrayChangeIndex(interfaceColList, source.colIndex, target.colIndex));
       }
-      await axios.post('/api/col/up_case', { id: id.split('_')[1], col_id: dropColId });
-      // this.props.fetchInterfaceColList(projectId);
-      this.getList();
+      if (projectId !== this.props.match.params.id) return;
+      await this.getList();
       this.props.setColData({ isRander: true });
-    } else {
-      let changes = arrayChangeIndex(interfaceColList, dragIndex, dropIndex);
-      axios.post('/api/col/up_col_index', changes).then();
-      this.getList();
+    } catch (failure) {
+      message.error(failure.message || '排序失败，请重试');
+    } finally {
+      this.reorderingTree = false;
     }
   };
 
@@ -420,7 +467,9 @@ export default class InterfaceColMenu extends Component {
       if (router) {
         if (router.params.action === 'case') {
           if (!currCase || !currCase._id) {
-            return rNull;
+            const caseId = Number(router.params.actionId);
+            const collection = interfaceColList.find(col => (col.caseList || []).some(item => item._id === caseId));
+            return collection ? { expands: this.state.expands || ['col_' + collection._id], selects: ['case_' + caseId] } : rNull;
           }
           return {
             expands: this.state.expands ? this.state.expands : ['col_' + currCase.col_id],
@@ -487,14 +536,14 @@ export default class InterfaceColMenu extends Component {
     let currentKes = defaultExpandedKeys();
     // console.log('currentKey', currentKes)
 
-    let list = this.state.list;
+    let list = this.state.list.map(col => ({ ...col, caseList: [...col.caseList] }));
 
     if (this.state.filterValue) {
       let arr = [];
       list = list.filter(item => {
 
         item.caseList = item.caseList.filter(inter => {
-          if (inter.casename.indexOf(this.state.filterValue) === -1 
+          if (inter.casename.indexOf(this.state.filterValue) === -1
           && inter.path.indexOf(this.state.filterValue) === -1
           ) {
             return false;
@@ -618,11 +667,13 @@ export default class InterfaceColMenu extends Component {
           title="导入接口到集合"
           visible={importInterVisible}
           onOk={this.handleImportOk}
+          confirmLoading={this.state.importSaving}
+          maskClosable={false}
           onCancel={this.handleImportCancel}
           className="import-case-modal"
           width={800}
         >
-          <ImportInterface currProjectId={currProjectId} selectInterface={this.selectInterface} />
+          {importInterVisible && <ImportInterface key={this.state.importSession} currProjectId={currProjectId} selectInterface={this.selectInterface} />}
         </Modal>
       </div>
     );

@@ -96,6 +96,12 @@ class exportController extends baseController {
         return;
       }
 
+      if (!this.$tokenAuth && curProject.project_type === 'private' &&
+          !await this.checkAuth(curProject._id, 'project', 'view')) {
+        ctx.body = yapi.commons.resReturn(null, 400, '没有权限');
+        return;
+      }
+
       if (isWiki === 'true') {
         const wikiModel = require('../yapi-plugin-wiki/wikiModel.js');
         wikiData = await yapi.getInst(wikiModel).get(pid);

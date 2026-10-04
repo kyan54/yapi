@@ -68,8 +68,9 @@
     top: 50%;
     transform: translateY(-50%);
   }
-  .ant-tree li .ant-tree-node-content-wrapper {
-    width: calc(100% - 28px);
+  .ant-tree .ant-tree-node-content-wrapper {
+    flex: 1;
+    min-width: 0;
     position: relative;
     .container-title {
       overflow: hidden;
@@ -85,7 +86,7 @@
       transition: all 0.2s;
     }
   }
-  .ant-tree li .ant-tree-node-selected {
+  .ant-tree .ant-tree-node-selected {
     .btns {
       background-color: #d5ebfc;
       transition: all 0.2s;
@@ -180,6 +181,15 @@
     }
   }
   .interface-content {
+    // Match the legacy detail navigation without changing nested editor tabs.
+    > .tabs-large > .ant-tabs-nav {
+      margin-bottom: 0;
+      .ant-tabs-tab {
+        padding: 12px 16px;
+        font-size: 16px;
+        line-height: 24px;
+      }
+    }
     .ant-tabs-nav {
       width: 100%;
       // background-color: #ddd;
@@ -295,4 +305,19 @@
   .insert-code{
     padding-top: 45px;
   }
+}
+// Ant Design 6 uses flex tab lists and div-based tree rows.
+.left-menu {
+  > .ant-tabs > .ant-tabs-nav .ant-tabs-nav-list { width: 100%; }
+  > .ant-tabs > .ant-tabs-nav .ant-tabs-tab {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    margin: 0;
+  }
+  .ant-tree .ant-tree-treenode:not([aria-hidden="true"]) { width: 100%; min-height: 32px; align-items: center; }
+  .ant-tree .ant-tree-title { display: block; min-width: 0; }
+  .ant-tree .container-title { display: flex; align-items: center; min-width: 0; }
+  .ant-tree .interface-item { flex: 1; min-width: 0; padding-right: 28px; text-overflow: ellipsis; white-space: nowrap; }
+  .ant-tree .ant-tree-node-content-wrapper { line-height: 32px; }
 }

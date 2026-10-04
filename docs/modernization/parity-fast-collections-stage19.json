@@ -1,0 +1,106 @@
+{
+  "format": "yapi.parity.ci-repair.v1",
+  "base": "a873b4b0352294d1f4b794243c3b52e9907e57dd",
+  "parentVerifiedCI": {
+    "head": "f9e282b17a3f69e0c6ae5ed837f4e38673abee08",
+    "run": "https://github.com/kyan54/yapi/actions/runs/37119588487",
+    "artifact": 11272219542,
+    "dedicatedPassed": 9,
+    "dedicatedFailed": 2,
+    "dedicatedSkipped": 0
+  },
+  "findings": [
+    {
+      "failure": "runner_response-03 / collection_rules-03 neighbor navigation",
+      "classification": "test locator",
+      "evidence": "CI API errcode0 and screenshot show persisted case17 with displayed Neighbor collection ...; product intentionally truncates names >23. Local exact full-name cell count0, precise case href and Key each identify correct row.",
+      "change": "Locate table link by exact case-ID href and assert expected truncated display plus Key; preserve actual neighbor execution, payload col_id and report assertions."
+    },
+    {
+      "failure": "collection_server-04 json selection",
+      "classification": "timing-dependent product popup sizing, plus test readiness",
+      "ciEvidence": "Parent independent trace: modal appear-start/active scale-in; dropdown inline width13.1125px; final json invisible.",
+      "localBefore": {
+        "initialRapidPass": 4,
+        "initialRapidFail": 1,
+        "secondRapidPass": 1,
+        "secondRapidFail": 1,
+        "settledPass": 3,
+        "collapsedPopupWidth": 13.53125,
+        "jsonClientWidth": 0,
+        "jsonScrollWidth": 25,
+        "selectedAndGeneratedMode": "html"
+      },
+      "change": "Only the output-format Select gets style width120 and popupMatchSelectWidth120. Compat spread passthrough verified locally and at exact f9 commit. CI exercises rapid then closed/reopened settled path; waits for appear/enter classes to disappear (prepare can still have transform:none), checks modal780, popup>=120, full option text, normal click and generated mode=json. No force, arbitrary long delay, timeout increase, shared style change or direct mode query rewrite.",
+      "localAfter": {
+        "rapidPass": 5,
+        "settledPass": 3,
+        "failed": 0,
+        "popupWidth": 120,
+        "jsonClientAndScrollWidth": 88,
+        "twoRapidClicksCapturedScale": 0.2,
+        "selectedAndGeneratedMode": "json"
+      }
+    }
+  ],
+  "rows": [
+    {
+      "id": "mock_advanced-02",
+      "new": "passed",
+      "status": "passed",
+      "evidence": "Parent-confirmed f9 CI actual advanced syntax/missing runner/recovery scenario passed"
+    },
+    {
+      "id": "runner_variables-04",
+      "new": "passed",
+      "status": "passed",
+      "evidence": "Parent-confirmed f9 CI actual missing previous output/zero echo/no neighbor leak passed; later preview UI patch separately paired locally"
+    },
+    {
+      "id": "runner_response-03",
+      "new": "failed",
+      "status": "failed",
+      "remaining": "combined scenario not completed at f9; patched exact Linux CI pending"
+    },
+    {
+      "id": "collection_rules-03",
+      "new": "failed",
+      "status": "failed",
+      "remaining": "neighbor/disable/recovery tail not completed at f9; patched exact Linux CI pending"
+    },
+    {
+      "id": "collection_server-04",
+      "new": "failed",
+      "status": "failed",
+      "remaining": "actual report phase not reached at f9; patched exact Linux CI pending"
+    }
+  ],
+  "validation": {
+    "basicPassed": 32,
+    "basicSkipped": 1,
+    "modernizationPassed": 361,
+    "modernizationSkipped": 8,
+    "failed": 0,
+    "productionBuild": "passed",
+    "CI_ONLY_syntax": "passed",
+    "dedicatedCountUnchanged": 11,
+    "MacScriptExecution": false,
+    "viewport": "1920x1080",
+    "visualComparison": "before narrow blank strip and after full html/json options personally inspected"
+  },
+  "localEvidence": [
+    "ci-neighbor-selector-probe.json",
+    "modal-timing-before.json",
+    "modal-timing-stable-stable-before.json",
+    "modal-timing-after.json",
+    "modal-timing-0.png",
+    "modal-timing-after-0.png",
+    "build-stage19.log",
+    "units-stage19.log"
+  ],
+  "limitations": [
+    "Local ordinary UI is not substitute for exact Linux CI script/report acceptance.",
+    "Observed Mac failure is intermittent, not claimed deterministic.",
+    "GitHub artifact read succeeded but local download helper could not create attachment directory; no permission workaround; exact CI trace facts supplied by parent independent review."
+  ]
+}

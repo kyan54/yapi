@@ -1,6 +1,6 @@
 import React, { PureComponent as Component } from 'react'
 import PropTypes from 'prop-types'
-import { Form, Input, Select, Button } from 'antd';
+import { Form, Input, Select, Button, message } from 'antd';
 
 import constants from '../../../../constants/variable.js'
 import { handleApiPath, nameLengthLimit } from '../../../../common.js'
@@ -19,20 +19,41 @@ class AddInterfaceForm extends Component {
     form: PropTypes.object,
     onSubmit: PropTypes.func,
     onCancel: PropTypes.func,
+    onPendingChange: PropTypes.func,
+    captureSubmission: PropTypes.func,
     catid: PropTypes.number,
     catdata: PropTypes.array
   }
-  handleSubmit = (e) => {
-    e.preventDefault();
-    this.props.form.validateFields((err, values) => {
-      if (!err) {
-        this.props.onSubmit(values, () => {
-          this.props.form.resetFields();
-        });
+  state = { submitting: false };
+  submitting = false;
+  disposed = false;
+  componentWillUnmount() { this.disposed = true; }
 
+  handleSubmit = async e => {
+    e.preventDefault();
+    if (this.submitting || this.disposed) return;
+    const isCurrent = this.props.captureSubmission ? this.props.captureSubmission() : () => true;
+    this.submitting = true;
+    this.setState({ submitting: true });
+    if (this.props.onPendingChange) this.props.onPendingChange(true);
+    try {
+      const { err, values } = await new Promise(resolve =>
+        this.props.form.validateFields((err, values) => resolve({ err, values })));
+      if (err || this.disposed || !isCurrent()) return;
+      await this.props.onSubmit(values, () => this.props.form.resetFields());
+    } catch (error) {
+      if (!this.disposed && isCurrent()) {
+        const response = error.response && error.response.data;
+        message.error((response && response.errmsg) || '接口创建失败，请重试');
       }
-    });
-  }
+    } finally {
+      this.submitting = false;
+      if (!this.disposed && isCurrent()) {
+        this.setState({ submitting: false });
+        if (this.props.onPendingChange) this.props.onPendingChange(false);
+      }
+    }
+  };
 
   handlePath = (e) => {
     let val = e.target.value
@@ -66,6 +87,7 @@ class AddInterfaceForm extends Component {
     return (
 
       <Form onSubmit={this.handleSubmit}>
+        {this.state.submitting && <p role="status" style={{ textAlign: 'center' }}>正在提交，请稍候；完成后可关闭。</p>}
         <FormItem
           {...formItemLayout}
           label="接口分类"
@@ -110,11 +132,12 @@ class AddInterfaceForm extends Component {
           <span style={{ color: "#929292" }}>详细的接口数据可以在编辑页面中添加</span>
         </FormItem>
         <FormItem className="catModalfoot" wrapperCol={{ span: 24, offset: 8 }} >
-          <Button onClick={this.props.onCancel} style={{ marginRight: "10px" }}  >取消</Button>
+          <Button disabled={this.state.submitting} onClick={this.props.onCancel} style={{ marginRight: "10px" }}  >取消</Button>
           <Button
             type="primary"
             htmlType="submit"
-            disabled={hasErrors(getFieldsError())}
+            loading={this.state.submitting}
+            disabled={this.state.submitting || hasErrors(getFieldsError())}
           >
             提交
           </Button>

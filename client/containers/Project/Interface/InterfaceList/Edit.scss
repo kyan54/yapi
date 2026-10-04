@@ -81,6 +81,11 @@
     vertical-align: middle;
   }
 
+  .ant-select.path {
+    display: inline-flex;
+    padding-right: 0;
+  }
+
   .opened {
     color: #00a854;
     padding-right: 6px;
@@ -114,3 +119,41 @@
   padding-left: 48px;
 }
 
+
+// Explicit full-width columns are required by the modern flex-based grid.
+.interface-edit .interface-edit-item-content {
+  flex-wrap: nowrap;
+  .ant-select { width: 100%; }
+  .interface-edit-item-content-col { min-width: 0; }
+}
+.schema-editor-modern {
+  width: 100%;
+  .schema-tree-scroll { overflow-x: auto; }
+  .schema-node-row {
+    display: grid;
+    grid-template-columns: 28px minmax(130px, 2fr) 28px 110px minmax(100px, 1fr) minmax(100px, 1fr) minmax(150px, 1.5fr) 96px;
+    align-items: center;
+    gap: 8px;
+    min-width: 850px;
+    min-height: 44px;
+    box-sizing: border-box;
+    .ant-input, .ant-select { width: 100%; min-width: 0; }
+  }
+  .schema-node-input-editor {
+    display: flex;
+    min-width: 0;
+    .ant-input, .ant-select { flex: 1; }
+    .ant-btn { flex: 0 0 28px; width: 28px; padding-inline: 0; }
+  }
+  .schema-node-actions {
+    display: flex;
+    .ant-btn { width: 32px; padding-inline: 0; }
+  }
+}
+
+.schema-advanced-fields {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+  h4, p { grid-column: 1 / -1; margin: 0; }
+  label { display: flex; flex-direction: column; gap: 4px; }
+  .ant-input-number, .ant-select { width: 100%; }
+}

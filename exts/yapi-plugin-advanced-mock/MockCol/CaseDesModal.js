@@ -45,6 +45,7 @@ class CaseDesForm extends Component {
     onOk: PropTypes.func,
     onCancel: PropTypes.func,
     isAdd: PropTypes.bool,
+    saving: PropTypes.bool,
     visible: PropTypes.bool
   };
   // 初始化输入数据
@@ -334,6 +335,9 @@ class CaseDesForm extends Component {
       <Modal
         title={isAdd ? '添加期望' : '编辑期望'}
         visible={visible}
+        confirmLoading={this.props.saving}
+        closable={!this.props.saving}
+        keyboard={!this.props.saving}
         maskClosable={false}
         onOk={this.handleOk}
         width={780}

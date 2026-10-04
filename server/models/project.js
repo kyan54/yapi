@@ -63,7 +63,7 @@ class projectModel extends baseModel {
   }
 
   updateMember(data) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         'members.uid': data.uid
       },
@@ -82,6 +82,7 @@ class projectModel extends baseModel {
   }
 
   handleEnvNullData(data){
+    if (!data) return data;
     data = data.toObject();
     data.toObject = ()=> data;
     let isFix = false;
@@ -99,7 +100,7 @@ class projectModel extends baseModel {
     }
     
     if(isFix){
-      this.model.update(
+      this.updateDocuments(
         {
           _id: data._id
 
@@ -218,20 +219,20 @@ class projectModel extends baseModel {
   }
 
   del(id) {
-    return this.model.remove({
+    return this.removeDocuments({
       _id: id
     });
   }
 
   delByGroupid(groupId) {
-    return this.model.remove({
+    return this.removeDocuments({
       group_id: groupId
     });
   }
 
   up(id, data) {
     data.up_time = yapi.commons.time();
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },
@@ -241,7 +242,7 @@ class projectModel extends baseModel {
   }
 
   addMember(id, data) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },
@@ -253,7 +254,7 @@ class projectModel extends baseModel {
   }
 
   delMember(id, uid) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id
       },
@@ -271,7 +272,7 @@ class projectModel extends baseModel {
   }
 
   changeMemberRole(id, uid, role) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id,
         'members.uid': uid
@@ -283,7 +284,7 @@ class projectModel extends baseModel {
   }
 
   changeMemberEmailNotice(id, uid, notice) {
-    return this.model.update(
+    return this.updateDocuments(
       {
         _id: id,
         'members.uid': uid
@@ -294,12 +295,8 @@ class projectModel extends baseModel {
     );
   }
 
-  search(keyword) {
-    return this.model
-      .find({
-        name: new RegExp(keyword, 'ig')
-      })
-      .limit(10);
+  search(keyword, options) {
+    return this.model.aggregate(require('../utils/search-visibility').projectPipeline(keyword, options)).exec();
   }
 }
 

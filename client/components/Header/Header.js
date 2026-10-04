@@ -1,5 +1,5 @@
 import './Header.scss';
-import React, { PureComponent as Component } from 'react';
+import React, { PureComponent as Component, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -32,7 +32,7 @@ let HeaderMenu = {
 plugin.emitHook('header_menu', HeaderMenu);
 
 const MenuUser = props => (
-  <Menu theme="dark" className="user-menu">
+  <Menu theme="dark" className="user-menu" onClick={props.onSelect}>
     {Object.keys(HeaderMenu).map(key => {
       let item = HeaderMenu[key];
       const isAdmin = props.role === 'admin';
@@ -66,7 +66,7 @@ const MenuUser = props => (
 const tipFollow = (
   <div className="title-container">
     <h3 className="title">
-      <Icon type="star" /> 关注
+      <Icon type="star" theme="filled" /> 关注
     </h3>
     <p>这里是你的专属收藏夹，便于你找到自己的项目</p>
   </div>
@@ -74,7 +74,7 @@ const tipFollow = (
 const tipAdd = (
   <div className="title-container">
     <h3 className="title">
-      <Icon type="plus-circle" /> 新建项目
+      <Icon type="plus-circle" theme="filled" /> 新建项目
     </h3>
     <p>在任何页面都可以快速新建项目</p>
   </div>
@@ -100,10 +100,25 @@ MenuUser.propTypes = {
   role: PropTypes.string,
   uid: PropTypes.number,
   relieveLink: PropTypes.func,
-  logout: PropTypes.func
+  logout: PropTypes.func,
+  onSelect: PropTypes.func
 };
 
 const ToolUser = props => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuTrigger = useRef(null);
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const closeOnEscape = event => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      setMenuOpen(false);
+      menuTrigger.current?.focus();
+    };
+    document.addEventListener('keydown', closeOnEscape, true);
+    return () => document.removeEventListener('keydown', closeOnEscape, true);
+  }, [menuOpen]);
   let imageUrl = props.imageUrl ? props.imageUrl : `/api/user/avatar?uid=${props.uid}`;
   return (
     <ul>
@@ -121,7 +136,7 @@ const ToolUser = props => {
         <Tooltip placement="bottom" title={'我的关注'}>
           <li className="toolbar-li">
             <Link to="/follow">
-              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="star" />
+              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="star" theme="filled" />
             </Link>
           </li>
         </Tooltip>
@@ -137,7 +152,7 @@ const ToolUser = props => {
         <Tooltip placement="bottom" title={'新建项目'}>
           <li className="toolbar-li">
             <Link to="/add-project">
-              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="plus-circle" />
+              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="plus-circle" theme="filled" />
             </Link>
           </li>
         </Tooltip>
@@ -153,7 +168,7 @@ const ToolUser = props => {
         <Tooltip placement="bottom" title={'使用文档'}>
           <li className="toolbar-li">
             <a target="_blank" href="https://hellosean1025.github.io/yapi" rel="noopener noreferrer">
-              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="question-circle" />
+              <Icon className="dropdown-link" style={{ fontSize: 16 }} type="question-circle" theme="filled" />
             </a>
           </li>
         </Tooltip>
@@ -162,6 +177,8 @@ const ToolUser = props => {
         <Dropdown
           placement="bottomRight"
           trigger={['click']}
+          visible={menuOpen}
+          onVisibleChange={setMenuOpen}
           overlay={
             <MenuUser
               user={props.user}
@@ -170,10 +187,25 @@ const ToolUser = props => {
               role={props.role}
               relieveLink={props.relieveLink}
               logout={props.logout}
+              onSelect={() => setMenuOpen(false)}
             />
           }
         >
-          <a className="dropdown-link">
+          <a
+            className="dropdown-link"
+            ref={menuTrigger}
+            role="button"
+            tabIndex={0}
+            aria-label="用户菜单"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setMenuOpen(open => !open);
+              }
+            }}
+          >
             <span className="avatar-image">
               <img src={imageUrl} />
             </span>
